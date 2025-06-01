@@ -1,6 +1,7 @@
 package com.example.plugins
 
 import com.example.config.DatabaseConfig
+import com.example.database.tables.AcademicYears
 import com.example.database.tables.Complaints
 import com.example.database.tables.Holidays
 import com.example.database.tables.Posts
@@ -14,6 +15,6 @@ fun Application.configureDatabases() {
 
     // Create tables
     transaction(database) {
-        SchemaUtils.create(Users, Holidays, Posts, Complaints)
+        SchemaUtils.create(Users, Holidays, Posts, Complaints, AcademicYears)
     }
 }
