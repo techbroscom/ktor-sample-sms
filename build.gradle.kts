@@ -45,4 +45,7 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:3.1.3")
     implementation("org.jetbrains.exposed:exposed-java-time:0.61.0")
     implementation("org.postgresql:postgresql:42.7.1") // or latest version
+
+    // For password hashing
+    implementation("org.mindrot:jbcrypt:0.4")
 }
