@@ -4,6 +4,7 @@ import com.example.config.DatabaseConfig
 import com.example.database.tables.AcademicYears
 import com.example.database.tables.Complaints
 import com.example.database.tables.Holidays
+import com.example.database.tables.OtpCodes
 import com.example.database.tables.Posts
 import com.example.database.tables.Users
 import io.ktor.server.application.*
@@ -15,6 +16,6 @@ fun Application.configureDatabases() {
 
     // Create tables
     transaction(database) {
-        SchemaUtils.create(Users, Holidays, Posts, Complaints, AcademicYears)
+        SchemaUtils.create(Users, Holidays, Posts, Complaints, AcademicYears, OtpCodes)
     }
 }

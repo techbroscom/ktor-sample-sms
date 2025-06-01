@@ -37,13 +37,13 @@ class UserRepository {
 
     suspend fun findByEmail(email: String): List<UserDto>? = dbQuery {
         Users.selectAll()
-            .where { Users.mobileNumber eq email }
+            .where { Users.email eq email }
             .map { mapRowToDto(it) }
     }
 
     suspend fun findPasswordHashByEmail(email: String): String? = dbQuery {
         Users.selectAll()
-            .where { Users.mobileNumber eq email }
+            .where { Users.email eq email }
             .map { it[Users.passwordHash] }
             .last()
     }

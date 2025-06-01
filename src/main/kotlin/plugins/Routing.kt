@@ -3,6 +3,7 @@ package com.example.plugins
 import com.example.repositories.AcademicYearRepository
 import com.example.repositories.ComplaintRepository
 import com.example.repositories.HolidayRepository
+import com.example.repositories.OtpRepository
 import com.example.repositories.PostRepository
 import com.example.repositories.UserRepository
 import com.example.routes.api.academicYearRoutes
@@ -12,7 +13,9 @@ import com.example.routes.api.postRoutes
 import com.example.routes.api.userRoutes
 import com.example.services.AcademicYearService
 import com.example.services.ComplaintService
+import com.example.services.EmailService
 import com.example.services.HolidayService
+import com.example.services.OtpService
 import com.example.services.PostService
 import com.example.services.UserService
 import io.ktor.server.application.*
@@ -36,6 +39,10 @@ fun Application.configureRouting() {
     val academicYearRepository = AcademicYearRepository()
     val academicYearService = AcademicYearService(academicYearRepository)
 
+    val otpRepository = OtpRepository()
+    val emailService = EmailService()
+    val otpService = OtpService(otpRepository, userRepository, emailService)
+
     routing {
         get("/") {
             call.respondText("School Management API Server")
@@ -46,7 +53,7 @@ fun Application.configureRouting() {
         }
 
         // API routes
-        userRoutes(userService)
+        userRoutes(userService, otpService)
         holidayRoutes(holidayService)
         postRoutes(postService)
         complaintRoutes(complaintService)
