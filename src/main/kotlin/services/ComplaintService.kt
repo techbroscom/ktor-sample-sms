@@ -58,6 +58,12 @@ class ComplaintService(private val complaintRepository: ComplaintRepository) {
     suspend fun updateStatus(id: String, request: UpdateStatusRequest): ComplaintDto {
         validateStatus(request.status)
 
+        val comment = CommentDto(
+            comment = request.comment,
+            commentedBy = request.commentedBy,
+            commentedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        )
+        complaintRepository.addComment(id, comment)
         val updated = complaintRepository.updateStatus(id, request.status)
         if (!updated) {
             throw ApiException("Complaint not found", HttpStatusCode.NotFound)

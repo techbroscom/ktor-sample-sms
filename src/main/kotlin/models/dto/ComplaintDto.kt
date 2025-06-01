@@ -34,7 +34,9 @@ data class UpdateComplaintRequest(
 
 @Serializable
 data class UpdateStatusRequest(
-    val status: String
+    val status: String,
+    val comment: String,
+    val commentedBy: String
 )
 
 @Serializable
