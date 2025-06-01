@@ -48,4 +48,8 @@ dependencies {
 
     // For password hashing
     implementation("org.mindrot:jbcrypt:0.4")
+
+    //Email
+    implementation("javax.mail:javax.mail-api:1.6.2")
+    implementation("com.sun.mail:javax.mail:1.6.2")
 }
