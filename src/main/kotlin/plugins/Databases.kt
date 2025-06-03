@@ -6,6 +6,8 @@ import com.example.database.tables.Complaints
 import com.example.database.tables.Holidays
 import com.example.database.tables.OtpCodes
 import com.example.database.tables.Posts
+import com.example.database.tables.Rules
+import com.example.database.tables.SchoolConfig
 import com.example.database.tables.Users
 import io.ktor.server.application.*
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -16,6 +18,6 @@ fun Application.configureDatabases() {
 
     // Create tables
     transaction(database) {
-        SchemaUtils.create(Users, Holidays, Posts, Complaints, AcademicYears, OtpCodes)
+        SchemaUtils.create(Users, Holidays, Posts, Complaints, AcademicYears, OtpCodes, SchoolConfig, Rules)
     }
 }
