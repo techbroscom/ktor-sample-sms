@@ -5,6 +5,7 @@ import com.example.database.tables.AcademicYears
 import com.example.database.tables.ClassSubjects
 import com.example.database.tables.Classes
 import com.example.database.tables.Complaints
+import com.example.database.tables.ExamResults
 import com.example.database.tables.ExamSchedules
 import com.example.database.tables.Exams
 import com.example.database.tables.Holidays
@@ -26,6 +27,6 @@ fun Application.configureDatabases() {
 
     // Create tables
     transaction(database) {
-        SchemaUtils.create(Users, Holidays, Posts, Complaints, OtpCodes, SchoolConfig, Rules, AcademicYears, Subjects, Classes, ClassSubjects, StudentAssignments, StaffClassAssignments, StaffSubjectAssignments, Exams, ExamSchedules)
+        SchemaUtils.create(Users, Holidays, Posts, Complaints, OtpCodes, SchoolConfig, Rules, AcademicYears, Subjects, Classes, ClassSubjects, StudentAssignments, StaffClassAssignments, StaffSubjectAssignments, Exams, ExamSchedules, ExamResults)
     }
 }

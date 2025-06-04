@@ -5,6 +5,7 @@ import com.example.repositories.ClassRepository
 import com.example.repositories.ClassSubjectRepository
 import com.example.repositories.ComplaintRepository
 import com.example.repositories.ExamRepository
+import com.example.repositories.ExamResultRepository
 import com.example.repositories.ExamScheduleRepository
 import com.example.repositories.HolidayRepository
 import com.example.repositories.OtpRepository
@@ -20,6 +21,7 @@ import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.classRoutes
 import com.example.routes.api.classSubjectRoutes
 import com.example.routes.api.complaintRoutes
+import com.example.routes.api.examResultRoutes
 import com.example.routes.api.examRoutes
 import com.example.routes.api.examScheduleRoutes
 import com.example.routes.api.holidayRoutes
@@ -36,6 +38,7 @@ import com.example.services.ClassService
 import com.example.services.ClassSubjectService
 import com.example.services.ComplaintService
 import com.example.services.EmailService
+import com.example.services.ExamResultService
 import com.example.services.ExamScheduleService
 import com.example.services.ExamService
 import com.example.services.HolidayService
@@ -102,6 +105,9 @@ fun Application.configureRouting() {
 
     val examScheduleRepository = ExamScheduleRepository()
     val examScheduleService = ExamScheduleService(examScheduleRepository, examService, classService)
+
+    val examResultRepository = ExamResultRepository()
+    val examResultService = ExamResultService(examResultRepository, examService, userService)
     // API routes
 
     routing {
@@ -129,5 +135,6 @@ fun Application.configureRouting() {
         staffSubjectAssignmentRoutes(staffSubjectAssignmentService)
         examRoutes(examService)
         examScheduleRoutes(examScheduleService)
+        examResultRoutes(examResultService)
     }
 }
