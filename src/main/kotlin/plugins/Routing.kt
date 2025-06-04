@@ -9,6 +9,7 @@ import com.example.repositories.OtpRepository
 import com.example.repositories.PostRepository
 import com.example.repositories.RulesAndRegulationsRepository
 import com.example.repositories.SchoolConfigRepository
+import com.example.repositories.StudentAssignmentRepository
 import com.example.repositories.SubjectRepository
 import com.example.repositories.UserRepository
 import com.example.routes.api.academicYearRoutes
@@ -19,6 +20,7 @@ import com.example.routes.api.holidayRoutes
 import com.example.routes.api.postRoutes
 import com.example.routes.api.rulesAndRegulationsRoutes
 import com.example.routes.api.schoolConfigRoutes
+import com.example.routes.api.studentAssignmentRoutes
 import com.example.routes.api.subjectRoutes
 import com.example.routes.api.userRoutes
 import com.example.services.AcademicYearService
@@ -31,6 +33,7 @@ import com.example.services.OtpService
 import com.example.services.PostService
 import com.example.services.RulesAndRegulationsService
 import com.example.services.SchoolConfigService
+import com.example.services.StudentAssignmentService
 import com.example.services.SubjectService
 import com.example.services.UserService
 import io.ktor.server.application.*
@@ -73,6 +76,8 @@ fun Application.configureRouting() {
     val classSubjectRepository = ClassSubjectRepository()
     val classSubjectService = ClassSubjectService(classSubjectRepository, classService, subjectService, academicYearService)
 
+    val studentAssignmentRepository = StudentAssignmentRepository()
+    val studentAssignmentService = StudentAssignmentService(studentAssignmentRepository, userService, classService, academicYearService)
     // API routes
 
     routing {
@@ -95,5 +100,6 @@ fun Application.configureRouting() {
         classRoutes(classService)
         subjectRoutes(subjectService)
         classSubjectRoutes(classSubjectService)
+        studentAssignmentRoutes(studentAssignmentService)
     }
 }
