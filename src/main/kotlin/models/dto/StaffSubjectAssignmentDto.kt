@@ -68,7 +68,7 @@ data class SubjectWithClassDto(
     val id: String,
     val classSubjectId: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val className: String,
     val sectionName: String
 )
@@ -78,7 +78,7 @@ data class SubjectWithStaffDto(
     val id: String,
     val classSubjectId: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val staff: List<StaffBasicDto>
 )
 

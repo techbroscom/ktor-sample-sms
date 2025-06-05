@@ -12,11 +12,11 @@ class SubjectService(private val subjectRepository: SubjectRepository) {
     suspend fun createSubject(request: CreateSubjectRequest): SubjectDto {
         validateSubjectRequest(request.name, request.code)
 
-        // Check for duplicate code
+        /*// Check for duplicate code
         val codeExists = subjectRepository.checkDuplicateCode(request.code)
         if (codeExists) {
             throw ApiException("Subject code '${request.code}' already exists", HttpStatusCode.Conflict)
-        }
+        }*/
 
         // Check for duplicate name (optional - you can remove this if names can be duplicated)
         val nameExists = subjectRepository.checkDuplicateName(request.name)
@@ -103,13 +103,13 @@ class SubjectService(private val subjectRepository: SubjectRepository) {
         return Pair(subjects, totalCount)
     }
 
-    private fun validateSubjectRequest(name: String, code: String) {
+    private fun validateSubjectRequest(name: String, code: String?) {
         when {
             name.isBlank() -> throw ApiException("Subject name cannot be empty", HttpStatusCode.BadRequest)
             name.length > 100 -> throw ApiException("Subject name is too long (max 100 characters)", HttpStatusCode.BadRequest)
-            code.isBlank() -> throw ApiException("Subject code cannot be empty", HttpStatusCode.BadRequest)
+            /*code.isBlank() -> throw ApiException("Subject code cannot be empty", HttpStatusCode.BadRequest)
             code.length > 20 -> throw ApiException("Subject code is too long (max 20 characters)", HttpStatusCode.BadRequest)
-            !code.matches(Regex("^[A-Z0-9_-]+$")) -> throw ApiException("Subject code must contain only uppercase letters, numbers, hyphens and underscores", HttpStatusCode.BadRequest)
+            !code.matches(Regex("^[A-Z0-9_-]+$")) -> throw ApiException("Subject code must contain only uppercase letters, numbers, hyphens and underscores", HttpStatusCode.BadRequest)*/
         }
     }
 

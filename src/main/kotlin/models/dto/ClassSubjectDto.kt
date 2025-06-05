@@ -51,6 +51,6 @@ data class ClassWithSubjectsDto(
 data class SubjectWithClassesDto(
     val subjectId: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val classes: List<ClassDto>
 )

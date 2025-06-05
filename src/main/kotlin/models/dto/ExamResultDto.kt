@@ -57,7 +57,7 @@ data class ExamWithResultsDto(
     val examId: String,
     val examName: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val maxMarks: Int,
     val examDate: String, // ISO date string
     val academicYearName: String,
@@ -95,7 +95,7 @@ data class ExamResultDetailDto(
     val examId: String,
     val examName: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val maxMarks: Int,
     val examDate: String,
     val marksObtained: Int,

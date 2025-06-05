@@ -6,13 +6,13 @@ import kotlinx.serialization.Serializable
 data class SubjectDto(
     val id: String? = null,
     val name: String,
-    val code: String
+    val code: String? = null
 )
 
 @Serializable
 data class CreateSubjectRequest(
     val name: String,
-    val code: String
+    val code: String? = null
 )
 
 @Serializable

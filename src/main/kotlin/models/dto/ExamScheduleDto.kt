@@ -50,7 +50,7 @@ data class ExamWithSchedulesDto(
     val examId: String,
     val examName: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val maxMarks: Int,
     val examDate: String, // ISO date string
     val academicYearName: String,
@@ -82,7 +82,7 @@ data class ExamScheduleDetailDto(
     val examId: String,
     val examName: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val maxMarks: Int,
     val examDate: String,
     val startTime: String,

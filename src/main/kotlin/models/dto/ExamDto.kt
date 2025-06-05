@@ -69,7 +69,7 @@ data class ClassExamsDto(
 data class SubjectExamsDto(
     val subjectId: String,
     val subjectName: String,
-    val subjectCode: String,
+    val subjectCode: String?,
     val exams: List<ExamDto>
 )
 

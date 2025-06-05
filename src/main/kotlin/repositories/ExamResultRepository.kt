@@ -343,7 +343,7 @@ class ExamResultRepository {
         val id: String,
         val name: String,
         val subjectName: String,
-        val subjectCode: String,
+        val subjectCode: String?,
         val maxMarks: Int,
         val date: String,
         val academicYearName: String
