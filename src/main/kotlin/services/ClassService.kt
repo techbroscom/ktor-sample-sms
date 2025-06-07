@@ -14,16 +14,22 @@ class ClassService(
 ) {
 
     suspend fun createClass(request: CreateClassRequest): ClassDto {
-        validateClassRequest(request.className, request.sectionName, request.academicYearId)
+        validateClassRequest(request.className, request.sectionName)
 
-        // Check if academic year exists
-        academicYearService.getAcademicYearById(request.academicYearId)
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        // Check if academic year exists (will throw exception if not found)
+        academicYearService.getAcademicYearById(academicYearId)
 
         // Check for duplicate class in the same academic year
         val isDuplicate = classRepository.checkDuplicateClass(
             request.className,
             request.sectionName,
-            request.academicYearId
+            academicYearId
         )
         if (isDuplicate) {
             throw ApiException(
@@ -32,7 +38,7 @@ class ClassService(
             )
         }
 
-        val classId = classRepository.create(request)
+        val classId = classRepository.create(request.copy(academicYearId = academicYearId))
         return getClassById(classId)
     }
 
@@ -46,18 +52,29 @@ class ClassService(
         return classRepository.findAll()
     }
 
+    suspend fun getClassesForActiveAcademicYear(): List<ClassDto> {
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return classRepository.findByAcademicYear(activeAcademicYear.id)
+    }
+
     suspend fun updateClass(id: String, request: UpdateClassRequest): ClassDto {
         validateUUID(id, "Class ID")
-        validateClassRequest(request.className, request.sectionName, request.academicYearId)
+        validateClassRequest(request.className, request.sectionName)
+
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
 
         // Check if academic year exists
-        academicYearService.getAcademicYearById(request.academicYearId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         // Check for duplicate class in the same academic year (excluding current class)
         val isDuplicate = classRepository.checkDuplicateClass(
             request.className,
             request.sectionName,
-            request.academicYearId,
+            academicYearId,
             excludeId = id
         )
         if (isDuplicate) {
@@ -67,7 +84,7 @@ class ClassService(
             )
         }
 
-        val updated = classRepository.update(id, request)
+        val updated = classRepository.update(id, request.copy(academicYearId = academicYearId))
         if (!updated) {
             throw ApiException("Class not found", HttpStatusCode.NotFound)
         }
@@ -101,15 +118,23 @@ class ClassService(
         return classRepository.findByClassNameAndSection(className, sectionName)
     }
 
-    private fun validateClassRequest(className: String, sectionName: String, academicYearId: String) {
+    suspend fun getClassesByNameAndSectionForActiveYear(className: String, sectionName: String): List<ClassDto> {
+        when {
+            className.isBlank() -> throw ApiException("Class name cannot be empty", HttpStatusCode.BadRequest)
+            sectionName.isBlank() -> throw ApiException("Section name cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return classRepository.findByClassNameAndSectionAndAcademicYear(className, sectionName, activeAcademicYear.id)
+    }
+
+    private fun validateClassRequest(className: String, sectionName: String) {
         when {
             className.isBlank() -> throw ApiException("Class name cannot be empty", HttpStatusCode.BadRequest)
             className.length > 50 -> throw ApiException("Class name is too long (max 50 characters)", HttpStatusCode.BadRequest)
             sectionName.isBlank() -> throw ApiException("Section name cannot be empty", HttpStatusCode.BadRequest)
             sectionName.length > 50 -> throw ApiException("Section name is too long (max 50 characters)", HttpStatusCode.BadRequest)
         }
-
-        validateUUID(academicYearId, "Academic Year ID")
     }
 
     private fun validateUUID(uuid: String, fieldName: String) {

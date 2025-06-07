@@ -63,6 +63,14 @@ class ClassRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByClassNameAndSectionAndAcademicYear(className: String, sectionName: String, academicYearId: String): List<ClassDto> = dbQuery {
+        Classes.join(AcademicYears, JoinType.LEFT, Classes.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { (Classes.className eq className) and (Classes.sectionName eq sectionName) and (AcademicYears.id  eq UUID.fromString(academicYearId)) }
+            .orderBy(Classes.className to SortOrder.ASC, Classes.sectionName to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun checkDuplicateClass(className: String, sectionName: String, academicYearId: String, excludeId: String? = null): Boolean = dbQuery {
         val query = Classes.selectAll()
             .where {

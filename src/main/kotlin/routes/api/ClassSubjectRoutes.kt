@@ -24,7 +24,16 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Get class-subject assignments by academic year
+        // Get class-subject assignments for active academic year
+        get("/active") {
+            val classSubjects = classSubjectService.getClassSubjectsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = classSubjects
+            ))
+        }
+
+        // Get class-subject assignments by academic year (keep for backward compatibility)
         get("/academic-year/{academicYearId}") {
             val academicYearId = call.parameters["academicYearId"]
                 ?: throw ApiException("Academic Year ID is required", HttpStatusCode.BadRequest)
@@ -36,7 +45,7 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Get subjects by class
+        // Get subjects by class (all academic years)
         get("/class/{classId}/subjects") {
             val classId = call.parameters["classId"]
                 ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
@@ -48,12 +57,36 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Get classes by subject
+        // Get subjects by class for active academic year
+        get("/class/{classId}/subjects/active") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+
+            val classSubjects = classSubjectService.getSubjectsByClassForActiveYear(classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = classSubjects
+            ))
+        }
+
+        // Get classes by subject (all academic years)
         get("/subject/{subjectId}/classes") {
             val subjectId = call.parameters["subjectId"]
                 ?: throw ApiException("Subject ID is required", HttpStatusCode.BadRequest)
 
             val classSubjects = classSubjectService.getClassesBySubject(subjectId)
+            call.respond(ApiResponse(
+                success = true,
+                data = classSubjects
+            ))
+        }
+
+        // Get classes by subject for active academic year
+        get("/subject/{subjectId}/classes/active") {
+            val subjectId = call.parameters["subjectId"]
+                ?: throw ApiException("Subject ID is required", HttpStatusCode.BadRequest)
+
+            val classSubjects = classSubjectService.getClassesBySubjectForActiveYear(subjectId)
             call.respond(ApiResponse(
                 success = true,
                 data = classSubjects
@@ -74,7 +107,16 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Get classes with their subjects for an academic year
+        // Get classes with their subjects for active academic year
+        get("/active/classes-with-subjects") {
+            val classesWithSubjects = classSubjectService.getClassesWithSubjectsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = classesWithSubjects
+            ))
+        }
+
+        // Get classes with their subjects for an academic year (keep for backward compatibility)
         get("/academic-year/{academicYearId}/classes-with-subjects") {
             val academicYearId = call.parameters["academicYearId"]
                 ?: throw ApiException("Academic Year ID is required", HttpStatusCode.BadRequest)
@@ -86,7 +128,16 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Get subjects with their classes for an academic year
+        // Get subjects with their classes for active academic year
+        get("/active/subjects-with-classes") {
+            val subjectsWithClasses = classSubjectService.getSubjectsWithClassesForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = subjectsWithClasses
+            ))
+        }
+
+        // Get subjects with their classes for an academic year (keep for backward compatibility)
         get("/academic-year/{academicYearId}/subjects-with-classes") {
             val academicYearId = call.parameters["academicYearId"]
                 ?: throw ApiException("Academic Year ID is required", HttpStatusCode.BadRequest)
@@ -110,7 +161,7 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Create class-subject assignment
+        // Create class-subject assignment (uses active academic year if not specified)
         post {
             val request = call.receive<CreateClassSubjectRequest>()
             val classSubject = classSubjectService.createClassSubject(request)
@@ -121,7 +172,7 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Bulk create class-subject assignments
+        // Bulk create class-subject assignments (uses active academic year if not specified)
         post("/bulk") {
             val request = call.receive<BulkCreateClassSubjectRequest>()
             val classSubjects = classSubjectService.bulkCreateClassSubjects(request)
@@ -132,7 +183,7 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Update class-subject assignment
+        // Update class-subject assignment (uses active academic year if not specified)
         put("/{id}") {
             val id = call.parameters["id"]
                 ?: throw ApiException("Class Subject ID is required", HttpStatusCode.BadRequest)
@@ -158,7 +209,7 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Remove all subjects from a class
+        // Remove all subjects from a class (all academic years)
         delete("/class/{classId}/subjects") {
             val classId = call.parameters["classId"]
                 ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
@@ -170,7 +221,19 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             ))
         }
 
-        // Remove a subject from all classes
+        // Remove all subjects from a class for active academic year
+        delete("/class/{classId}/subjects/active") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = classSubjectService.removeAllSubjectsFromClassForActiveYear(classId)
+            call.respond(ApiResponse<Unit>(
+                success = true,
+                message = "$deletedCount subject assignments removed from class for active academic year"
+            ))
+        }
+
+        // Remove a subject from all classes (all academic years)
         delete("/subject/{subjectId}/classes") {
             val subjectId = call.parameters["subjectId"]
                 ?: throw ApiException("Subject ID is required", HttpStatusCode.BadRequest)
@@ -179,6 +242,18 @@ fun Route.classSubjectRoutes(classSubjectService: ClassSubjectService) {
             call.respond(ApiResponse<Unit>(
                 success = true,
                 message = "Subject removed from $deletedCount classes"
+            ))
+        }
+
+        // Remove a subject from all classes for active academic year
+        delete("/subject/{subjectId}/classes/active") {
+            val subjectId = call.parameters["subjectId"]
+                ?: throw ApiException("Subject ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = classSubjectService.removeClassFromAllSubjectsForActiveYear(subjectId)
+            call.respond(ApiResponse<Unit>(
+                success = true,
+                message = "Subject removed from $deletedCount classes for active academic year"
             ))
         }
     }

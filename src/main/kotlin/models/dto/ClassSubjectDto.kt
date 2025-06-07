@@ -20,21 +20,21 @@ data class ClassSubjectDto(
 data class CreateClassSubjectRequest(
     val classId: String,
     val subjectId: String,
-    val academicYearId: String
+    val academicYearId: String? = null
 )
 
 @Serializable
 data class UpdateClassSubjectRequest(
     val classId: String,
     val subjectId: String,
-    val academicYearId: String
+    val academicYearId: String? = null
 )
 
 @Serializable
 data class BulkCreateClassSubjectRequest(
     val classId: String,
     val subjectIds: List<String>,
-    val academicYearId: String
+    val academicYearId: String? = null
 )
 
 @Serializable
@@ -42,7 +42,7 @@ data class ClassWithSubjectsDto(
     val classId: String,
     val className: String,
     val sectionName: String,
-    val academicYearId: String,
+    val academicYearId: String? = null,
     val academicYearName: String,
     val subjects: List<SubjectDto>
 )

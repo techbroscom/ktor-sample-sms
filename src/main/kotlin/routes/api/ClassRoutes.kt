@@ -23,7 +23,16 @@ fun Route.classRoutes(classService: ClassService) {
             ))
         }
 
-        // Get classes by academic year
+        // Get classes for active academic year
+        get("/active") {
+            val classes = classService.getClassesForActiveAcademicYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = classes
+            ))
+        }
+
+        // Get classes by academic year (keep for backward compatibility)
         get("/academic-year/{academicYearId}") {
             val academicYearId = call.parameters["academicYearId"]
                 ?: throw ApiException("Academic Year ID is required", HttpStatusCode.BadRequest)
@@ -35,7 +44,7 @@ fun Route.classRoutes(classService: ClassService) {
             ))
         }
 
-        // Get classes by name and section
+        // Get classes by name and section (all academic years)
         get("/search") {
             val className = call.request.queryParameters["className"]
                 ?: throw ApiException("className parameter is required", HttpStatusCode.BadRequest)
@@ -43,6 +52,20 @@ fun Route.classRoutes(classService: ClassService) {
                 ?: throw ApiException("sectionName parameter is required", HttpStatusCode.BadRequest)
 
             val classes = classService.getClassesByNameAndSection(className, sectionName)
+            call.respond(ApiResponse(
+                success = true,
+                data = classes
+            ))
+        }
+
+        // Get classes by name and section for active academic year
+        get("/search/active") {
+            val className = call.request.queryParameters["className"]
+                ?: throw ApiException("className parameter is required", HttpStatusCode.BadRequest)
+            val sectionName = call.request.queryParameters["sectionName"]
+                ?: throw ApiException("sectionName parameter is required", HttpStatusCode.BadRequest)
+
+            val classes = classService.getClassesByNameAndSectionForActiveYear(className, sectionName)
             call.respond(ApiResponse(
                 success = true,
                 data = classes
@@ -61,7 +84,7 @@ fun Route.classRoutes(classService: ClassService) {
             ))
         }
 
-        // Create class
+        // Create class (uses active academic year if not specified)
         post {
             val request = call.receive<CreateClassRequest>()
             val classDto = classService.createClass(request)
@@ -72,7 +95,7 @@ fun Route.classRoutes(classService: ClassService) {
             ))
         }
 
-        // Update class
+        // Update class (uses active academic year if not specified)
         put("/{id}") {
             val id = call.parameters["id"]
                 ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)

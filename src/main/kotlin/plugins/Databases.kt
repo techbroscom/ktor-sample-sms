@@ -2,6 +2,7 @@ package com.example.plugins
 
 import com.example.config.DatabaseConfig
 import com.example.database.tables.AcademicYears
+import com.example.database.tables.Attendance
 import com.example.database.tables.ClassSubjects
 import com.example.database.tables.Classes
 import com.example.database.tables.Complaints
@@ -27,6 +28,25 @@ fun Application.configureDatabases() {
 
     // Create tables
     transaction(database) {
-        SchemaUtils.create(Users, Holidays, Posts, Complaints, OtpCodes, SchoolConfig, Rules, AcademicYears, Subjects, Classes, ClassSubjects, StudentAssignments, StaffClassAssignments, StaffSubjectAssignments, Exams, ExamSchedules, ExamResults)
+        SchemaUtils.create(
+            Users,
+            Holidays,
+            Posts,
+            Complaints,
+            OtpCodes,
+            SchoolConfig,
+            Rules,
+            AcademicYears,
+            Subjects,
+            Classes,
+            ClassSubjects,
+            StudentAssignments,
+            StaffClassAssignments,
+            StaffSubjectAssignments,
+            Exams,
+            ExamSchedules,
+            ExamResults,
+            Attendance
+        )
     }
 }

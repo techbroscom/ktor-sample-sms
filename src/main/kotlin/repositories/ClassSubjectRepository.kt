@@ -85,6 +85,17 @@ class ClassSubjectRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findBySubjectAndAcademicYear(subjectId: String, academicYearId: String): List<ClassSubjectDto> = dbQuery {
+        ClassSubjects
+            .join(Classes, JoinType.LEFT, ClassSubjects.classId, Classes.id)
+            .join(Subjects, JoinType.LEFT, ClassSubjects.subjectId, Subjects.id)
+            .join(AcademicYears, JoinType.LEFT, ClassSubjects.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { (ClassSubjects.subjectId eq UUID.fromString(subjectId)) and (AcademicYears.id eq UUID.fromString(academicYearId))}
+            .orderBy(Classes.className to SortOrder.ASC, Classes.sectionName to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun findByAcademicYear(academicYearId: String): List<ClassSubjectDto> = dbQuery {
         ClassSubjects
             .join(Classes, JoinType.LEFT, ClassSubjects.classId, Classes.id)
@@ -129,8 +140,16 @@ class ClassSubjectRepository {
         ClassSubjects.deleteWhere { ClassSubjects.classId eq UUID.fromString(classId) }
     }
 
+    suspend fun deleteByClassAndAcademicYear(classId: String, academicYearId: String): Int = dbQuery {
+        ClassSubjects.deleteWhere { (ClassSubjects.classId eq UUID.fromString(classId)) and (ClassSubjects.academicYearId eq UUID.fromString(academicYearId)) }
+    }
+
     suspend fun deleteBySubjectId(subjectId: String): Int = dbQuery {
         ClassSubjects.deleteWhere { ClassSubjects.subjectId eq UUID.fromString(subjectId) }
+    }
+
+    suspend fun deleteBySubjectAndAcademicYear(subjectId: String, academicYearId: String): Int = dbQuery {
+        ClassSubjects.deleteWhere { (ClassSubjects.subjectId eq UUID.fromString(subjectId)) and (ClassSubjects.academicYearId eq UUID.fromString(academicYearId)) }
     }
 
     suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {
