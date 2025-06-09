@@ -89,6 +89,17 @@ class StaffClassAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<StaffClassAssignmentDto> = dbQuery {
+        StaffClassAssignments
+            .join(Users, JoinType.LEFT, StaffClassAssignments.staffId, Users.id)
+            .join(Classes, JoinType.LEFT, StaffClassAssignments.classId, Classes.id)
+            .join(AcademicYears, JoinType.LEFT, StaffClassAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { (StaffClassAssignments.classId eq UUID.fromString(classId)) and (AcademicYears.id eq UUID.fromString(academicYearId))}
+            .orderBy(Users.firstName to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun findByAcademicYear(academicYearId: String): List<StaffClassAssignmentDto> = dbQuery {
         StaffClassAssignments
             .join(Users, JoinType.LEFT, StaffClassAssignments.staffId, Users.id)
@@ -125,6 +136,17 @@ class StaffClassAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByRoleAndAcademicYear(role: String, academicYearId: String): List<StaffClassAssignmentDto> = dbQuery {
+        StaffClassAssignments
+            .join(Users, JoinType.LEFT, StaffClassAssignments.staffId, Users.id)
+            .join(Classes, JoinType.LEFT, StaffClassAssignments.classId, Classes.id)
+            .join(AcademicYears, JoinType.LEFT, StaffClassAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { (StaffClassAssignments.role eq StaffClassRole.valueOf(role)) and (AcademicYears.id eq UUID.fromString(academicYearId)) }
+            .orderBy(Users.firstName to SortOrder.ASC, Classes.className to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun checkDuplicate(staffId: String, classId: String, academicYearId: String, excludeId: String? = null): Boolean = dbQuery {
         val query = StaffClassAssignments.selectAll()
             .where {
@@ -144,8 +166,16 @@ class StaffClassAssignmentRepository {
         StaffClassAssignments.deleteWhere { StaffClassAssignments.staffId eq UUID.fromString(staffId) }
     }
 
+    suspend fun deleteByStaffAndAcademicYear(staffId: String, academicYearId: String): Int = dbQuery {
+        StaffClassAssignments.deleteWhere { (StaffClassAssignments.staffId eq UUID.fromString(staffId)) and (StaffClassAssignments.academicYearId eq UUID.fromString(academicYearId)) }
+    }
+
     suspend fun deleteByClassId(classId: String): Int = dbQuery {
         StaffClassAssignments.deleteWhere { StaffClassAssignments.classId eq UUID.fromString(classId) }
+    }
+
+    suspend fun deleteByClassAndAcademicYear(classId: String, academicYearId: String): Int = dbQuery {
+        StaffClassAssignments.deleteWhere { (StaffClassAssignments.classId eq UUID.fromString(classId)) and (StaffClassAssignments.academicYearId eq UUID.fromString(academicYearId)) }
     }
 
     suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {

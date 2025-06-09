@@ -22,7 +22,7 @@ data class StaffClassAssignmentDto(
 data class CreateStaffClassAssignmentRequest(
     val staffId: String,
     val classId: String,
-    val academicYearId: String,
+    val academicYearId: String?=null,
     val role: String? = null
 )
 

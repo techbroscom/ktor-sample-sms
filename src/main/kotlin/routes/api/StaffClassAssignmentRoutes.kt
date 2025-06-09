@@ -24,6 +24,15 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
+        // Get staff-class assignments for active academic year
+        get("/active-year") {
+            val assignments = staffClassAssignmentService.getStaffClassAssignmentsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
         // Get staff-class assignments by academic year
         get("/academic-year/{academicYearId}") {
             val academicYearId = call.parameters["academicYearId"]
@@ -36,7 +45,7 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
-        // Get classes by staff
+        // Get classes by staff (all years)
         get("/staff/{staffId}/classes") {
             val staffId = call.parameters["staffId"]
                 ?: throw ApiException("Staff ID is required", HttpStatusCode.BadRequest)
@@ -48,12 +57,36 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
-        // Get staff by class
+        // Get classes by staff for active academic year
+        get("/staff/{staffId}/classes/active-year") {
+            val staffId = call.parameters["staffId"]
+                ?: throw ApiException("Staff ID is required", HttpStatusCode.BadRequest)
+
+            val assignments = staffClassAssignmentService.getClassesByStaffForActiveYear(staffId)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
+        // Get staff by class (all years)
         get("/class/{classId}/staff") {
             val classId = call.parameters["classId"]
                 ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
 
             val assignments = staffClassAssignmentService.getStaffByClass(classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
+        // Get staff by class for active academic year
+        get("/class/{classId}/staff/active-year") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+
+            val assignments = staffClassAssignmentService.getStaffByClassForActiveYear(classId)
             call.respond(ApiResponse(
                 success = true,
                 data = assignments
@@ -74,12 +107,24 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
-        // Get staff by role
+        // Get staff by role (all years)
         get("/role/{role}") {
             val role = call.parameters["role"]
                 ?: throw ApiException("Role is required", HttpStatusCode.BadRequest)
 
             val assignments = staffClassAssignmentService.getStaffByRole(role)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
+        // Get staff by role for active academic year
+        get("/role/{role}/active-year") {
+            val role = call.parameters["role"]
+                ?: throw ApiException("Role is required", HttpStatusCode.BadRequest)
+
+            val assignments = staffClassAssignmentService.getStaffByRoleForActiveYear(role)
             call.respond(ApiResponse(
                 success = true,
                 data = assignments
@@ -98,12 +143,30 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
+        // Get staff with their classes for active academic year
+        get("/active-year/staff-with-classes") {
+            val staffWithClasses = staffClassAssignmentService.getStaffWithClassesForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = staffWithClasses
+            ))
+        }
+
         // Get classes with their staff for an academic year
         get("/academic-year/{academicYearId}/classes-with-staff") {
             val academicYearId = call.parameters["academicYearId"]
                 ?: throw ApiException("Academic Year ID is required", HttpStatusCode.BadRequest)
 
             val classesWithStaff = staffClassAssignmentService.getClassesWithStaff(academicYearId)
+            call.respond(ApiResponse(
+                success = true,
+                data = classesWithStaff
+            ))
+        }
+
+        // Get classes with their staff for active academic year
+        get("/active-year/classes-with-staff") {
+            val classesWithStaff = staffClassAssignmentService.getClassesWithStaffForActiveYear()
             call.respond(ApiResponse(
                 success = true,
                 data = classesWithStaff
@@ -170,7 +233,7 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
-        // Remove all classes from a staff member
+        // Remove all classes from a staff member (all years)
         delete("/staff/{staffId}/classes") {
             val staffId = call.parameters["staffId"]
                 ?: throw ApiException("Staff ID is required", HttpStatusCode.BadRequest)
@@ -183,7 +246,20 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
             ))
         }
 
-        // Remove all staff from a class
+        // Remove all classes from a staff member for active academic year only
+        delete("/staff/{staffId}/classes/active-year") {
+            val staffId = call.parameters["staffId"]
+                ?: throw ApiException("Staff ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = staffClassAssignmentService.removeAllClassesFromStaffForActiveYear(staffId)
+            call.respond(ApiResponse(
+                success = true,
+                data = mapOf("deletedCount" to deletedCount),
+                message = "All class assignments removed from staff member for active academic year"
+            ))
+        }
+
+        // Remove all staff from a class (all years)
         delete("/class/{classId}/staff") {
             val classId = call.parameters["classId"]
                 ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
@@ -193,6 +269,19 @@ fun Route.staffClassAssignmentRoutes(staffClassAssignmentService: StaffClassAssi
                 success = true,
                 data = mapOf("deletedCount" to deletedCount),
                 message = "All staff assignments removed from class"
+            ))
+        }
+
+        // Remove all staff from a class for active academic year only
+        delete("/class/{classId}/staff/active-year") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = staffClassAssignmentService.removeAllStaffFromClassForActiveYear(classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = mapOf("deletedCount" to deletedCount),
+                message = "All staff assignments removed from class for active academic year"
             ))
         }
     }
