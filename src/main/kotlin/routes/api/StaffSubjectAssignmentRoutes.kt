@@ -22,6 +22,15 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
             ))
         }
 
+        // Get all staff subject assignments for active academic year
+        get("/active-year") {
+            val assignments = staffSubjectAssignmentService.getStaffSubjectAssignmentsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
         // Get staff subject assignment by ID
         get("/{id}") {
             val id = call.parameters["id"]
@@ -58,6 +67,18 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
             ))
         }
 
+        // Get subjects by staff ID for active academic year
+        get("/staff/{staffId}/subjects/active-year") {
+            val staffId = call.parameters["staffId"]
+                ?: throw ApiException("Staff ID is required", HttpStatusCode.BadRequest)
+
+            val assignments = staffSubjectAssignmentService.getSubjectsByStaffForActiveYear(staffId)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
         // Get staff by class ID
         get("/class/{classId}/staff") {
             val classId = call.parameters["classId"]
@@ -70,12 +91,36 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
             ))
         }
 
+        // Get staff by class ID for active academic year
+        get("/class/{classId}/staff/active-year") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+
+            val assignments = staffSubjectAssignmentService.getStaffByClassForActiveYear(classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
         // Get staff by class subject ID
         get("/class-subject/{classSubjectId}/staff") {
             val classSubjectId = call.parameters["classSubjectId"]
                 ?: throw ApiException("Class Subject ID is required", HttpStatusCode.BadRequest)
 
             val assignments = staffSubjectAssignmentService.getStaffByClassSubject(classSubjectId)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
+        // Get staff by class subject ID for active academic year
+        get("/class-subject/{classSubjectId}/staff/active-year") {
+            val classSubjectId = call.parameters["classSubjectId"]
+                ?: throw ApiException("Class Subject ID is required", HttpStatusCode.BadRequest)
+
+            val assignments = staffSubjectAssignmentService.getStaffByClassSubjectForActiveYear(classSubjectId)
             call.respond(ApiResponse(
                 success = true,
                 data = assignments
@@ -122,12 +167,30 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
             ))
         }
 
+        // Get staff with their subjects for active academic year (grouped view)
+        get("/active-year/staff-with-subjects") {
+            val staffWithSubjects = staffSubjectAssignmentService.getStaffWithSubjectsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = staffWithSubjects
+            ))
+        }
+
         // Get classes with their subjects and staff (grouped view)
         get("/academic-year/{academicYearId}/classes-with-subject-staff") {
             val academicYearId = call.parameters["academicYearId"]
                 ?: throw ApiException("Academic Year ID is required", HttpStatusCode.BadRequest)
 
             val classesWithSubjectStaff = staffSubjectAssignmentService.getClassesWithSubjectStaff(academicYearId)
+            call.respond(ApiResponse(
+                success = true,
+                data = classesWithSubjectStaff
+            ))
+        }
+
+        // Get classes with their subjects and staff for active academic year (grouped view)
+        get("/active-year/classes-with-subject-staff") {
+            val classesWithSubjectStaff = staffSubjectAssignmentService.getClassesWithSubjectStaffForActiveYear()
             call.respond(ApiResponse(
                 success = true,
                 data = classesWithSubjectStaff
@@ -195,6 +258,19 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
             ))
         }
 
+        // Delete assignments by staff ID for active academic year
+        delete("/staff/{staffId}/assignments/active-year") {
+            val staffId = call.parameters["staffId"]
+                ?: throw ApiException("Staff ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = staffSubjectAssignmentService.deleteStaffSubjectAssignmentsByStaffForActiveYear(staffId)
+            call.respond(ApiResponse(
+                success = true,
+                data = mapOf("deletedCount" to deletedCount),
+                message = "All subject assignments removed from staff member for active academic year"
+            ))
+        }
+
         // Delete assignments by class ID
         delete("/class/{classId}/assignments") {
             val classId = call.parameters["classId"]
@@ -208,6 +284,19 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
             ))
         }
 
+        // Delete assignments by class ID for active academic year
+        delete("/class/{classId}/assignments/active-year") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = staffSubjectAssignmentService.deleteStaffSubjectAssignmentsByClassForActiveYear(classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = mapOf("deletedCount" to deletedCount),
+                message = "All subject assignments removed from class for active academic year"
+            ))
+        }
+
         // Delete assignments by class subject ID
         delete("/class-subject/{classSubjectId}/assignments") {
             val classSubjectId = call.parameters["classSubjectId"]
@@ -218,6 +307,19 @@ fun Route.staffSubjectAssignmentRoutes(staffSubjectAssignmentService: StaffSubje
                 success = true,
                 data = mapOf("deletedCount" to deletedCount),
                 message = "All assignments removed from class subject"
+            ))
+        }
+
+        // Delete assignments by class subject ID for active academic year
+        delete("/class-subject/{classSubjectId}/assignments/active-year") {
+            val classSubjectId = call.parameters["classSubjectId"]
+                ?: throw ApiException("Class Subject ID is required", HttpStatusCode.BadRequest)
+
+            val deletedCount = staffSubjectAssignmentService.deleteStaffSubjectAssignmentsByClassSubjectForActiveYear(classSubjectId)
+            call.respond(ApiResponse(
+                success = true,
+                data = mapOf("deletedCount" to deletedCount),
+                message = "All assignments removed from class subject for active academic year"
             ))
         }
 

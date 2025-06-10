@@ -106,6 +106,19 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByClassSubjectAndAcademicYear(classSubjectId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+        StaffSubjectAssignments
+            .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
+            .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
+            .join(Subjects, JoinType.LEFT, ClassSubjects.subjectId, Subjects.id)
+            .join(Classes, JoinType.LEFT, StaffSubjectAssignments.classId, Classes.id)
+            .join(AcademicYears, JoinType.LEFT, StaffSubjectAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { (StaffSubjectAssignments.classSubjectId eq UUID.fromString(classSubjectId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId)) }
+            .orderBy(Users.firstName to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun findByAcademicYear(academicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
@@ -171,12 +184,24 @@ class StaffSubjectAssignmentRepository {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.staffId eq UUID.fromString(staffId) }
     }
 
+    suspend fun deleteByStaffAndAcademicYear(staffId: String, academicYearId: String): Int = dbQuery {
+        StaffSubjectAssignments.deleteWhere { (StaffSubjectAssignments.staffId eq UUID.fromString(staffId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId))}
+    }
+
     suspend fun deleteByClassId(classId: String): Int = dbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.classId eq UUID.fromString(classId) }
     }
 
+    suspend fun deleteByClassAndAcademicYear(classId: String, academicYearId: String): Int = dbQuery {
+        StaffSubjectAssignments.deleteWhere { (StaffSubjectAssignments.classId eq UUID.fromString(classId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId)) }
+    }
+
     suspend fun deleteByClassSubjectId(classSubjectId: String): Int = dbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.classSubjectId eq UUID.fromString(classSubjectId) }
+    }
+
+    suspend fun deleteByClassSubjectAndAcademicYear(classSubjectId: String, academicYearId: String): Int = dbQuery {
+        StaffSubjectAssignments.deleteWhere { (StaffSubjectAssignments.classSubjectId eq UUID.fromString(classSubjectId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId)) }
     }
 
     suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {

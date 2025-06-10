@@ -14,25 +14,31 @@ class StaffSubjectAssignmentService(
 ) {
 
     suspend fun createStaffSubjectAssignment(request: CreateStaffSubjectAssignmentRequest): StaffSubjectAssignmentDto {
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
         validateStaffSubjectAssignmentRequest(
             request.staffId,
             request.classSubjectId,
             request.classId,
-            request.academicYearId
+            academicYearId
         )
 
         // Validate that referenced entities exist
         userService.getUserById(request.staffId) // Check if staff exists
         classSubjectService.getClassSubjectById(request.classSubjectId)
         classService.getClassById(request.classId)
-        academicYearService.getAcademicYearById(request.academicYearId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         // Check for duplicate
         val isDuplicate = staffSubjectAssignmentRepository.checkDuplicate(
             request.staffId,
             request.classSubjectId,
             request.classId,
-            request.academicYearId
+            academicYearId
         )
         if (isDuplicate) {
             throw ApiException(
@@ -41,14 +47,19 @@ class StaffSubjectAssignmentService(
             )
         }
 
-        val assignmentId = staffSubjectAssignmentRepository.create(request)
+        val assignmentId = staffSubjectAssignmentRepository.create(request.copy(academicYearId = academicYearId))
         return getStaffSubjectAssignmentById(assignmentId)
     }
 
     suspend fun bulkCreateStaffSubjectAssignments(request: BulkCreateStaffSubjectAssignmentRequest): List<StaffSubjectAssignmentDto> {
         validateUUID(request.staffId, "Staff ID")
         validateUUID(request.classId, "Class ID")
-        validateUUID(request.academicYearId, "Academic Year ID")
+
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
 
         if (request.classSubjectIds.isEmpty()) {
             throw ApiException("Class Subject IDs list cannot be empty", HttpStatusCode.BadRequest)
@@ -57,7 +68,7 @@ class StaffSubjectAssignmentService(
         // Validate that referenced entities exist
         userService.getUserById(request.staffId)
         classService.getClassById(request.classId)
-        academicYearService.getAcademicYearById(request.academicYearId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         val createRequests = mutableListOf<CreateStaffSubjectAssignmentRequest>()
 
@@ -70,7 +81,7 @@ class StaffSubjectAssignmentService(
                 request.staffId,
                 classSubjectId,
                 request.classId,
-                request.academicYearId
+                academicYearId
             )
             if (!isDuplicate) {
                 createRequests.add(
@@ -78,7 +89,7 @@ class StaffSubjectAssignmentService(
                         staffId = request.staffId,
                         classSubjectId = classSubjectId,
                         classId = request.classId,
-                        academicYearId = request.academicYearId
+                        academicYearId = academicYearId
                     )
                 )
             }
@@ -105,30 +116,42 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.findAll()
     }
 
+    suspend fun getStaffSubjectAssignmentsForActiveYear(): List<StaffSubjectAssignmentDto> {
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.findByAcademicYear(activeAcademicYear.id)
+    }
+
     suspend fun updateStaffSubjectAssignment(
         id: String,
         request: UpdateStaffSubjectAssignmentRequest
     ): StaffSubjectAssignmentDto {
         validateUUID(id, "Staff Subject Assignment ID")
+
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
         validateStaffSubjectAssignmentRequest(
             request.staffId,
             request.classSubjectId,
             request.classId,
-            request.academicYearId
+            academicYearId
         )
 
         // Validate that referenced entities exist
         userService.getUserById(request.staffId)
         classSubjectService.getClassSubjectById(request.classSubjectId)
         classService.getClassById(request.classId)
-        academicYearService.getAcademicYearById(request.academicYearId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         // Check for duplicate (excluding current record)
         val isDuplicate = staffSubjectAssignmentRepository.checkDuplicate(
             request.staffId,
             request.classSubjectId,
             request.classId,
-            request.academicYearId,
+            academicYearId,
             excludeId = id
         )
         if (isDuplicate) {
@@ -138,7 +161,7 @@ class StaffSubjectAssignmentService(
             )
         }
 
-        val updated = staffSubjectAssignmentRepository.update(id, request)
+        val updated = staffSubjectAssignmentRepository.update(id, request.copy(academicYearId = academicYearId))
         if (!updated) {
             throw ApiException("Staff Subject assignment not found", HttpStatusCode.NotFound)
         }
@@ -161,6 +184,15 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.findByStaffId(staffId)
     }
 
+    suspend fun getSubjectsByStaffForActiveYear(staffId: String): List<StaffSubjectAssignmentDto> {
+        validateUUID(staffId, "Staff ID")
+        // Validate staff exists
+        userService.getUserById(staffId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.findByStaffAndAcademicYear(staffId, activeAcademicYear.id)
+    }
+
     suspend fun getStaffByClass(classId: String): List<StaffSubjectAssignmentDto> {
         validateUUID(classId, "Class ID")
         // Validate class exists
@@ -168,11 +200,29 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.findByClassId(classId)
     }
 
+    suspend fun getStaffByClassForActiveYear(classId: String): List<StaffSubjectAssignmentDto> {
+        validateUUID(classId, "Class ID")
+        // Validate class exists
+        classService.getClassById(classId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.findByClassAndAcademicYear(classId, activeAcademicYear.id)
+    }
+
     suspend fun getStaffByClassSubject(classSubjectId: String): List<StaffSubjectAssignmentDto> {
         validateUUID(classSubjectId, "Class Subject ID")
         // Validate class subject exists
         classSubjectService.getClassSubjectById(classSubjectId)
         return staffSubjectAssignmentRepository.findByClassSubjectId(classSubjectId)
+    }
+
+    suspend fun getStaffByClassSubjectForActiveYear(classSubjectId: String): List<StaffSubjectAssignmentDto> {
+        validateUUID(classSubjectId, "Class Subject ID")
+        // Validate class subject exists
+        classSubjectService.getClassSubjectById(classSubjectId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.findByClassSubjectAndAcademicYear(classSubjectId, activeAcademicYear.id)
     }
 
     suspend fun getStaffSubjectAssignmentsByAcademicYear(academicYearId: String): List<StaffSubjectAssignmentDto> {
@@ -217,11 +267,21 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.getStaffWithSubjects(academicYearId)
     }
 
+    suspend fun getStaffWithSubjectsForActiveYear(): List<StaffWithSubjectsDto> {
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.getStaffWithSubjects(activeAcademicYear.id)
+    }
+
     suspend fun getClassesWithSubjectStaff(academicYearId: String): List<ClassWithSubjectStaffDto> {
         validateUUID(academicYearId, "Academic Year ID")
         // Validate academic year exists
         academicYearService.getAcademicYearById(academicYearId)
         return staffSubjectAssignmentRepository.getClassesWithSubjectStaff(academicYearId)
+    }
+
+    suspend fun getClassesWithSubjectStaffForActiveYear(): List<ClassWithSubjectStaffDto> {
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.getClassesWithSubjectStaff(activeAcademicYear.id)
     }
 
     suspend fun deleteStaffSubjectAssignmentsByStaff(staffId: String): Int {
@@ -231,6 +291,15 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.deleteByStaffId(staffId)
     }
 
+    suspend fun deleteStaffSubjectAssignmentsByStaffForActiveYear(staffId: String): Int {
+        validateUUID(staffId, "Staff ID")
+        // Validate staff exists
+        userService.getUserById(staffId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.deleteByStaffAndAcademicYear(staffId, activeAcademicYear.id)
+    }
+
     suspend fun deleteStaffSubjectAssignmentsByClass(classId: String): Int {
         validateUUID(classId, "Class ID")
         // Validate class exists
@@ -238,11 +307,29 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.deleteByClassId(classId)
     }
 
+    suspend fun deleteStaffSubjectAssignmentsByClassForActiveYear(classId: String): Int {
+        validateUUID(classId, "Class ID")
+        // Validate class exists
+        classService.getClassById(classId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.deleteByClassAndAcademicYear(classId, activeAcademicYear.id)
+    }
+
     suspend fun deleteStaffSubjectAssignmentsByClassSubject(classSubjectId: String): Int {
         validateUUID(classSubjectId, "Class Subject ID")
         // Validate class subject exists
         classSubjectService.getClassSubjectById(classSubjectId)
         return staffSubjectAssignmentRepository.deleteByClassSubjectId(classSubjectId)
+    }
+
+    suspend fun deleteStaffSubjectAssignmentsByClassSubjectForActiveYear(classSubjectId: String): Int {
+        validateUUID(classSubjectId, "Class Subject ID")
+        // Validate class subject exists
+        classSubjectService.getClassSubjectById(classSubjectId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.deleteByClassSubjectAndAcademicYear(classSubjectId, activeAcademicYear.id)
     }
 
     suspend fun deleteStaffSubjectAssignmentsByAcademicYear(academicYearId: String): Int {
