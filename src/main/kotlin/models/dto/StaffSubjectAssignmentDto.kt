@@ -24,7 +24,7 @@ data class CreateStaffSubjectAssignmentRequest(
     val staffId: String,
     val classSubjectId: String,
     val classId: String,
-    val academicYearId: String
+    val academicYearId: String? = null
 )
 
 @Serializable
