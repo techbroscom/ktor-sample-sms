@@ -193,7 +193,7 @@ class StaffSubjectAssignmentService(
         return staffSubjectAssignmentRepository.findByStaffAndAcademicYear(staffId, activeAcademicYear.id)
     }
 
-    suspend fun getStaffByClass(classId: String): List<StaffSubjectAssignmentDto> {
+    /*suspend fun getStaffByClass(classId: String): List<StaffSubjectAssignmentDto> {
         validateUUID(classId, "Class ID")
         // Validate class exists
         classService.getClassById(classId)
@@ -207,6 +207,22 @@ class StaffSubjectAssignmentService(
 
         val activeAcademicYear = academicYearService.getActiveAcademicYear()
         return staffSubjectAssignmentRepository.findByClassAndAcademicYear(classId, activeAcademicYear.id)
+    }*/
+
+    suspend fun getStaffByClass(classId: String): List<StaffSubjectAssignmentDto> {
+        validateUUID(classId, "Class ID")
+        // Validate class exists
+        classService.getClassById(classId)
+        return staffSubjectAssignmentRepository.findByClassIdWithAllSubjects(classId)
+    }
+
+    suspend fun getStaffByClassForActiveYear(classId: String): List<StaffSubjectAssignmentDto> {
+        validateUUID(classId, "Class ID")
+        // Validate class exists
+        classService.getClassById(classId)
+
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return staffSubjectAssignmentRepository.findByClassIdWithAllSubjectsForActiveYear(classId, activeAcademicYear.id)
     }
 
     suspend fun getStaffByClassSubject(classSubjectId: String): List<StaffSubjectAssignmentDto> {

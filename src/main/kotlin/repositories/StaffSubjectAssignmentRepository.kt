@@ -313,4 +313,53 @@ class StaffSubjectAssignmentRepository {
             academicYearName = row.getOrNull(AcademicYears.year)
         )
     }
+
+    suspend fun findByClassIdWithAllSubjects(classId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+        ClassSubjects
+            .join(Subjects, JoinType.INNER, ClassSubjects.subjectId, Subjects.id)
+            .join(Classes, JoinType.INNER, ClassSubjects.classId, Classes.id)
+            .join(StaffSubjectAssignments, JoinType.LEFT, ClassSubjects.id, StaffSubjectAssignments.classSubjectId)
+            .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
+            .join(AcademicYears, JoinType.LEFT, StaffSubjectAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { ClassSubjects.classId eq UUID.fromString(classId) }
+            .orderBy(Subjects.name to SortOrder.ASC, Users.firstName to SortOrder.ASC)
+            .map { mapRowToDtoWithNullableStaff(it) }
+    }
+
+    suspend fun findByClassIdWithAllSubjectsForActiveYear(classId: String, activeAcademicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+        ClassSubjects
+            .join(Subjects, JoinType.INNER, ClassSubjects.subjectId, Subjects.id)
+            .join(Classes, JoinType.INNER, ClassSubjects.classId, Classes.id)
+            .join(StaffSubjectAssignments, JoinType.LEFT,
+                additionalConstraint = {
+                    (ClassSubjects.id eq StaffSubjectAssignments.classSubjectId) and
+                            (StaffSubjectAssignments.academicYearId eq UUID.fromString(activeAcademicYearId))
+                }
+            )
+            .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
+            .join(AcademicYears, JoinType.LEFT, StaffSubjectAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { ClassSubjects.classId eq UUID.fromString(classId) }
+            .orderBy(Subjects.name to SortOrder.ASC, Users.firstName to SortOrder.ASC)
+            .map { mapRowToDtoWithNullableStaff(it, activeAcademicYearId) }
+    }
+
+    // Modified mapping function to handle null staff assignments
+    private fun mapRowToDtoWithNullableStaff(row: ResultRow, academicYearId: String? = null): StaffSubjectAssignmentDto {
+        return StaffSubjectAssignmentDto(
+            id = row.getOrNull(StaffSubjectAssignments.id)?.toString() ?: "", // Empty if no assignment
+            staffId = row.getOrNull(StaffSubjectAssignments.staffId)?.toString() ?: "", // Empty if no staff assigned
+            classSubjectId = row[ClassSubjects.id].toString(),
+            classId = row[Classes.id].toString(),
+            academicYearId = academicYearId ?: row.getOrNull(StaffSubjectAssignments.academicYearId)?.toString() ?: "",
+            staffName = row.getOrNull(Users.firstName),
+            staffEmail = row.getOrNull(Users.email),
+            subjectName = row.getOrNull(Subjects.name),
+            subjectCode = row.getOrNull(Subjects.code),
+            className = row.getOrNull(Classes.className),
+            sectionName = row.getOrNull(Classes.sectionName),
+            academicYearName = row.getOrNull(AcademicYears.year)
+        )
+    }
 }
