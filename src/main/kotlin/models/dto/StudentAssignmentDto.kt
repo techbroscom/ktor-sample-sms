@@ -9,9 +9,10 @@ data class StudentAssignmentDto(
     val classId: String,
     val academicYearId: String,
     // Additional fields for joined queries
-    val studentName: String? = null,
-    val studentEmail: String? = null,
-    val studentPhone: String? = null,
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val email: String? = null,
+    val mobileNumber: String? = null,
     val className: String? = null,
     val sectionName: String? = null,
     val academicYearName: String? = null
@@ -21,7 +22,7 @@ data class StudentAssignmentDto(
 data class CreateStudentAssignmentRequest(
     val studentId: String,
     val classId: String,
-    val academicYearId: String
+    val academicYearId: String? = null
 )
 
 @Serializable

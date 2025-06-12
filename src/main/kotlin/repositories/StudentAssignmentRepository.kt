@@ -327,9 +327,10 @@ class StudentAssignmentRepository {
             studentId = row[StudentAssignments.studentId].toString(),
             classId = row[StudentAssignments.classId].toString(),
             academicYearId = row[StudentAssignments.academicYearId].toString(),
-            studentName = row.getOrNull(Users.firstName),
-            studentEmail = row.getOrNull(Users.email),
-            studentPhone = row.getOrNull(Users.mobileNumber),
+            firstName = row.getOrNull(Users.firstName),
+            lastName = row.getOrNull(Users.lastName),
+            email = row.getOrNull(Users.email),
+            mobileNumber = row.getOrNull(Users.mobileNumber),
             className = row.getOrNull(Classes.className),
             sectionName = row.getOrNull(Classes.sectionName),
             academicYearName = row.getOrNull(AcademicYears.year)
