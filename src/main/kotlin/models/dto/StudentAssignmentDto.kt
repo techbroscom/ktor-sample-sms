@@ -78,9 +78,10 @@ data class ClassAssignmentDto(
 @Serializable
 data class StudentDto(
     val id: String,
-    val name: String,
+    val firstName: String,
+    val lastName: String,
     val email: String,
-    val phone: String?
+    val mobileNumber: String?
 )
 
 @Serializable

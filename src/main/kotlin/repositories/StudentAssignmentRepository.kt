@@ -201,9 +201,10 @@ class StudentAssignmentRepository {
                 students = rows.map { row ->
                     StudentDto(
                         id = row[StudentAssignments.studentId].toString(),
-                        name = row[Users.firstName],
+                        firstName = row[Users.firstName],
+                        lastName = row[Users.lastName],
                         email = row[Users.email],
-                        phone = row[Users.mobileNumber]
+                        mobileNumber = row[Users.mobileNumber]
                     )
                 }
             )
@@ -277,9 +278,10 @@ class StudentAssignmentRepository {
             .map { row ->
                 StudentDto(
                     id = row[Users.id].toString(),
-                    name = row[Users.firstName],
+                    firstName = row[Users.firstName],
+                    lastName = row[Users.lastName],
                     email = row[Users.email],
-                    phone = row[Users.mobileNumber]
+                    mobileNumber = row[Users.mobileNumber]
                 )
             }
     }
@@ -300,9 +302,10 @@ class StudentAssignmentRepository {
             .map { row ->
                 StudentDto(
                     id = row[Users.id].toString(),
-                    name = row[Users.firstName],
+                    firstName = row[Users.firstName],
+                    lastName = row[Users.lastName],
                     email = row[Users.email],
-                    phone = row[Users.mobileNumber]
+                    mobileNumber = row[Users.mobileNumber]
                 )
             }
     }
