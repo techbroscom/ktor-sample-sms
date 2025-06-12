@@ -144,8 +144,16 @@ class StudentAssignmentRepository {
         StudentAssignments.deleteWhere { StudentAssignments.studentId eq UUID.fromString(studentId) }
     }
 
+    suspend fun deleteByStudentAndAcademicYear(studentId: String, academicYearId: String): Int = dbQuery {
+        StudentAssignments.deleteWhere { (StudentAssignments.studentId eq UUID.fromString(studentId)) and (StudentAssignments.academicYearId eq UUID.fromString(academicYearId)) }
+    }
+
     suspend fun deleteByClassId(classId: String): Int = dbQuery {
         StudentAssignments.deleteWhere { StudentAssignments.classId eq UUID.fromString(classId) }
+    }
+
+    suspend fun deleteByClassAndAcademicYear(classId: String, academicYearId: String): Int = dbQuery {
+        StudentAssignments.deleteWhere { (StudentAssignments.classId eq UUID.fromString(classId)) and (StudentAssignments.academicYearId eq UUID.fromString(academicYearId)) }
     }
 
     suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {

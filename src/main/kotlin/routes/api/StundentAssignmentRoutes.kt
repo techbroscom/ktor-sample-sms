@@ -22,6 +22,14 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             ))
         }
 
+        get("/active") {
+            val assignments = studentAssignmentService.getStudentAssignmentsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
         // Get student assignments by academic year
         get("/academic-year/{academicYearId}") {
             val academicYearId = call.getPathParameter("academicYearId", "Academic Year ID")
@@ -39,10 +47,27 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             call.respond(ApiResponse(success = true, data = assignments))
         }
 
+        // Get students by class
+        get("/class/{classId}/students/active") {
+            val classId = call.getPathParameter("classId", "Class ID")
+            val assignments = studentAssignmentService.getClassStudentsForActiveYear(classId)
+            call.respond(ApiResponse(success = true, data = assignments))
+        }
+
         // Get classes by student
         get("/student/{studentId}/classes") {
             val studentId = call.getPathParameter("studentId", "Student ID")
             val assignments = studentAssignmentService.getStudentAssignments(studentId)
+            call.respond(ApiResponse(
+                success = true,
+                data = assignments
+            ))
+        }
+
+        // Get classes by student for Active year
+        get("/student/{studentId}/classes/active") {
+            val studentId = call.getPathParameter("studentId", "Student ID")
+            val assignments = studentAssignmentService.getStudentAssignmentsForActiveYear(studentId)
             call.respond(ApiResponse(
                 success = true,
                 data = assignments
@@ -81,6 +106,15 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             ))
         }
 
+        // Get classes with their students for an academic year
+        get("/academic-year/active/classes-with-students") {
+            val classesWithStudents = studentAssignmentService.getClassesWithStudentsForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = classesWithStudents
+            ))
+        }
+
         // Get students with their classes for an academic year
         get("/academic-year/{academicYearId}/students-with-classes") {
             val academicYearId = call.getPathParameter("academicYearId", "Academic Year ID")
@@ -91,10 +125,30 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             ))
         }
 
+        // Get students with their classes for an active year
+        get("/academic-year/active/students-with-classes") {
+            val studentsWithClasses = studentAssignmentService.getStudentsWithClassesForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = studentsWithClasses
+            ))
+        }
+
         // Get student count by class for an academic year
         get("/academic-year/{academicYearId}/student-count-by-class") {
             val academicYearId = call.getPathParameter("academicYearId", "Academic Year ID")
             val counts = studentAssignmentService.getStudentCountByClass(academicYearId)
+            call.respond(ApiResponse(
+                success = true,
+                data = counts.map { (className, count) ->
+                    mapOf("className" to className, "studentCount" to count)
+                }
+            ))
+        }
+
+        // Get student count by class for an academic year
+        get("/academic-year/active/student-count-by-class") {
+            val counts = studentAssignmentService.getStudentCountByClassForActiveYear()
             call.respond(ApiResponse(
                 success = true,
                 data = counts.map { (className, count) ->
@@ -127,6 +181,15 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             ))
         }
 
+        // Get academic year summary (comprehensive analytics)
+        get("/academic-year/summary/active") {
+            val summary = studentAssignmentService.getAcademicYearSummaryForActiveYear()
+            call.respond(ApiResponse(
+                success = true,
+                data = summary
+            ))
+        }
+
         // Get students not assigned to a specific class (for bulk assignment)
         get("/class/{classId}/academic-year/{academicYearId}/available-students") {
             val classId = call.getPathParameter("classId", "Class ID")
@@ -138,10 +201,29 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             ))
         }
 
+        // Get students not assigned to a specific class (for bulk assignment)
+        get("/class/{classId}/academic-year/active/available-students") {
+            val classId = call.getPathParameter("classId", "Class ID")
+            val availableStudents = studentAssignmentService.getStudentsNotInClassForActiveYear(classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = availableStudents
+            ))
+        }
+
         // Get unassigned students for an academic year
         get("/academic-year/{academicYearId}/unassigned-students") {
             val academicYearId = call.getPathParameter("academicYearId", "Academic Year ID")
             val unassignedStudents = studentAssignmentService.getUnassignedStudents(academicYearId)
+            call.respond(ApiResponse(
+                success = true,
+                data = unassignedStudents
+            ))
+        }
+
+        // Get unassigned students for an academic year
+        get("/academic-year/active/unassigned-students") {
+            val unassignedStudents = studentAssignmentService.getUnassignedStudentsForActiveYear()
             call.respond(ApiResponse(
                 success = true,
                 data = unassignedStudents
@@ -310,10 +392,32 @@ fun Route.studentAssignmentRoutes(studentAssignmentService: StudentAssignmentSer
             ))
         }
 
+        // Remove all students from a class
+        delete("/class/{classId}/all-students/active") {
+            val classId = call.getPathParameter("classId", "Class ID")
+            val removedCount = studentAssignmentService.removeAllStudentsFromClassForActiveYear(classId)
+            call.respond(ApiResponse(
+                success = true,
+                message = "$removedCount students removed from class",
+                data = mapOf("removedCount" to removedCount)
+            ))
+        }
+
         // Remove student from all classes
         delete("/student/{studentId}/all-classes") {
             val studentId = call.getPathParameter("studentId", "Student ID")
             val removedCount = studentAssignmentService.removeStudentFromAllClasses(studentId)
+            call.respond(ApiResponse(
+                success = true,
+                message = "Student removed from $removedCount classes",
+                data = mapOf("removedCount" to removedCount)
+            ))
+        }
+
+        // Remove student from all classes for active year
+        delete("/student/{studentId}/all-classes") {
+            val studentId = call.getPathParameter("studentId", "Student ID")
+            val removedCount = studentAssignmentService.removeStudentFromAllClassesForActiveYear(studentId)
             call.respond(ApiResponse(
                 success = true,
                 message = "Student removed from $removedCount classes",
