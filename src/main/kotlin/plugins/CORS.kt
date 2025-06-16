@@ -12,6 +12,5 @@ fun Application.configureCORS() {
         allowMethod(HttpMethod.Patch)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
-        anyHost() // Don't do this in production - specify allowed hosts
     }
 }

@@ -33,6 +33,7 @@ import com.example.routes.api.postRoutes
 import com.example.routes.api.rulesAndRegulationsRoutes
 import com.example.routes.api.schoolConfigRoutes
 import com.example.routes.api.staffClassAssignmentRoutes
+import com.example.routes.api.staffClassSubjectRoutes
 import com.example.routes.api.staffSubjectAssignmentRoutes
 import com.example.routes.api.studentAssignmentRoutes
 import com.example.routes.api.subjectRoutes
@@ -120,6 +121,8 @@ fun Application.configureRouting() {
 
     val dashboardRepository = DashboardRepository()
     val dashboardService = DashboardService(dashboardRepository)
+
+
     // API routes
 
     routing {
@@ -150,5 +153,6 @@ fun Application.configureRouting() {
         examResultRoutes(examResultService)
         attendanceRoutes(attendanceService)
         dashboardRoutes(dashboardService)
+        staffClassSubjectRoutes(staffClassAssignmentService, staffSubjectAssignmentService)
     }
 }
