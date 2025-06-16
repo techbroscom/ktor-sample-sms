@@ -12,5 +12,6 @@ fun Application.configureCORS() {
         allowMethod(HttpMethod.Patch)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
+        anyHost() //localhost support
     }
 }
