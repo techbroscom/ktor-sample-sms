@@ -1,22 +1,22 @@
-# Stage 1: Build using Gradle and JDK
+# Stage 1: Build the fat JAR using Gradle
 FROM gradle:8.5-jdk17 AS build
 WORKDIR /app
 
-# Copy all project files into the container
+# Copy project files into container
 COPY . .
 
-# Build the application using the Gradle wrapper
-RUN ./gradlew installDist
+# Build the shadowJar (fat jar)
+RUN ./gradlew shadowJar
 
-# Stage 2: Run using lightweight JDK image
+# Stage 2: Run the app using slim JDK
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 
-# Copy built app from previous stage
-COPY --from=build /app/build/install/ktor-sample-sms /app
+# Copy the fat JAR from the build stage
+COPY --from=build /app/build/libs/ktor-app.jar app.jar
 
-# Expose the port your Ktor app listens to
+# Expose port
 EXPOSE 8080
 
-# Run the app
-CMD ["./bin/ktor-sample-sms"]
+# Run the application
+CMD ["java", "-jar", "app.jar"]
