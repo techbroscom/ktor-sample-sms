@@ -128,7 +128,10 @@ private fun buildStaffClassSubjectDetails(
     val myClasses = classAssignments.map { assignment ->
         MyClassDto(
             id = assignment.classId,
-            name = assignment.className
+            className = assignment.className,
+            sectionName = assignment.sectionName,
+            academicYearId = assignment.academicYearId,
+            academicYearName = assignment.academicYearName
         )
     }
 
@@ -136,7 +139,8 @@ private fun buildStaffClassSubjectDetails(
     val teachingClasses = subjectAssignments.map { assignment ->
         TeachingClassDto(
             id = assignment.classId,
-            name = assignment.className,
+            className = assignment.className,
+            sectionName = assignment.sectionName,
             subjectName = assignment.subjectName,
             subjectId = assignment.classSubjectId
         )
