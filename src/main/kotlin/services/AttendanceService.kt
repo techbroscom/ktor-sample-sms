@@ -1,5 +1,6 @@
 package com.example.services
 
+import com.example.database.tables.AttendanceStatus
 import com.example.exceptions.ApiException
 import com.example.models.dto.*
 import com.example.repositories.AttendanceRepository
@@ -10,7 +11,8 @@ import java.time.format.DateTimeParseException
 class AttendanceService(
     private val attendanceRepository: AttendanceRepository,
     private val userService: UserService,
-    private val classService: ClassService
+    private val classService: ClassService,
+    private val studentAssignmentService: StudentAssignmentService
 ) {
 
     suspend fun createAttendance(request: CreateAttendanceRequest): AttendanceDto {
@@ -151,7 +153,7 @@ class AttendanceService(
         return attendanceRepository.findByDate(localDate)
     }
 
-    suspend fun getAttendanceByClassAndDate(classId: String, date: String): List<AttendanceDto> {
+    /*suspend fun getAttendanceByClassAndDate(classId: String, date: String): List<AttendanceDto> {
         validateUUID(classId, "Class ID")
         validateDateString(date, "Date")
 
@@ -160,6 +162,45 @@ class AttendanceService(
         val localDate = parseDate(date)
 
         return attendanceRepository.findByClassAndDate(classId, localDate)
+    }*/
+
+    suspend fun getAttendanceByClassAndDate(classId: String, date: String): List<AttendanceDto> {
+        validateUUID(classId, "Class ID")
+        validateDateString(date, "Date")
+
+        // Validate class exists
+        val classInfo = classService.getClassById(classId)
+        val localDate = parseDate(date)
+
+        // Get existing attendance records
+        val existingAttendance = attendanceRepository.findByClassAndDate(classId, localDate)
+
+        // Get all students assigned to this class for the active academic year
+        val studentsInClass = studentAssignmentService.getClassStudentsForActiveYear(classId)
+
+        if (studentsInClass.isEmpty()) {
+            // Return empty list if no students are assigned to this class
+            return emptyList()
+        }
+
+        // Create a map of existing attendance records by student ID
+        val attendanceMap = existingAttendance.associateBy { it.studentId }
+
+        // Create attendance records for all students in the class
+        return studentsInClass.map { studentAssignment ->
+            // If attendance record exists, use it; otherwise create ABSENT record
+            attendanceMap[studentAssignment.studentId] ?: AttendanceDto(
+                id = null,
+                studentId = studentAssignment.studentId,
+                classId = classId,
+                date = date,
+                status = AttendanceStatus.ABSENT,
+                studentName = studentAssignment.firstName,
+                studentEmail = studentAssignment.email,
+                className = classInfo.className,
+                sectionName = classInfo.sectionName
+            )
+        }.sortedBy { it.studentName }
     }
 
     suspend fun getAttendanceByStudentAndDateRange(studentId: String, startDate: String, endDate: String): List<AttendanceDto> {

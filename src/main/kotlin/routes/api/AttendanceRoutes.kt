@@ -61,6 +61,19 @@ fun Route.attendanceRoutes(attendanceService: AttendanceService) {
         }
 
         // Get attendance by class and date
+        /*get("/class/{classId}/date/{date}") {
+            val classId = call.parameters["classId"]
+                ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+            val date = call.parameters["date"]
+                ?: throw ApiException("Date is required", HttpStatusCode.BadRequest)
+
+            val attendance = attendanceService.getAttendanceByClassAndDate(classId, date)
+            call.respond(ApiResponse(
+                success = true,
+                data = attendance
+            ))
+        }*/
+
         get("/class/{classId}/date/{date}") {
             val classId = call.parameters["classId"]
                 ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
