@@ -41,7 +41,7 @@ class AttendanceService(
         return getAttendanceById(attendanceId)
     }
 
-    suspend fun bulkCreateAttendance(request: BulkCreateAttendanceRequest): List<AttendanceDto> {
+    /*suspend fun bulkCreateAttendance(request: BulkCreateAttendanceRequest): List<AttendanceDto> {
         validateUUID(request.classId, "Class ID")
         validateDateString(request.date, "Date")
 
@@ -81,6 +81,59 @@ class AttendanceService(
 
         val attendanceIds = attendanceRepository.bulkCreate(createRequests)
         return attendanceIds.map { getAttendanceById(it) }
+    }*/
+
+    suspend fun bulkCreateAttendance(request: BulkCreateAttendanceRequest): List<AttendanceDto> {
+        validateUUID(request.classId, "Class ID")
+        validateDateString(request.date, "Date")
+
+        if (request.attendanceRecords.isEmpty()) {
+            throw ApiException("Attendance records list cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        // Validate that class exists
+        classService.getClassById(request.classId)
+        val date = parseDate(request.date)
+
+        val results = mutableListOf<AttendanceDto>()
+
+        for (record in request.attendanceRecords) {
+            validateUUID(record.studentId, "Student ID")
+            userService.getUserById(record.studentId)
+
+            // Check if record already exists
+            val existingRecord = attendanceRepository.findByStudentClassAndDate(
+                record.studentId,
+                request.classId,
+                date
+            )
+
+            if (existingRecord != null) {
+                // Update existing record
+                val updateRequest = UpdateAttendanceRequest(
+                    studentId = record.studentId,
+                    classId = request.classId,
+                    date = request.date,
+                    status = record.status
+                )
+                val updated = attendanceRepository.update(existingRecord.id.toString(), updateRequest)
+                if (updated) {
+                    results.add(getAttendanceById(existingRecord.id.toString()))
+                }
+            } else {
+                // Create new record
+                val createRequest = CreateAttendanceRequest(
+                    studentId = record.studentId,
+                    classId = request.classId,
+                    date = request.date,
+                    status = record.status
+                )
+                val attendanceId = attendanceRepository.create(createRequest)
+                results.add(getAttendanceById(attendanceId))
+            }
+        }
+
+        return results
     }
 
     suspend fun getAttendanceById(id: String): AttendanceDto {

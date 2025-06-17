@@ -136,6 +136,20 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByStudentClassAndDate(studentId: String, classId: String, date: LocalDate): AttendanceDto? = dbQuery {
+        Attendance
+            .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
+            .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
+            .selectAll()
+            .where {
+                (Attendance.studentId eq UUID.fromString(studentId)) and
+                        (Attendance.classId eq UUID.fromString(classId)) and
+                        (Attendance.date eq date)
+            }
+            .map { mapRowToDto(it) }
+            .singleOrNull()
+    }
+
     suspend fun checkDuplicate(studentId: String, classId: String, date: LocalDate, excludeId: String? = null): Boolean = dbQuery {
         val query = Attendance.selectAll()
             .where {
