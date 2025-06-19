@@ -87,9 +87,10 @@ data class ExamByNameDto(
 
 @Serializable
 data class ClassByExamNameDto(
-    val classId: String,
+    val id: String,
     val className: String,
     val sectionName: String,
+    val academicYearId: String,
     val examName: String
 )
 

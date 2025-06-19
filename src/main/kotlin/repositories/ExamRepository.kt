@@ -374,9 +374,10 @@ class ExamRepository {
             .distinctBy { it[Classes.id] to it[Exams.name] }
             .map {
                 ClassByExamNameDto(
-                    classId = it[Classes.id].toString(),
+                    id = it[Classes.id].toString(),
                     className = it[Classes.className],
                     sectionName = it[Classes.sectionName],
+                    academicYearId = it[Classes.academicYearId].toString(),
                     examName = it[Exams.name]
                 )
             }
