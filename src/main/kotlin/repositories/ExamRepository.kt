@@ -14,6 +14,7 @@ import java.util.*
 class ExamRepository {
 
     suspend fun create(request: CreateExamRequest): String = dbQuery {
+        println("Create in Repo Called")
         Exams.insert {
             it[name] = request.name
             it[subjectId] = UUID.fromString(request.subjectId)

@@ -357,13 +357,44 @@ fun Route.examRoutes(examService: ExamService) {
 
         // Create single exam
         post {
-            val request = call.receive<CreateExamRequest>()
-            val exam = examService.createExam(request)
-            call.respond(HttpStatusCode.Created, ApiResponse(
-                success = true,
-                message = "Exam created successfully",
-                data = exam
-            ))
+            println("Create in Route Called")
+
+            try {
+                val request = call.receive<CreateExamRequest>()
+                println(request.toString())
+
+                val exam = examService.createExam(request)
+
+                call.respond(
+                    HttpStatusCode.Created,
+                    ApiResponse(
+                        success = true,
+                        message = "Exam created successfully",
+                        data = exam
+                    )
+                )
+            } catch (e: ContentTransformationException) {
+                // Handles invalid or malformed JSON in the request body
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ApiResponse(
+                        success = false,
+                        message = "Invalid request format: ${e.message}",
+                        data = null
+                    )
+                )
+            } catch (e: Exception) {
+                // Catches unexpected errors from service or elsewhere
+                e.printStackTrace()
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ApiResponse(
+                        success = false,
+                        message = "An unexpected error occurred: ${e.message}",
+                        data = null
+                    )
+                )
+            }
         }
 
         // Bulk create exams

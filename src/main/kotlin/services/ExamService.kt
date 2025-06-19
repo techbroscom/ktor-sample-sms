@@ -15,19 +15,27 @@ class ExamService(
 ) {
 
     suspend fun createExam(request: CreateExamRequest): ExamDto {
-        validateExamRequest(request)
+        println("Create in Service Called")
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        val requestWithAcademicYear = request.copy(academicYearId = academicYearId)
+        validateExamRequest(requestWithAcademicYear)
 
         // Validate that referenced entities exist
-        classService.getClassById(request.classId)
-        subjectService.getSubjectById(request.subjectId)
-        academicYearService.getAcademicYearById(request.academicYearId)
+        classService.getClassById(requestWithAcademicYear.classId)
+        subjectService.getSubjectById(requestWithAcademicYear.subjectId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         // Check for duplicate
         val isDuplicate = examRepository.checkDuplicate(
-            request.name,
-            request.classId,
-            request.subjectId,
-            request.academicYearId
+            requestWithAcademicYear.name,
+            requestWithAcademicYear.classId,
+            requestWithAcademicYear.subjectId,
+            academicYearId
         )
         if (isDuplicate) {
             throw ApiException(
@@ -36,13 +44,20 @@ class ExamService(
             )
         }
 
-        val examId = examRepository.create(request)
+        val examId = examRepository.create(requestWithAcademicYear)
         return getExamById(examId)
     }
 
     suspend fun bulkCreateExams(request: BulkCreateExamRequest): List<ExamDto> {
         validateUUID(request.classId, "Class ID")
-        validateUUID(request.academicYearId, "Academic Year ID")
+
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        validateUUID(academicYearId, "Academic Year ID")
 
         if (request.exams.isEmpty()) {
             throw ApiException("Exams list cannot be empty", HttpStatusCode.BadRequest)
@@ -50,7 +65,7 @@ class ExamService(
 
         // Validate that referenced entities exist
         classService.getClassById(request.classId)
-        academicYearService.getAcademicYearById(request.academicYearId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         val createRequests = mutableListOf<CreateExamRequest>()
 
@@ -67,14 +82,14 @@ class ExamService(
                 exam.name,
                 request.classId,
                 exam.subjectId,
-                request.academicYearId
+                academicYearId
             )
             if (!isDuplicate) {
                 createRequests.add(CreateExamRequest(
                     name = exam.name,
                     classId = request.classId,
                     subjectId = exam.subjectId,
-                    academicYearId = request.academicYearId,
+                    academicYearId = academicYearId,
                     maxMarks = exam.maxMarks,
                     date = exam.date
                 ))
@@ -101,19 +116,27 @@ class ExamService(
 
     suspend fun updateExam(id: String, request: UpdateExamRequest): ExamDto {
         validateUUID(id, "Exam ID")
-        validateExamRequest(request)
+
+        // Use active academic year if not provided
+        val academicYearId = request.academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        val requestWithAcademicYear = request.copy(academicYearId = academicYearId)
+        validateExamRequest(requestWithAcademicYear)
 
         // Validate that referenced entities exist
-        classService.getClassById(request.classId)
-        subjectService.getSubjectById(request.subjectId)
-        academicYearService.getAcademicYearById(request.academicYearId)
+        classService.getClassById(requestWithAcademicYear.classId)
+        subjectService.getSubjectById(requestWithAcademicYear.subjectId)
+        academicYearService.getAcademicYearById(academicYearId)
 
         // Check for duplicate (excluding current record)
         val isDuplicate = examRepository.checkDuplicate(
-            request.name,
-            request.classId,
-            request.subjectId,
-            request.academicYearId,
+            requestWithAcademicYear.name,
+            requestWithAcademicYear.classId,
+            requestWithAcademicYear.subjectId,
+            academicYearId,
             excludeId = id
         )
         if (isDuplicate) {
@@ -123,7 +146,7 @@ class ExamService(
             )
         }
 
-        val updated = examRepository.update(id, request)
+        val updated = examRepository.update(id, requestWithAcademicYear)
         if (!updated) {
             throw ApiException("Exam not found", HttpStatusCode.NotFound)
         }
@@ -139,16 +162,30 @@ class ExamService(
         }
     }
 
-    suspend fun getExamsByClass(classId: String): List<ExamDto> {
+    suspend fun getExamsByClass(classId: String, academicYearId: String? = null): List<ExamDto> {
         validateUUID(classId, "Class ID")
         classService.getClassById(classId)
-        return examRepository.findByClassId(classId)
+
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        return examRepository.findByClassAndAcademicYear(classId, finalAcademicYearId)
     }
 
-    suspend fun getExamsBySubject(subjectId: String): List<ExamDto> {
+    suspend fun getExamsBySubject(subjectId: String, academicYearId: String? = null): List<ExamDto> {
         validateUUID(subjectId, "Subject ID")
         subjectService.getSubjectById(subjectId)
-        return examRepository.findBySubjectId(subjectId)
+
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        return examRepository.findBySubjectAndAcademicYear(subjectId, finalAcademicYearId)
     }
 
     suspend fun getExamsByAcademicYear(academicYearId: String): List<ExamDto> {
@@ -181,12 +218,16 @@ class ExamService(
         validateDate(startDate)
         validateDate(endDate)
 
-        if (academicYearId != null) {
+        val finalAcademicYearId = if (academicYearId != null) {
             validateUUID(academicYearId, "Academic Year ID")
             academicYearService.getAcademicYearById(academicYearId)
+            academicYearId
+        } else {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
         }
 
-        return examRepository.findByDateRange(startDate, endDate, academicYearId)
+        return examRepository.findByDateRange(startDate, endDate, finalAcademicYearId)
     }
 
     suspend fun removeAllExamsFromClass(classId: String): Int {
@@ -204,7 +245,7 @@ class ExamService(
     private fun validateExamRequest(request: CreateExamRequest) {
         validateUUID(request.classId, "Class ID")
         validateUUID(request.subjectId, "Subject ID")
-        validateUUID(request.academicYearId, "Academic Year ID")
+        validateUUID(request.academicYearId!!, "Academic Year ID") // Now guaranteed to be non-null
         validateExamName(request.name)
         validateMaxMarks(request.maxMarks)
         validateDate(request.date)
@@ -213,7 +254,7 @@ class ExamService(
     private fun validateExamRequest(request: UpdateExamRequest) {
         validateUUID(request.classId, "Class ID")
         validateUUID(request.subjectId, "Subject ID")
-        validateUUID(request.academicYearId, "Academic Year ID")
+        validateUUID(request.academicYearId!!, "Academic Year ID") // Now guaranteed to be non-null
         validateExamName(request.name)
         validateMaxMarks(request.maxMarks)
         validateDate(request.date)

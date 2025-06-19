@@ -25,7 +25,7 @@ data class CreateExamRequest(
     val name: String,
     val subjectId: String,
     val classId: String,
-    val academicYearId: String,
+    val academicYearId: String? = null,
     val maxMarks: Int,
     val date: String // LocalDate as String in format YYYY-MM-DD
 )
@@ -35,7 +35,7 @@ data class UpdateExamRequest(
     val name: String,
     val subjectId: String,
     val classId: String,
-    val academicYearId: String,
+    val academicYearId: String? = null,
     val maxMarks: Int,
     val date: String // LocalDate as String in format YYYY-MM-DD
 )
@@ -43,7 +43,7 @@ data class UpdateExamRequest(
 @Serializable
 data class BulkCreateExamRequest(
     val classId: String,
-    val academicYearId: String,
+    val academicYearId: String? = null,
     val exams: List<ExamDetails>
 )
 
@@ -60,7 +60,7 @@ data class ClassExamsDto(
     val classId: String,
     val className: String,
     val sectionName: String,
-    val academicYearId: String,
+    val academicYearId: String? = null,
     val academicYearName: String,
     val exams: List<ExamDto>
 )
