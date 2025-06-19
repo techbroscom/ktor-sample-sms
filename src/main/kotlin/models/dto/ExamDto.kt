@@ -78,3 +78,29 @@ data class ExamsByDateDto(
     val date: String,
     val exams: List<ExamDto>
 )
+
+@Serializable
+data class ExamByNameDto(
+    val examName: String,
+    val classes: List<ClassWithSubjectsExamsDto>
+)
+
+@Serializable
+data class ClassWithSubjectsExamsDto(
+    val classId: String,
+    val className: String,
+    val sectionName: String,
+    val subjects: List<SubjectExamDto>
+)
+
+@Serializable
+data class SubjectExamDto(
+    val examId: String,
+    val subjectId: String,
+    val subjectName: String,
+    val subjectCode: String?,
+    val maxMarks: Int,
+    val date: String,
+    val academicYearId: String,
+    val academicYearName: String?
+)

@@ -287,4 +287,68 @@ class ExamRepository {
             academicYearName = row.getOrNull(AcademicYears.year)
         )
     }
+
+    suspend fun getExamsByNameGrouped(examName: String?, academicYearId: String): List<ExamByNameDto> = dbQuery {
+        val query = Exams
+            .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+            .join(AcademicYears, JoinType.INNER, Exams.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { Exams.academicYearId eq UUID.fromString(academicYearId) }
+
+        // If examName is provided, filter by it; otherwise get all exams
+        if (!examName.isNullOrBlank()) {
+            query.andWhere { Exams.name.lowerCase() like "%${examName.lowercase()}%" }
+        }
+
+        val results = query.orderBy(
+            Exams.name to SortOrder.ASC,
+            Classes.className to SortOrder.ASC,
+            Classes.sectionName to SortOrder.ASC,
+            Subjects.name to SortOrder.ASC
+        ).toList()
+
+        // Group by exam name first
+        val examGroups = results.groupBy { it[Exams.name] }
+
+        val examsByName = examGroups.map { (examName, examRows) ->
+            // Group by class within each exam
+            val classGroups = examRows.groupBy {
+                Triple(
+                    it[Exams.classId].toString(),
+                    it[Classes.className],
+                    it[Classes.sectionName]
+                )
+            }
+
+            val classesWithSubjects = classGroups.map { (classInfo, classRows) ->
+                val subjects = classRows.map { row ->
+                    SubjectExamDto(
+                        examId = row[Exams.id].toString(),
+                        subjectId = row[Exams.subjectId].toString(),
+                        subjectName = row[Subjects.name],
+                        subjectCode = row[Subjects.code],
+                        maxMarks = row[Exams.maxMarks],
+                        date = row[Exams.date].toString(),
+                        academicYearId = row[Exams.academicYearId].toString(),
+                        academicYearName = row[AcademicYears.year]
+                    )
+                }
+
+                ClassWithSubjectsExamsDto(
+                    classId = classInfo.first,
+                    className = classInfo.second,
+                    sectionName = classInfo.third,
+                    subjects = subjects
+                )
+            }
+
+            ExamByNameDto(
+                examName = examName,
+                classes = classesWithSubjects
+            )
+        }
+
+        examsByName
+    }
 }

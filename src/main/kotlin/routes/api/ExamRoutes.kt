@@ -22,10 +22,27 @@ fun Route.examRoutes(examService: ExamService) {
             ))
         }
 
+        get("/complete") {
+            val exams = examService.getExamsByNameGrouped()
+            call.respond(ApiResponse(
+                success = true,
+                data = exams
+            ))
+        }
+
         // Get exams by academic year
         get("/academic-year/{academicYearId}") {
             val academicYearId = call.getPathParameter("academicYearId", "Academic Year ID")
             val exams = examService.getExamsByAcademicYear(academicYearId)
+            call.respond(ApiResponse(
+                success = true,
+                data = exams
+            ))
+        }
+
+        // Get exams by academic year
+        get("/academic-year/active") {
+            val exams = examService.getExamsByActiveAcademicYear()
             call.respond(ApiResponse(
                 success = true,
                 data = exams

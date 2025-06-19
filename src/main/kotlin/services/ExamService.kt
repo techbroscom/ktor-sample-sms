@@ -194,6 +194,11 @@ class ExamService(
         return examRepository.findByAcademicYear(academicYearId)
     }
 
+    suspend fun getExamsByActiveAcademicYear(): List<ExamDto> {
+        val activeAcademicYear = academicYearService.getActiveAcademicYear()
+        return examRepository.findByAcademicYear(activeAcademicYear.id)
+    }
+
     suspend fun getExamsByClassAndAcademicYear(classId: String, academicYearId: String): List<ExamDto> {
         validateUUID(classId, "Class ID")
         validateUUID(academicYearId, "Academic Year ID")
@@ -292,5 +297,28 @@ class ExamService(
         } catch (e: IllegalArgumentException) {
             throw ApiException("$fieldName must be a valid UUID", HttpStatusCode.BadRequest)
         }
+    }
+
+    suspend fun getExamsByNameGrouped(examName: String? = null, academicYearId: String? = null): List<ExamByNameDto> {
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        validateUUID(finalAcademicYearId, "Academic Year ID")
+        academicYearService.getAcademicYearById(finalAcademicYearId)
+
+        // Validate exam name if provided
+        if (!examName.isNullOrBlank()) {
+            if (examName.length > 100) {
+                throw ApiException("Exam name cannot exceed 100 characters", HttpStatusCode.BadRequest)
+            }
+            if (examName.isBlank()) {
+                throw ApiException("Exam name cannot be blank", HttpStatusCode.BadRequest)
+            }
+        }
+
+        return examRepository.getExamsByNameGrouped(examName, finalAcademicYearId)
     }
 }
