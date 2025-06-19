@@ -321,4 +321,73 @@ class ExamService(
 
         return examRepository.getExamsByNameGrouped(examName, finalAcademicYearId)
     }
+
+    suspend fun getExamsName(examName: String? = null, academicYearId: String? = null): List<String> {
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        validateUUID(finalAcademicYearId, "Academic Year ID")
+        academicYearService.getAcademicYearById(finalAcademicYearId)
+
+        // Validate exam name if provided
+        if (!examName.isNullOrBlank()) {
+            if (examName.length > 100) {
+                throw ApiException("Exam name cannot exceed 100 characters", HttpStatusCode.BadRequest)
+            }
+            if (examName.isBlank()) {
+                throw ApiException("Exam name cannot be blank", HttpStatusCode.BadRequest)
+            }
+        }
+
+        return examRepository.getExamsName(finalAcademicYearId)
+    }
+
+    suspend fun getExamsClassesName(examName: String, academicYearId: String? = null): List<ClassByExamNameDto> {
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        validateUUID(finalAcademicYearId, "Academic Year ID")
+        academicYearService.getAcademicYearById(finalAcademicYearId)
+
+        // Validate exam name if provided
+        if (examName.isNotBlank()) {
+            if (examName.length > 100) {
+                throw ApiException("Exam name cannot exceed 100 characters", HttpStatusCode.BadRequest)
+            }
+            if (examName.isBlank()) {
+                throw ApiException("Exam name cannot be blank", HttpStatusCode.BadRequest)
+            }
+        }
+
+        return examRepository.getExamsClassesName(examName, finalAcademicYearId)
+    }
+
+    suspend fun getExamsByClassesAndExamsName(classId:String, examName: String, academicYearId: String? = null): List<ExamDto> {
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        validateUUID(finalAcademicYearId, "Academic Year ID")
+        academicYearService.getAcademicYearById(finalAcademicYearId)
+
+        // Validate exam name if provided
+        if (examName.isNotBlank()) {
+            if (examName.length > 100) {
+                throw ApiException("Exam name cannot exceed 100 characters", HttpStatusCode.BadRequest)
+            }
+            if (examName.isBlank()) {
+                throw ApiException("Exam name cannot be blank", HttpStatusCode.BadRequest)
+            }
+        }
+
+        return examRepository.getExamsByClassesAndExamsName(classId, examName, finalAcademicYearId)
+    }
 }

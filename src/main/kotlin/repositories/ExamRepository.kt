@@ -351,4 +351,53 @@ class ExamRepository {
 
         examsByName
     }
+
+    suspend fun getExamsName(academicYearId: String): List<String> = dbQuery {
+        Exams
+            .selectAll()
+            .where { Exams.academicYearId eq UUID.fromString(academicYearId) }
+            .orderBy(Exams.date)
+            .map { it[Exams.name] }
+            .distinct()
+    }
+
+    suspend fun getExamsClassesName(examName: String, academicYearId: String): List<ClassByExamNameDto> = dbQuery {
+        Exams
+            .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+            .selectAll()
+            .where {
+                (Exams.name eq examName) and
+                        (Exams.academicYearId eq UUID.fromString(academicYearId))
+            }
+            .orderBy(Classes.className to SortOrder.ASC)
+            .toList()
+            .distinctBy { it[Classes.id] to it[Exams.name] }
+            .map {
+                ClassByExamNameDto(
+                    classId = it[Classes.id].toString(),
+                    className = it[Classes.className],
+                    sectionName = it[Classes.sectionName],
+                    examName = it[Exams.name]
+                )
+            }
+    }
+
+    suspend fun getExamsByClassesAndExamsName(
+        classId: String,
+        examName: String,
+        academicYearId: String
+    ): List<ExamDto> = dbQuery {
+        Exams
+            .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
+            .join(AcademicYears, JoinType.LEFT, Exams.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where {
+                (Exams.name eq examName) and
+                        (Exams.academicYearId eq UUID.fromString(academicYearId)) and
+                        (Exams.classId eq UUID.fromString(classId))
+            }
+            .orderBy(Exams.date to SortOrder.ASC, Exams.name to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
 }

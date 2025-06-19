@@ -86,6 +86,14 @@ data class ExamByNameDto(
 )
 
 @Serializable
+data class ClassByExamNameDto(
+    val classId: String,
+    val className: String,
+    val sectionName: String,
+    val examName: String
+)
+
+@Serializable
 data class ClassWithSubjectsExamsDto(
     val classId: String,
     val className: String,

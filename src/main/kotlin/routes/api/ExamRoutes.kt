@@ -30,6 +30,33 @@ fun Route.examRoutes(examService: ExamService) {
             ))
         }
 
+        get("/examsByName") {
+            val exams = examService.getExamsName()
+            call.respond(ApiResponse(
+                success = true,
+                data = exams
+            ))
+        }
+
+        get("/classByExamName/{examName}") {
+            val examName = call.getPathParameter("examName", "Exam Name")
+            val exams = examService.getExamsClassesName(examName)
+            call.respond(ApiResponse(
+                success = true,
+                data = exams
+            ))
+        }
+
+        get("/examsByClassAndExamName/{classId}/{examName}") {
+            val classId = call.getPathParameter("classId", "Class Id")
+            val examName = call.getPathParameter("examName", "Exam Name")
+            val exams = examService.getExamsByClassesAndExamsName(classId, examName)
+            call.respond(ApiResponse(
+                success = true,
+                data = exams
+            ))
+        }
+
         // Get exams by academic year
         get("/academic-year/{academicYearId}") {
             val academicYearId = call.getPathParameter("academicYearId", "Academic Year ID")
