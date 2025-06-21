@@ -9,6 +9,28 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 class SchoolConfigRepository {
 
+    suspend fun insertDefaultIfNotExists() = dbQuery {
+        val exists = SchoolConfig
+            .selectAll()
+            .where { SchoolConfig.id eq 1 }
+            .any()
+        if (!exists) {
+            SchoolConfig.insert {
+                it[id] = 1
+                it[schoolName] = "My School"
+                it[address] = "My Address"
+                it[logoUrl] = null
+                it[email] = null
+                it[phoneNumber1] = null
+                it[phoneNumber2] = null
+                it[phoneNumber3] = null
+                it[phoneNumber4] = null
+                it[phoneNumber5] = null
+                it[website] = null
+            }
+        }
+    }
+
     suspend fun findById(id: Int): SchoolConfigDto? = dbQuery {
         SchoolConfig.selectAll()
             .where { SchoolConfig.id eq id }

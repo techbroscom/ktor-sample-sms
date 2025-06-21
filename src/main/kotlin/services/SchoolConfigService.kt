@@ -9,10 +9,21 @@ import java.util.regex.Pattern
 
 class SchoolConfigService(private val schoolConfigRepository: SchoolConfigRepository) {
 
-    suspend fun getSchoolConfigById(id: Int): SchoolConfigDto {
+    /*suspend fun getSchoolConfigById(id: Int): SchoolConfigDto {
         return schoolConfigRepository.findById(id)
             ?: throw ApiException("School configuration not found", HttpStatusCode.NotFound)
+    }*/
+
+    suspend fun getSchoolConfigById(id: Int): SchoolConfigDto {
+        val config = schoolConfigRepository.findById(id)
+        if (config == null && id == 1) {
+            schoolConfigRepository.insertDefaultIfNotExists()
+            return schoolConfigRepository.findById(1)
+                ?: throw ApiException("Failed to create default config", HttpStatusCode.InternalServerError)
+        }
+        return config ?: throw ApiException("School configuration not found", HttpStatusCode.NotFound)
     }
+
 
     suspend fun getAllSchoolConfigs(): List<SchoolConfigDto> {
         return schoolConfigRepository.findAll()
