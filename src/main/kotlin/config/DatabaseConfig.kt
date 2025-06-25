@@ -6,10 +6,10 @@ import org.jetbrains.exposed.sql.Database
 object DatabaseConfig {
     fun init(): Database {
         return Database.connect(
-            url = "jdbc:postgresql://dpg-d0q8diqli9vc73b9bhmg-a.singapore-postgres.render.com/sms_oeun",
-            user = "sms",
+            url = "jdbc:postgresql://ep-silent-brook-a16zf0cf.ap-southeast-1.pg.koyeb.app/koyebdb?user=koyeb-adm&password=npg_BjbAEfSt59Ou",
+            user = "koyeb-adm",
             driver = "org.postgresql.Driver",
-            password = "eZmti5NHOvT5jqrvK4k4rIAx5BF8v9Hd",
+            password = "npg_BjbAEfSt59Ou",
         )
     }
 }
