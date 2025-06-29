@@ -23,5 +23,5 @@ data class TeachingClassDto(
     val className: String?,
     val sectionName: String?,
     val subjectName: String?,
-    val subjectId: String
+    val subjectId: String?
 )

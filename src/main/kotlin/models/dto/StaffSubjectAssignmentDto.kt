@@ -12,6 +12,7 @@ data class StaffSubjectAssignmentDto(
     // Additional fields for joined queries
     val staffName: String? = null,
     val staffEmail: String? = null,
+    val subjectId: String? = null,
     val subjectName: String? = null,
     val subjectCode: String? = null,
     val className: String? = null,

@@ -142,7 +142,7 @@ private fun buildStaffClassSubjectDetails(
             className = assignment.className,
             sectionName = assignment.sectionName,
             subjectName = assignment.subjectName,
-            subjectId = assignment.classSubjectId
+            subjectId = assignment.subjectId
         )
     }
 

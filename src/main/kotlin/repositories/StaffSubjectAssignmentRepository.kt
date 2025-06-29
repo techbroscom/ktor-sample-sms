@@ -306,6 +306,7 @@ class StaffSubjectAssignmentRepository {
             academicYearId = row[StaffSubjectAssignments.academicYearId].toString(),
             staffName = row.getOrNull(Users.firstName),
             staffEmail = row.getOrNull(Users.email),
+            subjectId = row.getOrNull(Subjects.id).toString(),
             subjectName = row.getOrNull(Subjects.name),
             subjectCode = row.getOrNull(Subjects.code),
             className = row.getOrNull(Classes.className),
