@@ -135,6 +135,25 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByClassAndSubjectAndAcademicYear(
+        classId: String,
+        subjectId: String,
+        academicYearId: String
+    ): List<ExamDto> = dbQuery {
+        Exams
+            .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
+            .join(AcademicYears, JoinType.LEFT, Exams.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where {
+                (Exams.classId eq UUID.fromString(classId)) and
+                        (Exams.subjectId eq UUID.fromString(subjectId)) and
+                        (Exams.academicYearId eq UUID.fromString(academicYearId))
+            }
+            .orderBy(Exams.date to SortOrder.ASC, Subjects.name to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun findByDateRange(startDate: String, endDate: String, academicYearId: String? = null): List<ExamDto> = dbQuery {
         val query = Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)

@@ -188,6 +188,30 @@ class ExamService(
         return examRepository.findBySubjectAndAcademicYear(subjectId, finalAcademicYearId)
     }
 
+    suspend fun getExamsByClassAndSubject(
+        classId: String,
+        subjectId: String,
+        academicYearId: String? = null
+    ): List<ExamDto> {
+        validateUUID(classId, "Class ID")
+        validateUUID(subjectId, "Subject ID")
+
+        classService.getClassById(classId)
+        subjectService.getSubjectById(subjectId)
+
+        // Use active academic year if not provided
+        val finalAcademicYearId = academicYearId ?: run {
+            val activeAcademicYear = academicYearService.getActiveAcademicYear()
+            activeAcademicYear.id
+        }
+
+        return examRepository.findByClassAndSubjectAndAcademicYear(
+            classId,
+            subjectId,
+            finalAcademicYearId
+        )
+    }
+
     suspend fun getExamsByAcademicYear(academicYearId: String): List<ExamDto> {
         validateUUID(academicYearId, "Academic Year ID")
         academicYearService.getAcademicYearById(academicYearId)

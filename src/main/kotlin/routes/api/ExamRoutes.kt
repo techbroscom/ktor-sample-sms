@@ -96,6 +96,21 @@ fun Route.examRoutes(examService: ExamService) {
             ))
         }
 
+        // Get exams by class and subject
+        get("/class/{classId}/subject/{subjectId}") {
+            val classId = call.getPathParameter("classId", "Class ID")
+            val subjectId = call.getPathParameter("subjectId", "Subject ID")
+
+            val exams = examService.getExamsByClassAndSubject(classId, subjectId)
+
+            call.respond(
+                ApiResponse(
+                    success = true,
+                    data = exams
+                )
+            )
+        }
+
         // Get exams by class and academic year
         get("/class/{classId}/academic-year/{academicYearId}") {
             val classId = call.getPathParameter("classId", "Class ID")
