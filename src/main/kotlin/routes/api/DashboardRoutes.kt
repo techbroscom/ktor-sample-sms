@@ -1,7 +1,9 @@
 package com.example.routes.api
 
+import com.example.exceptions.ApiException
 import com.example.models.responses.ApiResponse
 import com.example.services.DashboardService
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -22,6 +24,32 @@ fun Route.dashboardRoutes(dashboardService: DashboardService) {
         // Get student statistics
         get("/students") {
             val studentStats = dashboardService.getStudentStatistics()
+            call.respond(ApiResponse(
+                success = true,
+                data = studentStats,
+                message = "Student statistics retrieved successfully"
+            ))
+        }
+
+        // Get student statistics
+        get("/students/complete/{id}") {
+            println("Student ID: ${call.parameters["id"]}")
+            val id = call.parameters["id"]
+                ?: throw ApiException("Invalid Student ID", HttpStatusCode.BadRequest)
+            val studentStats = dashboardService.getStudentStatistics(id)
+            call.respond(ApiResponse(
+                success = true,
+                data = studentStats,
+                message = "Student statistics retrieved successfully"
+            ))
+        }
+
+        // Get student statistics
+        get("/students/basic/{id}") {
+            println("Student ID: ${call.parameters["id"]}")
+            val id = call.parameters["id"]
+                ?: throw ApiException("Invalid Student ID", HttpStatusCode.BadRequest)
+            val studentStats = dashboardService.getStudentBasicStatistics(id)
             call.respond(ApiResponse(
                 success = true,
                 data = studentStats,

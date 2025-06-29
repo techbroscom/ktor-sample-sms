@@ -236,3 +236,159 @@ data class UpcomingHolidayDto(
     val isPublicHoliday: Boolean,
     val daysUntilHoliday: Int
 )
+
+@Serializable
+data class StudentCompleteDataDto(
+    // Basic student information
+    val studentId: String,
+    val firstName: String,
+    val lastName: String,
+    val email: String,
+    val mobileNumber: String,
+    val createdAt: String,
+    val updatedAt: String,
+
+    // Academic assignments and current status
+    val academicAssignments: List<StudentAcademicAssignmentDto>,
+    val currentAcademicYear: StudentAcademicAssignmentDto?,
+    val subjects: List<StudentSubjectDto>,
+
+    // Attendance data
+    val attendanceRecords: List<StudentUserAttendanceDto>,
+    val attendanceStatistics: StudentAttendanceStatisticsDto,
+    val recentAttendance: List<StudentUserAttendanceDto>,
+
+    // Academic performance
+    val examResults: List<StudentExamResultDto>,
+    val academicPerformance: StudentAcademicPerformanceDto,
+    val subjectPerformance: List<StudentSubjectPerformanceDto>,
+
+    // Upcoming information
+    val upcomingExams: List<StudentUpcomingExamDto>,
+    val classTeachers: List<StudentClassTeacherDto>
+)
+
+@Serializable
+data class StudentAcademicAssignmentDto(
+    val assignmentId: String,
+    val classId: String,
+    val className: String,
+    val sectionName: String,
+    val academicYearId: String,
+    val academicYearName: String,
+    val academicYearStartDate: String,
+    val academicYearEndDate: String,
+    val isActiveYear: Boolean
+)
+
+@Serializable
+data class StudentSubjectDto(
+    val subjectId: String,
+    val subjectName: String,
+    val subjectCode: String,
+    val classId: String,
+    val className: String,
+    val sectionName: String,
+    val academicYearId: String,
+    val academicYearName: String
+)
+
+@Serializable
+data class StudentUserAttendanceDto(
+    val attendanceId: String,
+    val classId: String,
+    val className: String,
+    val sectionName: String,
+    val date: String,
+    val status: String
+)
+
+@Serializable
+data class StudentAttendanceStatisticsDto(
+    val totalDays: Int,
+    val presentDays: Int,
+    val absentDays: Int,
+    val lateDays: Int,
+    val attendancePercentage: Double,
+    val recentAttendanceRate: Double
+)
+
+@Serializable
+data class StudentExamResultDto(
+    val resultId: String,
+    val examId: String,
+    val examName: String,
+    val subjectName: String,
+    val subjectCode: String,
+    val className: String,
+    val sectionName: String,
+    val academicYearName: String,
+    val examDate: String,
+    val maxMarks: Int,
+    val marksObtained: Int,
+    val grade: String,
+    val percentage: Double
+)
+
+@Serializable
+data class StudentAcademicPerformanceDto(
+    val totalExams: Int,
+    val totalMarksObtained: Int,
+    val totalMaxMarks: Int,
+    val overallPercentage: Double
+)
+
+@Serializable
+data class StudentSubjectPerformanceDto(
+    val subjectName: String,
+    val subjectCode: String,
+    val academicYearName: String,
+    val totalExams: Int,
+    val totalMarksObtained: Int,
+    val totalMaxMarks: Int,
+    val averagePercentage: Double,
+    val bestScore: Double,
+    val worstScore: Double
+)
+
+@Serializable
+data class StudentUpcomingExamDto(
+    val examId: String,
+    val examName: String,
+    val subjectName: String,
+    val subjectCode: String,
+    val examDate: String,
+    val maxMarks: Int,
+    val startTime: String?,
+    val endTime: String?,
+    val daysUntilExam: Int
+)
+
+@Serializable
+data class StudentClassTeacherDto(
+    val teacherId: String,
+    val teacherName: String,
+    val email: String,
+    val role: String
+)
+
+@Serializable
+data class StudentBasicDataDto(
+    // Basic student information
+    val studentId: String,
+    val firstName: String,
+    val lastName: String,
+    val email: String,
+    val mobileNumber: String,
+    val createdAt: String,
+    val updatedAt: String,
+
+    // Academic assignments and current status
+    val academicAssignments: List<StudentAcademicAssignmentDto>,
+    val currentAcademicYear: StudentAcademicAssignmentDto?,
+    val subjects: List<StudentSubjectDto>,
+
+    // Upcoming information
+    val upcomingExams: List<StudentUpcomingExamDto>,
+    val classTeachers: List<StudentClassTeacherDto>
+)

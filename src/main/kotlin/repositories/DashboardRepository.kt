@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 
 class DashboardRepository {
@@ -621,6 +622,379 @@ class DashboardRepository {
             publicHolidays = publicHolidays,
             schoolHolidays = schoolHolidays,
             upcomingHolidaysList = upcomingHolidaysList
+        )
+    }
+
+    suspend fun getStudentCompleteData(studentId: String): StudentCompleteDataDto? = dbQuery {
+        // First, verify the student exists and get basic info
+        val studentInfo = Users.selectAll()
+            .where { (Users.id eq UUID.fromString(studentId)) and (Users.role eq UserRole.STUDENT) }
+            .singleOrNull() ?: return@dbQuery null
+
+        // Get student's academic assignments (classes across all years)
+        val academicAssignments = StudentAssignments
+            .join(Classes, JoinType.INNER, StudentAssignments.classId, Classes.id)
+            .join(AcademicYears, JoinType.INNER, StudentAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { StudentAssignments.studentId eq UUID.fromString(studentId) }
+            .orderBy(AcademicYears.startDate to SortOrder.DESC)
+            .map { row ->
+                StudentAcademicAssignmentDto(
+                    assignmentId = row[StudentAssignments.id].toString(),
+                    classId = row[Classes.id].toString(),
+                    className = row[Classes.className],
+                    sectionName = row[Classes.sectionName] ?: "",
+                    academicYearId = row[AcademicYears.id].toString(),
+                    academicYearName = row[AcademicYears.year] ?: "",
+                    academicYearStartDate = row[AcademicYears.startDate].toString(),
+                    academicYearEndDate = row[AcademicYears.endDate].toString(),
+                    isActiveYear = row[AcademicYears.isActive]
+                )
+            }
+
+        // Get subjects for each class the student is/was enrolled in
+        val subjectsData = mutableListOf<StudentSubjectDto>()
+        academicAssignments.forEach { assignment ->
+            val subjects = ClassSubjects
+                .join(Subjects, JoinType.INNER, ClassSubjects.subjectId, Subjects.id)
+                .selectAll()
+                .where {
+                    (ClassSubjects.classId eq UUID.fromString(assignment.classId)) and
+                            (ClassSubjects.academicYearId eq UUID.fromString(assignment.academicYearId))
+                }
+                .map { row ->
+                    StudentSubjectDto(
+                        subjectId = row[Subjects.id].toString(),
+                        subjectName = row[Subjects.name],
+                        subjectCode = row[Subjects.code]?:"",
+                        classId = assignment.classId,
+                        className = assignment.className,
+                        sectionName = assignment.sectionName,
+                        academicYearId = assignment.academicYearId,
+                        academicYearName = assignment.academicYearName
+                    )
+                }
+            subjectsData.addAll(subjects)
+        }
+
+        // Get attendance records
+        val attendanceRecords = Attendance
+            .join(Classes, JoinType.INNER, Attendance.classId, Classes.id)
+            .selectAll()
+            .where { Attendance.studentId eq UUID.fromString(studentId) }
+            .orderBy(Attendance.date to SortOrder.DESC)
+            .map { row ->
+                StudentUserAttendanceDto(
+                    attendanceId = row[Attendance.id].toString(),
+                    classId = row[Classes.id].toString(),
+                    className = row[Classes.className],
+                    sectionName = row[Classes.sectionName] ?: "",
+                    date = row[Attendance.date].toString(),
+                    status = row[Attendance.status].toString()
+                )
+            }
+
+        // Calculate attendance statistics
+        val totalAttendanceDays = attendanceRecords.size
+        val presentDays = attendanceRecords.count { it.status == "PRESENT" }
+        val absentDays = attendanceRecords.count { it.status == "ABSENT" }
+        val lateDays = attendanceRecords.count { it.status == "LATE" }
+        val attendancePercentage = if (totalAttendanceDays > 0) {
+            (presentDays.toDouble() / totalAttendanceDays) * 100
+        } else 0.0
+
+        // Get exam results with exam details
+        val examResults = ExamResults
+            .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
+            .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+            .join(AcademicYears, JoinType.INNER, Exams.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { ExamResults.studentId eq UUID.fromString(studentId) }
+            .orderBy(Exams.date to SortOrder.DESC)
+            .map { row ->
+                StudentExamResultDto(
+                    resultId = row[ExamResults.id].toString(),
+                    examId = row[Exams.id].toString(),
+                    examName = row[Exams.name],
+                    subjectName = row[Subjects.name],
+                    subjectCode = row[Subjects.code]?:"",
+                    className = row[Classes.className],
+                    sectionName = row[Classes.sectionName] ?: "",
+                    academicYearName = row[AcademicYears.year] ?: "",
+                    examDate = row[Exams.date].toString(),
+                    maxMarks = row[Exams.maxMarks],
+                    marksObtained = row[ExamResults.marksObtained],
+                    grade = row[ExamResults.grade] ?: "",
+                    percentage = if (row[Exams.maxMarks] > 0) {
+                        (row[ExamResults.marksObtained].toDouble() / row[Exams.maxMarks]) * 100
+                    } else 0.0
+                )
+            }
+
+        // Calculate academic performance statistics
+        val totalExams = examResults.size
+        val totalMarksObtained = examResults.sumOf { it.marksObtained }
+        val totalMaxMarks = examResults.sumOf { it.maxMarks }
+        val overallPercentage = if (totalMaxMarks > 0) {
+            (totalMarksObtained.toDouble() / totalMaxMarks) * 100
+        } else 0.0
+
+        // Get subject-wise performance
+        val subjectPerformance = examResults
+            .groupBy { "${it.subjectCode}_${it.academicYearName}" }
+            .map { (_, results) ->
+                val subjectResults = results.first()
+                val subjectTotal = results.sumOf { it.marksObtained }
+                val subjectMax = results.sumOf { it.maxMarks }
+                val subjectPercentage = if (subjectMax > 0) {
+                    (subjectTotal.toDouble() / subjectMax) * 100
+                } else 0.0
+
+                StudentSubjectPerformanceDto(
+                    subjectName = subjectResults.subjectName,
+                    subjectCode = subjectResults.subjectCode,
+                    academicYearName = subjectResults.academicYearName,
+                    totalExams = results.size,
+                    totalMarksObtained = subjectTotal,
+                    totalMaxMarks = subjectMax,
+                    averagePercentage = subjectPercentage,
+                    bestScore = results.maxOfOrNull { it.percentage } ?: 0.0,
+                    worstScore = results.minOfOrNull { it.percentage } ?: 0.0
+                )
+            }
+            .sortedByDescending { it.averagePercentage }
+
+        // Get upcoming exams for current academic year
+        val today = LocalDate.now()
+        val currentAcademicYear = academicAssignments.find { it.isActiveYear }
+
+        val upcomingExams = if (currentAcademicYear != null) {
+            Exams
+                .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
+                .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+                .join(ExamSchedules, JoinType.LEFT, Exams.id, ExamSchedules.examId)
+                .selectAll()
+                .where {
+                    (Exams.classId eq UUID.fromString(currentAcademicYear.classId)) and
+                            (Exams.academicYearId eq UUID.fromString(currentAcademicYear.academicYearId)) and
+                            (Exams.date greaterEq today)
+                }
+                .orderBy(Exams.date to SortOrder.ASC)
+                .map { row ->
+                    StudentUpcomingExamDto(
+                        examId = row[Exams.id].toString(),
+                        examName = row[Exams.name],
+                        subjectName = row[Subjects.name],
+                        subjectCode = row[Subjects.code]?:"",
+                        examDate = row[Exams.date].toString(),
+                        maxMarks = row[Exams.maxMarks],
+                        startTime = row.getOrNull(ExamSchedules.startTime)?.toString(),
+                        endTime = row.getOrNull(ExamSchedules.endTime)?.toString(),
+                        daysUntilExam = ChronoUnit.DAYS.between(today, row[Exams.date]).toInt()
+                    )
+                }
+        } else emptyList()
+
+        // Get recent attendance (last 30 days)
+        val thirtyDaysAgo = today.minusDays(30)
+        val recentAttendance = attendanceRecords
+            .filter {
+                try {
+                    LocalDate.parse(it.date) >= thirtyDaysAgo
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            .take(30)
+
+        val recentAttendanceRate = if (recentAttendance.isNotEmpty()) {
+            (recentAttendance.count { it.status == "PRESENT" }.toDouble() / recentAttendance.size) * 100
+        } else 0.0
+
+        // Get class teachers for current class
+        val classTeachers = if (currentAcademicYear != null) {
+            StaffClassAssignments
+                .join(Users, JoinType.INNER, StaffClassAssignments.staffId, Users.id)
+                .selectAll()
+                .where {
+                    (StaffClassAssignments.classId eq UUID.fromString(currentAcademicYear.classId)) and
+                            (StaffClassAssignments.academicYearId eq UUID.fromString(currentAcademicYear.academicYearId))
+                }
+                .map { row ->
+                    StudentClassTeacherDto(
+                        teacherId = row[Users.id].toString(),
+                        teacherName = "${row[Users.firstName]} ${row[Users.lastName]}",
+                        email = row[Users.email],
+                        role = row[StaffClassAssignments.role].toString()
+                    )
+                }
+        } else emptyList()
+
+        StudentCompleteDataDto(
+            // Basic student information
+            studentId = studentInfo[Users.id].toString(),
+            firstName = studentInfo[Users.firstName],
+            lastName = studentInfo[Users.lastName],
+            email = studentInfo[Users.email],
+            mobileNumber = studentInfo[Users.mobileNumber] ?: "",
+            createdAt = studentInfo[Users.createdAt].toString(),
+            updatedAt = studentInfo[Users.updatedAt].toString(),
+
+            // Academic assignments and current status
+            academicAssignments = academicAssignments,
+            currentAcademicYear = currentAcademicYear,
+            subjects = subjectsData,
+
+            // Attendance data
+            attendanceRecords = attendanceRecords,
+            attendanceStatistics = StudentAttendanceStatisticsDto(
+                totalDays = totalAttendanceDays,
+                presentDays = presentDays,
+                absentDays = absentDays,
+                lateDays = lateDays,
+                attendancePercentage = attendancePercentage,
+                recentAttendanceRate = recentAttendanceRate
+            ),
+            recentAttendance = recentAttendance,
+
+            // Academic performance
+            examResults = examResults,
+            academicPerformance = StudentAcademicPerformanceDto(
+                totalExams = totalExams,
+                totalMarksObtained = totalMarksObtained,
+                totalMaxMarks = totalMaxMarks,
+                overallPercentage = overallPercentage
+            ),
+            subjectPerformance = subjectPerformance,
+
+            // Upcoming information
+            upcomingExams = upcomingExams,
+            classTeachers = classTeachers
+        )
+    }
+
+    suspend fun getStudentBasicData(studentId: String): StudentBasicDataDto? = dbQuery {
+        // First, verify the student exists and get basic info
+        val studentInfo = Users.selectAll()
+            .where { (Users.id eq UUID.fromString(studentId)) and (Users.role eq UserRole.STUDENT) }
+            .singleOrNull() ?: return@dbQuery null
+
+        // Get student's academic assignments (classes across all years)
+        val academicAssignments = StudentAssignments
+            .join(Classes, JoinType.INNER, StudentAssignments.classId, Classes.id)
+            .join(AcademicYears, JoinType.INNER, StudentAssignments.academicYearId, AcademicYears.id)
+            .selectAll()
+            .where { StudentAssignments.studentId eq UUID.fromString(studentId) }
+            .orderBy(AcademicYears.startDate to SortOrder.DESC)
+            .map { row ->
+                StudentAcademicAssignmentDto(
+                    assignmentId = row[StudentAssignments.id].toString(),
+                    classId = row[Classes.id].toString(),
+                    className = row[Classes.className],
+                    sectionName = row[Classes.sectionName] ?: "",
+                    academicYearId = row[AcademicYears.id].toString(),
+                    academicYearName = row[AcademicYears.year] ?: "",
+                    academicYearStartDate = row[AcademicYears.startDate].toString(),
+                    academicYearEndDate = row[AcademicYears.endDate].toString(),
+                    isActiveYear = row[AcademicYears.isActive]
+                )
+            }
+
+        // Get subjects for each class the student is/was enrolled in
+        val subjectsData = mutableListOf<StudentSubjectDto>()
+        academicAssignments.forEach { assignment ->
+            val subjects = ClassSubjects
+                .join(Subjects, JoinType.INNER, ClassSubjects.subjectId, Subjects.id)
+                .selectAll()
+                .where {
+                    (ClassSubjects.classId eq UUID.fromString(assignment.classId)) and
+                            (ClassSubjects.academicYearId eq UUID.fromString(assignment.academicYearId))
+                }
+                .map { row ->
+                    StudentSubjectDto(
+                        subjectId = row[Subjects.id].toString(),
+                        subjectName = row[Subjects.name],
+                        subjectCode = row[Subjects.code]?:"",
+                        classId = assignment.classId,
+                        className = assignment.className,
+                        sectionName = assignment.sectionName,
+                        academicYearId = assignment.academicYearId,
+                        academicYearName = assignment.academicYearName
+                    )
+                }
+            subjectsData.addAll(subjects)
+        }
+
+        // Find current academic year
+        val currentAcademicYear = academicAssignments.find { it.isActiveYear }
+
+        // Get upcoming exams for current academic year
+        val today = LocalDate.now()
+        val upcomingExams = if (currentAcademicYear != null) {
+            Exams
+                .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
+                .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+                .join(ExamSchedules, JoinType.LEFT, Exams.id, ExamSchedules.examId)
+                .selectAll()
+                .where {
+                    (Exams.classId eq UUID.fromString(currentAcademicYear.classId)) and
+                            (Exams.academicYearId eq UUID.fromString(currentAcademicYear.academicYearId)) and
+                            (Exams.date greaterEq today)
+                }
+                .orderBy(Exams.date to SortOrder.ASC)
+                .map { row ->
+                    StudentUpcomingExamDto(
+                        examId = row[Exams.id].toString(),
+                        examName = row[Exams.name],
+                        subjectName = row[Subjects.name],
+                        subjectCode = row[Subjects.code]?:"",
+                        examDate = row[Exams.date].toString(),
+                        maxMarks = row[Exams.maxMarks],
+                        startTime = row.getOrNull(ExamSchedules.startTime)?.toString(),
+                        endTime = row.getOrNull(ExamSchedules.endTime)?.toString(),
+                        daysUntilExam = ChronoUnit.DAYS.between(today, row[Exams.date]).toInt()
+                    )
+                }
+        } else emptyList()
+
+        // Get class teachers for current class
+        val classTeachers = if (currentAcademicYear != null) {
+            StaffClassAssignments
+                .join(Users, JoinType.INNER, StaffClassAssignments.staffId, Users.id)
+                .selectAll()
+                .where {
+                    (StaffClassAssignments.classId eq UUID.fromString(currentAcademicYear.classId)) and
+                            (StaffClassAssignments.academicYearId eq UUID.fromString(currentAcademicYear.academicYearId))
+                }
+                .map { row ->
+                    StudentClassTeacherDto(
+                        teacherId = row[Users.id].toString(),
+                        teacherName = "${row[Users.firstName]} ${row[Users.lastName]}",
+                        email = row[Users.email],
+                        role = row[StaffClassAssignments.role].toString()
+                    )
+                }
+        } else emptyList()
+
+        StudentBasicDataDto(
+            // Basic student information
+            studentId = studentInfo[Users.id].toString(),
+            firstName = studentInfo[Users.firstName],
+            lastName = studentInfo[Users.lastName],
+            email = studentInfo[Users.email],
+            mobileNumber = studentInfo[Users.mobileNumber] ?: "",
+            createdAt = studentInfo[Users.createdAt].toString(),
+            updatedAt = studentInfo[Users.updatedAt].toString(),
+
+            // Academic assignments and current status
+            academicAssignments = academicAssignments,
+            currentAcademicYear = currentAcademicYear,
+            subjects = subjectsData,
+
+            // Upcoming information
+            upcomingExams = upcomingExams,
+            classTeachers = classTeachers
         )
     }
 }

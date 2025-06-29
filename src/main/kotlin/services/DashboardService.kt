@@ -36,6 +36,34 @@ class DashboardService(private val dashboardRepository: DashboardRepository) {
     }
 
     /**
+     * Get comprehensive student statistics
+     */
+    suspend fun getStudentStatistics(id: String): StudentCompleteDataDto? {
+        println("Getting student statistics for id: $id")
+        return try {
+            dashboardRepository.getStudentCompleteData(id)
+        } catch (e: Exception) {
+            println("Error getting student statistics: ${e.message}")
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+    /**
+     * Get comprehensive student statistics
+     */
+    suspend fun getStudentBasicStatistics(id: String): StudentBasicDataDto? {
+        println("Getting student statistics for id: $id")
+        return try {
+            dashboardRepository.getStudentBasicData(id)
+        } catch (e: Exception) {
+            println("Error getting student statistics: ${e.message}")
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+    /**
      * Get comprehensive staff statistics
      */
     suspend fun getStaffStatistics(): StaffStatisticsDto {
