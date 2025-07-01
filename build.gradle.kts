@@ -52,4 +52,8 @@ dependencies {
     //Email
     implementation("javax.mail:javax.mail-api:1.6.2")
     implementation("com.sun.mail:javax.mail:1.6.2")
+
+    //File Service
+    implementation("com.dropbox.core:dropbox-core-sdk:5.4.5")
+    implementation("org.apache.tika:tika-core:2.9.1")
 }
