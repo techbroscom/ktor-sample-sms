@@ -1,5 +1,6 @@
 package com.example.plugins
 
+import com.example.config.DropboxConfig
 import com.example.repositories.AcademicYearRepository
 import com.example.repositories.AttendanceRepository
 import com.example.repositories.ClassRepository
@@ -28,6 +29,7 @@ import com.example.routes.api.dashboardRoutes
 import com.example.routes.api.examResultRoutes
 import com.example.routes.api.examRoutes
 import com.example.routes.api.examScheduleRoutes
+import com.example.routes.api.fileRoutes
 import com.example.routes.api.holidayRoutes
 import com.example.routes.api.postRoutes
 import com.example.routes.api.rulesAndRegulationsRoutes
@@ -48,6 +50,7 @@ import com.example.services.EmailService
 import com.example.services.ExamResultService
 import com.example.services.ExamScheduleService
 import com.example.services.ExamService
+import com.example.services.FileService
 import com.example.services.HolidayService
 import com.example.services.OtpService
 import com.example.services.PostService
@@ -122,6 +125,9 @@ fun Application.configureRouting() {
     val dashboardRepository = DashboardRepository()
     val dashboardService = DashboardService(dashboardRepository)
 
+    // NEW: Initialize FileService with Dropbox
+    val dropboxConfig = DropboxConfig.fromEnvironment()
+    val fileService = FileService(dropboxConfig)
 
     // API routes
 
@@ -154,5 +160,6 @@ fun Application.configureRouting() {
         attendanceRoutes(attendanceService)
         dashboardRoutes(dashboardService)
         staffClassSubjectRoutes(staffClassAssignmentService, staffSubjectAssignmentService)
+        fileRoutes(fileService)
     }
 }
