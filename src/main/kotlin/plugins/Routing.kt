@@ -1,6 +1,7 @@
 package com.example.plugins
 
 import com.example.config.DropboxConfig
+import com.example.config.SupabaseConfig
 import com.example.repositories.AcademicYearRepository
 import com.example.repositories.AttendanceRepository
 import com.example.repositories.ClassRepository
@@ -127,7 +128,15 @@ fun Application.configureRouting() {
 
     // NEW: Initialize FileService with Dropbox
     val dropboxConfig = DropboxConfig.fromEnvironment()
-    val fileService = FileService(dropboxConfig)
+
+    val supabaseConfig = SupabaseConfig.forSupabase(
+        projectUrl = "https://tzieatliufhksqtxbyoz.supabase.co",
+        accessKeyId = "00dbbb297978d7097ab1865e46f765aa",
+        secretAccessKey = "8f329a537c49a89d11f5010f03bbf412577f3a2d61437576fc60040e28b1d392",
+        bucket = "sms"
+    )
+
+    val fileService = FileService(supabaseConfig)
 
     // API routes
 

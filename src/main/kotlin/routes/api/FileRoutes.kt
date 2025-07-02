@@ -224,7 +224,7 @@ fun Route.fileRoutes(fileService: FileService) {
         }
 
         // Get shareable link
-        get("/share/{filePath...}") {
+        /*get("/share/{filePath...}") {
             try {
                 val filePath = call.parameters.getAll("filePath")?.joinToString("/") ?: ""
 
@@ -247,11 +247,11 @@ fun Route.fileRoutes(fileService: FileService) {
                     mapOf("error" to "Failed to get shareable link: ${e.message}")
                 )
             }
-        }
+        }*/
 
-        get("/test-dropbox") {
+        /*get("/test-dropbox") {
             val result = fileService.testDropboxConnection()
             call.respond(HttpStatusCode.OK, mapOf("result" to result))
-        }
+        }*/
     }
 }

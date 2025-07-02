@@ -1,26 +1,44 @@
 package com.example.services
 
-import com.dropbox.core.DbxRequestConfig
-import com.dropbox.core.v2.DbxClientV2
-import com.dropbox.core.v2.files.FileMetadata
-import com.dropbox.core.v2.files.WriteMode
-import com.dropbox.core.v2.sharing.SharedLinkMetadata
-import com.example.config.DropboxConfig
+import com.example.config.SupabaseConfig
 import com.example.models.FileUploadResponse
 import com.example.models.FileDeleteResponse
 import com.example.models.UploadedFile
 import org.apache.tika.Tika
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.*
+import software.amazon.awssdk.endpoints.Endpoint
+import software.amazon.awssdk.services.s3.S3Configuration
 import java.io.InputStream
-import java.util.*
+import java.net.URI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-class FileService(private val dropboxConfig: DropboxConfig) {
+class FileService(private val supabaseConfig: SupabaseConfig) {
 
-    private val dbxClient: DbxClientV2
+    private val s3Client: S3Client
     private val tika = Tika()
 
     init {
-        val config = DbxRequestConfig.newBuilder("school-management/1.0").build()
-        dbxClient = DbxClientV2(config, dropboxConfig.accessToken)
+        val credentials = AwsBasicCredentials.create(
+            supabaseConfig.accessKeyId,
+            supabaseConfig.secretAccessKey
+        )
+
+        s3Client = S3Client.builder()
+            .region(Region.of(supabaseConfig.region))
+            .credentialsProvider(StaticCredentialsProvider.create(credentials))
+            .endpointOverride(URI.create(supabaseConfig.endpoint))
+            .serviceConfiguration(
+                S3Configuration.builder()
+                    .pathStyleAccessEnabled(true) // Important for Supabase
+                    .build()
+            )
+            .build()
     }
 
     companion object {
@@ -62,13 +80,13 @@ class FileService(private val dropboxConfig: DropboxConfig) {
             // Generate unique filename
             val fileExtension = getFileExtension(originalFileName)
             val uniqueFileName = "profile_${userId}_${System.currentTimeMillis()}.$fileExtension"
-            val dropboxPath = "${dropboxConfig.basePath}/$PROFILE_PICS_FOLDER/$uniqueFileName"
-            println("Generated dropbox path: $dropboxPath")
+            val s3Key = "$PROFILE_PICS_FOLDER/$uniqueFileName"
+            println("Generated S3 key: $s3Key")
 
-            // Upload to Dropbox
-            println("Starting Dropbox upload...")
-            val uploadedFile = uploadToDropbox(fileBytes, dropboxPath, originalFileName)
-            println("Dropbox upload completed successfully")
+            // Upload to S3/Supabase
+            println("Starting S3 upload...")
+            val uploadedFile = uploadToS3(fileBytes, s3Key, originalFileName)
+            println("S3 upload completed successfully")
 
             val response = FileUploadResponse(
                 success = true,
@@ -116,10 +134,10 @@ class FileService(private val dropboxConfig: DropboxConfig) {
             val fileExtension = getFileExtension(originalFileName)
             val sanitizedCategory = category.replace(Regex("[^a-zA-Z0-9]"), "_")
             val uniqueFileName = "${sanitizedCategory}_${userId}_${System.currentTimeMillis()}.$fileExtension"
-            val dropboxPath = "${dropboxConfig.basePath}/$DOCUMENTS_FOLDER/$sanitizedCategory/$uniqueFileName"
+            val s3Key = "$DOCUMENTS_FOLDER/$sanitizedCategory/$uniqueFileName"
 
-            // Upload to Dropbox
-            val uploadedFile = uploadToDropbox(fileBytes, dropboxPath, originalFileName)
+            // Upload to S3/Supabase
+            val uploadedFile = uploadToS3(fileBytes, s3Key, originalFileName)
 
             FileUploadResponse(
                 success = true,
@@ -140,15 +158,23 @@ class FileService(private val dropboxConfig: DropboxConfig) {
     }
 
     /**
-     * Delete file from Dropbox
+     * Delete file from S3/Supabase
      */
-    suspend fun deleteFile(filePath: String): FileDeleteResponse {
+    suspend fun deleteFile(s3Key: String): FileDeleteResponse {
         return try {
-            dbxClient.files().deleteV2(filePath)
-            FileDeleteResponse(
-                success = true,
-                message = "File deleted successfully"
-            )
+            withContext(Dispatchers.IO) {
+                val deleteRequest = DeleteObjectRequest.builder()
+                    .bucket(supabaseConfig.bucket)
+                    .key(s3Key)
+                    .build()
+
+                s3Client.deleteObject(deleteRequest)
+
+                FileDeleteResponse(
+                    success = true,
+                    message = "File deleted successfully"
+                )
+            }
         } catch (e: Exception) {
             FileDeleteResponse(
                 success = false,
@@ -158,78 +184,67 @@ class FileService(private val dropboxConfig: DropboxConfig) {
     }
 
     /**
+     * Generate public URL for file
+     */
+    suspend fun getPublicUrl(s3Key: String): String {
+        // Supabase public URL format
+        val projectId = supabaseConfig.endpoint.substringAfter("https://").substringBefore(".supabase.co")
+        return "https://${projectId}.supabase.co/storage/v1/object/public/${supabaseConfig.bucket}/$s3Key"
+    }
+
+    /**
      * Generate shareable link for existing file
      */
-    suspend fun getShareableLink(filePath: String): String? {
+    suspend fun getShareableLink(s3Key: String): String? {
         return try {
-            val sharedLink = dbxClient.sharing().createSharedLinkWithSettings(filePath)
-            convertToDirectLink(sharedLink.url)
+            getPublicUrl(s3Key)
         } catch (e: Exception) {
             null
         }
     }
 
-    private fun uploadToDropbox(
+    private suspend fun uploadToS3(
         fileBytes: ByteArray,
-        dropboxPath: String,
+        s3Key: String,
         originalFileName: String
-    ): UploadedFile {
+    ): UploadedFile = withContext(Dispatchers.IO) {
         try {
-            println("=== DROPBOX UPLOAD DEBUG ===")
-            println("Uploading to path: $dropboxPath")
+            println("=== S3 UPLOAD DEBUG ===")
+            println("Uploading to S3 key: $s3Key")
             println("File size: ${fileBytes.size} bytes")
+            println("Bucket: ${supabaseConfig.bucket}")
+            println("Endpoint: ${supabaseConfig.endpoint}")
 
-            // Upload file
-            val metadata = dbxClient.files().uploadBuilder(dropboxPath)
-                .withMode(WriteMode.OVERWRITE)
-                .uploadAndFinish(fileBytes.inputStream())
+            val mimeType = tika.detect(fileBytes, originalFileName)
+            println("Detected MIME type: $mimeType")
 
-            println("Upload successful. Metadata: name=${metadata.name}, size=${metadata.size}")
+            val putObjectRequest = PutObjectRequest.builder()
+                .bucket(supabaseConfig.bucket)
+                .key(s3Key)
+                .contentType(mimeType)
+                .contentLength(fileBytes.size.toLong())
+                .build()
 
-            // Create shared link
-            println("Creating shared link...")
-            val sharedLink = try {
-                val link = dbxClient.sharing().createSharedLinkWithSettings(dropboxPath)
-                println("Shared link created successfully: ${link.url}")
-                link
-            } catch (e: Exception) {
-                println("Failed to create shared link, trying to get existing one: ${e.message}")
-                // If shared link creation fails, try to get existing one
-                try {
-                    val existingLinks = dbxClient.sharing().listSharedLinksBuilder()
-                        .withPath(dropboxPath)
-                        .start()
-                    val existingLink = existingLinks.links.firstOrNull()
-                    if (existingLink != null) {
-                        println("Found existing shared link: ${existingLink.url}")
-                        existingLink
-                    } else {
-                        println("No existing shared link found")
-                        throw Exception("Failed to create or retrieve shared link: ${e.message}")
-                    }
-                } catch (ex: Exception) {
-                    println("Failed to get existing shared link: ${ex.message}")
-                    throw Exception("Failed to create or retrieve shared link: ${ex.message}")
-                }
-            }
+            val requestBody = RequestBody.fromBytes(fileBytes)
 
-            val publicUrl = convertToDirectLink(sharedLink?.url ?: "")
-            val mimeType = tika.detect(fileBytes)
+            val response = s3Client.putObject(putObjectRequest, requestBody)
+            println("S3 Upload successful. ETag: ${response.eTag()}")
 
+            // Generate public URL
+            val publicUrl = getPublicUrl(s3Key)
             println("Public URL: $publicUrl")
-            println("MIME type: $mimeType")
-            println("============================")
+            println("=======================")
 
-            return UploadedFile(
-                fileName = metadata.name,
+            return@withContext UploadedFile(
+                fileName = s3Key.substringAfterLast('/'),
                 originalName = originalFileName,
-                fileSize = metadata.size,
+                fileSize = fileBytes.size.toLong(),
                 mimeType = mimeType,
-                dropboxPath = dropboxPath,
+                dropboxPath = s3Key, // Using same field name for compatibility
                 publicUrl = publicUrl
             )
         } catch (e: Exception) {
-            println("ERROR in uploadToDropbox: ${e.message}")
+            println("ERROR in uploadToS3: ${e.message}")
             e.printStackTrace()
             throw e
         }
@@ -290,42 +305,67 @@ class FileService(private val dropboxConfig: DropboxConfig) {
         return fileName.substringAfterLast('.', "")
     }
 
-    private fun convertToDirectLink(dropboxUrl: String): String {
-        // Convert Dropbox sharing URL to direct download URL
-        return if (dropboxUrl.contains("dropbox.com")) {
-            dropboxUrl.replace("?dl=0", "?raw=1")
-        } else {
-            dropboxUrl
-        }
-    }
-
-    // Add this test function to your FileService class
-    suspend fun testDropboxConnection(): String {
+    // Test S3/Supabase connection
+    suspend fun testSupabaseConnection(): String {
         return try {
-            println("=== TESTING DROPBOX CONNECTION ===")
-            println("Access token (first 10 chars): ${dropboxConfig.accessToken.take(10)}...")
+            withContext(Dispatchers.IO) {
+                println("=== TESTING S3/SUPABASE CONNECTION ===")
+                println("Bucket: ${supabaseConfig.bucket}")
+                println("Endpoint: ${supabaseConfig.endpoint}")
+                println("Access Key ID: ${supabaseConfig.accessKeyId.take(10)}...")
 
-            // Test basic API call
-            val account = dbxClient.users().getCurrentAccount()
-            println("Connected successfully!")
-            println("Account name: ${account.name.displayName}")
-            println("Account email: ${account.email}")
+                // Test bucket access
+                val headBucketRequest = HeadBucketRequest.builder()
+                    .bucket(supabaseConfig.bucket)
+                    .build()
 
-            // Test folder creation
-            val testFolderPath = "${dropboxConfig.basePath}/test-folder"
-            try {
-                dbxClient.files().createFolderV2(testFolderPath)
-                println("Test folder created: $testFolderPath")
-            } catch (e: Exception) {
-                println("Folder creation test: ${e.message}")
+                s3Client.headBucket(headBucketRequest)
+                println("Bucket access successful!")
+
+                // Test list objects (optional)
+                try {
+                    val listRequest = ListObjectsV2Request.builder()
+                        .bucket(supabaseConfig.bucket)
+                        .maxKeys(1)
+                        .build()
+
+                    val listResponse = s3Client.listObjectsV2(listRequest)
+                    println("List objects successful. Found ${listResponse.keyCount()} objects")
+                } catch (e: Exception) {
+                    println("List objects test: ${e.message}")
+                }
+
+                println("=======================================")
+                "Connection successful"
             }
-
-            println("==================================")
-            "Connection successful"
         } catch (e: Exception) {
-            println("ERROR testing Dropbox connection: ${e.message}")
+            println("ERROR testing S3/Supabase connection: ${e.message}")
             e.printStackTrace()
             "Connection failed: ${e.message}"
         }
+    }
+
+    // List files in bucket
+    suspend fun listFiles(prefix: String = "", maxKeys: Int = 100): List<String> {
+        return try {
+            withContext(Dispatchers.IO) {
+                val listRequest = ListObjectsV2Request.builder()
+                    .bucket(supabaseConfig.bucket)
+                    .prefix(prefix)
+                    .maxKeys(maxKeys)
+                    .build()
+
+                val response = s3Client.listObjectsV2(listRequest)
+                response.contents().map { it.key() }
+            }
+        } catch (e: Exception) {
+            println("Error listing files: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // Close S3 client when done
+    fun close() {
+        s3Client.close()
     }
 }

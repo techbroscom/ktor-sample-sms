@@ -56,4 +56,11 @@ dependencies {
     //File Service
     implementation("com.dropbox.core:dropbox-core-sdk:5.4.5")
     implementation("org.apache.tika:tika-core:2.9.1")
+
+    implementation("io.ktor:ktor-client-core:2.3.4")
+    implementation("io.ktor:ktor-client-cio:2.3.4")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
+
+    implementation("software.amazon.awssdk:s3:2.21.29")
+    implementation("software.amazon.awssdk:auth:2.21.29")
 }
