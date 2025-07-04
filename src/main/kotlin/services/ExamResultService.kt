@@ -79,12 +79,12 @@ class ExamResultService(
                 continue
             }
 
-            // Check for duplicate
+            /*// Check for duplicate
             val isDuplicate = examResultRepository.checkDuplicate(request.examId, studentResult.studentId)
             if (isDuplicate) {
                 conflictMessages.add("${student.firstName}: Result already exists")
                 continue
-            }
+            }*/
 
             createRequests.add(CreateExamResultRequest(
                 examId = request.examId,

@@ -21,12 +21,33 @@ class ExamResultRepository {
 
     suspend fun bulkCreate(requests: List<CreateExamResultRequest>): List<String> = dbQuery {
         requests.map { request ->
-            ExamResults.insert {
-                it[examId] = UUID.fromString(request.examId)
-                it[studentId] = UUID.fromString(request.studentId)
-                it[marksObtained] = request.marksObtained
-                it[grade] = request.grade
-            }[ExamResults.id].toString()
+            val existingResult = ExamResults
+                .selectAll()
+                .where {
+                    (ExamResults.examId eq UUID.fromString(request.examId)) and
+                            (ExamResults.studentId eq UUID.fromString(request.studentId))
+                }
+                .firstOrNull()
+
+            if (existingResult != null) {
+                // Update existing result
+                ExamResults.update({
+                    (ExamResults.examId eq UUID.fromString(request.examId)) and
+                            (ExamResults.studentId eq UUID.fromString(request.studentId))
+                }) {
+                    it[marksObtained] = request.marksObtained
+                    it[grade] = request.grade
+                }
+                existingResult[ExamResults.id].toString()
+            } else {
+                // Insert new result
+                ExamResults.insert {
+                    it[examId] = UUID.fromString(request.examId)
+                    it[studentId] = UUID.fromString(request.studentId)
+                    it[marksObtained] = request.marksObtained
+                    it[grade] = request.grade
+                }[ExamResults.id].toString()
+            }
         }
     }
 
