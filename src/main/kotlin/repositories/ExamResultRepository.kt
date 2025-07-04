@@ -79,22 +79,34 @@ class ExamResultRepository {
     }
 
     suspend fun findByExamId(examId: String): List<ExamResultDto> = dbQuery {
-        ExamResults
-            .join(Exams, JoinType.LEFT, ExamResults.examId, Exams.id)
-            .join(Users, JoinType.LEFT, ExamResults.studentId, Users.id)
-            .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
-            .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
-            .join(AcademicYears, JoinType.LEFT, Exams.academicYearId, AcademicYears.id)
-            .join(StudentAssignments, JoinType.LEFT, additionalConstraint = {
-                (StudentAssignments.studentId eq ExamResults.studentId) and
-                        (StudentAssignments.classId eq Exams.classId) and
-                        (StudentAssignments.academicYearId eq Exams.academicYearId)
+        val examUUID = UUID.fromString(examId)
+
+        // First, fetch exam row to get classId and academicYearId
+        val examRow = Exams.selectAll().where { Exams.id eq examUUID }.singleOrNull()
+        val classId = examRow?.get(Exams.classId)
+        val academicYearId = examRow?.get(Exams.academicYearId)
+
+        if (classId == null || academicYearId == null) return@dbQuery emptyList()
+
+        StudentAssignments
+            .join(Users, JoinType.LEFT, StudentAssignments.studentId, Users.id)
+            .join(ExamResults, JoinType.LEFT, additionalConstraint = {
+                (ExamResults.examId eq examUUID) and
+                        (ExamResults.studentId eq StudentAssignments.studentId)
             })
+            .join(Exams, JoinType.LEFT, onColumn = Exams.id, otherColumn = ExamResults.examId)
+            .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.LEFT, StudentAssignments.classId, Classes.id)
+            .join(AcademicYears, JoinType.LEFT, StudentAssignments.academicYearId, AcademicYears.id)
             .selectAll()
-            .where { ExamResults.examId eq UUID.fromString(examId) }
+            .where {
+                (StudentAssignments.classId eq classId) and
+                        (StudentAssignments.academicYearId eq academicYearId)
+            }
             .orderBy(Users.firstName to SortOrder.ASC, Users.lastName to SortOrder.ASC)
-            .map { mapRowToDto(it) }
+            .map { mapRowToDtoWithDefaults(it, examId) }
     }
+
 
     suspend fun findByStudentId(studentId: String): List<ExamResultDto> = dbQuery {
         ExamResults
@@ -337,6 +349,31 @@ class ExamResultRepository {
             academicYearName = row.getOrNull(AcademicYears.year)
         )
     }
+
+    private fun mapRowToDtoWithDefaults(row: ResultRow, examId: String): ExamResultDto {
+        return ExamResultDto(
+            id = row.getOrNull(ExamResults.id)?.toString(),
+            examId = examId,
+            studentId = row[StudentAssignments.studentId].toString(),
+            marksObtained = row.getOrNull(ExamResults.marksObtained) ?: 0,
+            grade = row.getOrNull(ExamResults.grade),
+            examName = row.getOrNull(Exams.name),
+            subjectName = row.getOrNull(Subjects.name),
+            subjectCode = row.getOrNull(Subjects.code),
+            maxMarks = row.getOrNull(Exams.maxMarks),
+            examDate = row.getOrNull(Exams.date)?.toString(),
+            studentName = row.getOrNull(Users.firstName)?.let { firstName ->
+                val lastName = row.getOrNull(Users.lastName) ?: ""
+                "$firstName $lastName".trim()
+            },
+            studentEmail = row.getOrNull(Users.email),
+            rollNumber = "",
+            className = row.getOrNull(Classes.className),
+            sectionName = row.getOrNull(Classes.sectionName),
+            academicYearName = row.getOrNull(AcademicYears.year)
+        )
+    }
+
 
     // Helper data classes for grouping
     private data class ExamInfo(
