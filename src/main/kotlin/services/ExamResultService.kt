@@ -228,6 +228,21 @@ class ExamResultService(
         return examResultRepository.deleteByStudentId(studentId)
     }
 
+    suspend fun getStudentReportByExamName(examName: String): List<StudentExamReportDto> {
+        if (examName.isBlank()) {
+            throw ApiException("Exam name cannot be empty", HttpStatusCode.BadRequest)
+        }
+        return examResultRepository.getStudentReportByExamName(examName)
+    }
+
+    suspend fun getStudentReportByExamNameAndClass(examName: String, classId: String): ExamReportResponseDto {
+        if (examName.isBlank()) {
+            throw ApiException("Exam name cannot be empty", HttpStatusCode.BadRequest)
+        }
+        validateUUID(classId, "Class ID")
+        return examResultRepository.getStudentReportByExamNameAndClass(examName, classId)
+    }
+
     private fun validateExamResultRequest(examId: String, studentId: String, marksObtained: Int) {
         validateUUID(examId, "Exam ID")
         validateUUID(studentId, "Student ID")

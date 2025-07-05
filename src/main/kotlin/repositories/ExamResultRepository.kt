@@ -2,6 +2,7 @@
 package com.example.repositories
 
 import com.example.database.tables.*
+import com.example.exceptions.ApiException
 import com.example.models.dto.*
 import com.example.utils.dbQuery
 import org.jetbrains.exposed.sql.*
@@ -344,6 +345,134 @@ class ExamResultRepository {
             highestMarks = marks.maxOrNull() ?: 0,
             lowestMarks = marks.minOrNull() ?: 0,
             passPercentage = if (marks.isNotEmpty()) (passedStudents.toDouble() / marks.size) * 100 else 0.0
+        )
+    }
+
+    suspend fun getStudentReportByExamName(examName: String): List<StudentExamReportDto> = dbQuery {
+        println("Repo Called")
+        val examResults = ExamResults
+            .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
+            .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
+            .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+            .join(AcademicYears, JoinType.INNER, Exams.academicYearId, AcademicYears.id)
+            .join(StudentAssignments, JoinType.INNER, additionalConstraint = {
+                (StudentAssignments.studentId eq ExamResults.studentId) and
+                        (StudentAssignments.classId eq Exams.classId) and
+                        (StudentAssignments.academicYearId eq Exams.academicYearId)
+            })
+            .selectAll()
+            .where { Exams.name eq examName }
+            .orderBy(Users.firstName to SortOrder.ASC, Subjects.name to SortOrder.ASC)
+            .toList()
+
+        // Group by student
+        examResults.groupBy { it[ExamResults.studentId] }.map { (studentId, rows) ->
+            val firstRow = rows.first()
+            val subjectMarks = rows.map { row ->
+                SubjectMarksDto(
+                    subjectName = row[Subjects.name],
+                    subjectCode = row[Subjects.code],
+                    marksObtained = row[ExamResults.marksObtained],
+                    maxMarks = row[Exams.maxMarks],
+                    grade = row[ExamResults.grade]
+                )
+            }
+
+            StudentExamReportDto(
+                studentId = studentId.toString(),
+                studentName = "${firstRow[Users.firstName]} ${firstRow[Users.lastName]}".trim(),
+                studentEmail = firstRow[Users.email],
+                className = firstRow[Classes.className],
+                sectionName = firstRow[Classes.sectionName],
+                academicYear = firstRow[AcademicYears.year],
+                examName = firstRow[Exams.name],
+                examDate = firstRow[Exams.date].toString(),
+                subjects = subjectMarks,
+                totalMarksObtained = subjectMarks.sumOf { it.marksObtained },
+                totalMaxMarks = subjectMarks.sumOf { it.maxMarks },
+                overallPercentage = if (subjectMarks.isNotEmpty()) {
+                    (subjectMarks.sumOf { it.marksObtained }.toDouble() / subjectMarks.sumOf { it.maxMarks }) * 100
+                } else 0.0
+            )
+        }
+    }
+
+    suspend fun getStudentReportByExamNameAndClass(
+        examName: String,
+        classId: String
+    ): ExamReportResponseDto = dbQuery {
+        val examResults = ExamResults
+            .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
+            .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
+            .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
+            .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+            .join(AcademicYears, JoinType.INNER, Exams.academicYearId, AcademicYears.id)
+            .join(StudentAssignments, JoinType.INNER, additionalConstraint = {
+                (StudentAssignments.studentId eq ExamResults.studentId) and
+                        (StudentAssignments.classId eq Exams.classId) and
+                        (StudentAssignments.academicYearId eq Exams.academicYearId)
+            })
+            .selectAll()
+            .where { (Exams.name eq examName) and (Classes.id eq UUID.fromString(classId)) }
+            .orderBy(Users.firstName to SortOrder.ASC, Subjects.name to SortOrder.ASC)
+            .toList()
+
+        if (examResults.isEmpty()) throw ApiException("No data found")
+
+        val firstRow = examResults.first()
+
+        val subjects = examResults
+            .distinctBy { it[Subjects.id] }
+            .map {
+                SubjectMetadataDto(
+                    subjectName = it[Subjects.name],
+                    subjectCode = it[Subjects.code],
+                    maxMarks = it[Exams.maxMarks]
+                )
+            }
+
+        val students = examResults
+            .groupBy { it[ExamResults.studentId] }
+            .map { (studentId, rows) ->
+                val first = rows.first()
+
+                val subjectMarks = subjects.map { subjectMeta ->
+                    val subjectRow = rows.find { row ->
+                        row[Subjects.name] == subjectMeta.subjectName &&
+                                row[Subjects.code] == subjectMeta.subjectCode
+                    }
+
+                    StudentSubjectMarksDto(
+                        marksObtained = subjectRow?.get(ExamResults.marksObtained) ?: 0,
+                        grade = subjectRow?.get(ExamResults.grade)
+                    )
+                }
+
+                val totalMarksObtained = subjectMarks.sumOf { it.marksObtained }
+                val totalMaxMarks = subjects.sumOf { it.maxMarks }
+
+                StudentMarksDto(
+                    studentId = studentId.toString(),
+                    studentName = "${first[Users.firstName]} ${first[Users.lastName]}".trim(),
+                    studentEmail = first[Users.email],
+                    subjectMarks = subjectMarks,
+                    totalMarksObtained = totalMarksObtained,
+                    totalMaxMarks = totalMaxMarks,
+                    overallPercentage = if (totalMaxMarks > 0)
+                        (totalMarksObtained * 100.0) / totalMaxMarks
+                    else 0.0
+                )
+            }
+
+        return@dbQuery ExamReportResponseDto(
+            className = firstRow[Classes.className],
+            sectionName = firstRow[Classes.sectionName],
+            academicYear = firstRow[AcademicYears.year],
+            examName = firstRow[Exams.name],
+            examDate = firstRow[Exams.date].toString(),
+            subjects = subjects,
+            students = students
         )
     }
 

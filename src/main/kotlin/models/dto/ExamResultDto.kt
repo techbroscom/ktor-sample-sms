@@ -117,3 +117,63 @@ data class ClassResultSummaryDto(
     val lowestMarks: Int,
     val passPercentage: Double
 )
+
+@Serializable
+data class StudentExamReportDto(
+    val studentId: String,
+    val studentName: String,
+    val studentEmail: String,
+    val className: String,
+    val sectionName: String,
+    val academicYear: String,
+    val examName: String,
+    val examDate: String,
+    val subjects: List<SubjectMarksDto>,
+    val totalMarksObtained: Int,
+    val totalMaxMarks: Int,
+    val overallPercentage: Double
+)
+
+@Serializable
+data class SubjectMarksDto(
+    val subjectName: String,
+    val subjectCode: String?,
+    val marksObtained: Int,
+    val maxMarks: Int,
+    val grade: String?
+)
+
+@Serializable
+data class ExamReportResponseDto(
+    val className: String,
+    val sectionName: String,
+    val academicYear: String,
+    val examName: String,
+    val examDate: String,
+    val subjects: List<SubjectMetadataDto>, // common to all students
+    val students: List<StudentMarksDto>
+)
+
+@Serializable
+data class SubjectMetadataDto(
+    val subjectName: String,
+    val subjectCode: String?,
+    val maxMarks: Int
+)
+
+@Serializable
+data class StudentMarksDto(
+    val studentId: String,
+    val studentName: String,
+    val studentEmail: String,
+    val subjectMarks: List<StudentSubjectMarksDto>, // same order as `subjects`
+    val totalMarksObtained: Int,
+    val totalMaxMarks: Int,
+    val overallPercentage: Double
+)
+
+@Serializable
+data class StudentSubjectMarksDto(
+    val marksObtained: Int,
+    val grade: String?
+)

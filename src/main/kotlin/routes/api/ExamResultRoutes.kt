@@ -141,6 +141,25 @@ fun Route.examResultRoutes(examResultService: ExamResultService) {
                 message = "$deletedCount exam results deleted successfully"
             ))
         }
+
+        get("/report/exam-name/{examName}") {
+            val examName = call.parameters["examName"] ?: throw ApiException("Exam name is required", HttpStatusCode.BadRequest)
+            val studentReports = examResultService.getStudentReportByExamName(examName)
+            call.respond(ApiResponse(
+                success = true,
+                data = studentReports
+            ))
+        }
+
+        get("/report/exam-name/{examName}/class/{classId}") {
+            val examName = call.parameters["examName"] ?: throw ApiException("Exam name is required", HttpStatusCode.BadRequest)
+            val classId = call.parameters["classId"] ?: throw ApiException("Class ID is required", HttpStatusCode.BadRequest)
+            val studentReports = examResultService.getStudentReportByExamNameAndClass(examName, classId)
+            call.respond(ApiResponse(
+                success = true,
+                data = studentReports
+            ))
+        }
     }
 
     // Additional routes for reporting and analytics
