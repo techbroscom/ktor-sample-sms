@@ -4,14 +4,17 @@ import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
-import java.io.FileInputStream
+import java.io.ByteArrayInputStream
+import java.util.Base64
 
 object FCMConfig {
     fun initialize() {
         try {
-            // Initialize Firebase Admin SDK
-            val serviceAccount = javaClass.getResourceAsStream("/sms-flutter-c6d80-firebase-adminsdk-fbsvc-64ff35bbb5.json")
-                ?: throw IllegalStateException("Firebase service account file not found in resources")
+            val base64Key = System.getenv("FIREBASE_SERVICE_ACCOUNT")
+                ?: throw IllegalStateException("FIREBASE_SERVICE_ACCOUNT env variable not set")
+
+            val decodedKey = Base64.getDecoder().decode(base64Key)
+            val serviceAccount = ByteArrayInputStream(decodedKey)
 
             val options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -19,11 +22,11 @@ object FCMConfig {
 
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options)
+                println("Firebase Admin SDK initialized successfully")
             }
-
-            println("Firebase Admin SDK initialized successfully")
         } catch (e: Exception) {
             println("Error initializing Firebase: ${e.message}")
+            e.printStackTrace()
         }
     }
 
