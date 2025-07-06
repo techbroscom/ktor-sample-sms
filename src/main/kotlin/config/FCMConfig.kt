@@ -16,6 +16,9 @@ object FCMConfig {
             val decodedKey = Base64.getDecoder().decode(base64Key)
             val serviceAccount = ByteArrayInputStream(decodedKey)
 
+            /*val serviceAccount = javaClass.getResourceAsStream("/sms-flutter-c6d80-firebase-adminsdk-fbsvc-bcfb4007ff.json")
+                ?: throw IllegalStateException("Firebase service account file not found in resources")*/
+
             val options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                 .build()
