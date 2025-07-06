@@ -11,6 +11,8 @@ import com.example.repositories.DashboardRepository
 import com.example.repositories.ExamRepository
 import com.example.repositories.ExamResultRepository
 import com.example.repositories.ExamScheduleRepository
+import com.example.repositories.FCMTokenRepository
+import com.example.repositories.FeesStructureRepository
 import com.example.repositories.HolidayRepository
 import com.example.repositories.OtpRepository
 import com.example.repositories.PostRepository
@@ -30,6 +32,8 @@ import com.example.routes.api.dashboardRoutes
 import com.example.routes.api.examResultRoutes
 import com.example.routes.api.examRoutes
 import com.example.routes.api.examScheduleRoutes
+import com.example.routes.api.fcmRoutes
+import com.example.routes.api.feesStructureRoutes
 import com.example.routes.api.fileRoutes
 import com.example.routes.api.holidayRoutes
 import com.example.routes.api.postRoutes
@@ -51,6 +55,8 @@ import com.example.services.EmailService
 import com.example.services.ExamResultService
 import com.example.services.ExamScheduleService
 import com.example.services.ExamService
+import com.example.services.FCMService
+import com.example.services.FeesStructureService
 import com.example.services.FileService
 import com.example.services.HolidayService
 import com.example.services.OtpService
@@ -68,8 +74,11 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
     // Initialize dependencies
+    val fcmTokenRepository = FCMTokenRepository()
+    val fcmService = FCMService(fcmTokenRepository)
+
     val userRepository = UserRepository()
-    val userService = UserService(userRepository)
+    val userService = UserService(userRepository, fcmService)
 
     val holidayRepository = HolidayRepository()
     val holidayService = HolidayService(holidayRepository)
@@ -126,6 +135,9 @@ fun Application.configureRouting() {
     val dashboardRepository = DashboardRepository()
     val dashboardService = DashboardService(dashboardRepository)
 
+    val feesStructureRepository = FeesStructureRepository()
+    val feesStructureService = FeesStructureService(feesStructureRepository, classService, academicYearService)
+
     // NEW: Initialize FileService with Dropbox
     val dropboxConfig = DropboxConfig.fromEnvironment()
 
@@ -170,5 +182,7 @@ fun Application.configureRouting() {
         dashboardRoutes(dashboardService)
         staffClassSubjectRoutes(staffClassAssignmentService, staffSubjectAssignmentService)
         fileRoutes(fileService)
+        feesStructureRoutes(feesStructureService)
+        fcmRoutes(fcmService)
     }
 }

@@ -2,13 +2,14 @@ package com.example.services
 
 import com.example.database.tables.UserRole
 import com.example.exceptions.ApiException
+import com.example.models.FCMTokenRequest
 import com.example.models.dto.*
 import com.example.repositories.UserRepository
 import io.ktor.http.*
 import org.mindrot.jbcrypt.BCrypt
 import java.util.*
 
-class UserService(private val userRepository: UserRepository) {
+class UserService(private val userRepository: UserRepository, private val fcmService: FCMService?) {
 
     suspend fun createUser(request: CreateUserRequest): UserDto {
         validateCreateUserRequest(request)
@@ -140,6 +141,75 @@ class UserService(private val userRepository: UserRepository) {
             user = user,
             token = null // Implement JWT token generation here if needed
         )
+    }
+
+    suspend fun authenticateUserWithFCM(
+        request: UserLoginFCMRequest,
+    ): UserLoginResponse {
+        // First authenticate user normally
+        val loginResponse = authenticateUser(UserLoginRequest(request.mobileNumber, request.password))
+
+        // If authentication successful and FCM data provided, update token
+        if (request.fcmToken != null && request.platform != null && fcmService != null) {
+            try {
+                updateFCMTokenOnLogin(UUID.fromString(loginResponse.user[0].id), request.fcmToken, request.deviceId, request.platform)
+            } catch (e: Exception) {
+                // Log FCM update failure but don't fail the login
+                println("Warning: Failed to update FCM token for user ${loginResponse.user[0].id}: ${e.message}")
+            }
+        }
+
+        return loginResponse
+    }
+
+    /**
+     * Update FCM token on user login
+     * @param userId User ID as UUID
+     * @param fcmToken FCM token to be saved
+     * @param deviceId Optional device identifier
+     * @param platform Platform (e.g., "android", "ios")
+     * @return Boolean indicating success
+     */
+    suspend fun updateFCMTokenOnLogin(
+        userId: UUID,
+        fcmToken: String,
+        deviceId: String?,
+        platform: String
+    ): Boolean {
+        // Validate input
+        if (fcmToken.isBlank()) {
+            throw ApiException("FCM token cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        if (platform.isBlank()) {
+            throw ApiException("Platform cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        // Check if user exists
+        val userExists = try {
+            getUserById(userId)
+            true
+        } catch (e: ApiException) {
+            false
+        }
+
+        if (!userExists) {
+            throw ApiException("User not found", HttpStatusCode.NotFound)
+        }
+
+        // Save FCM token if service is available
+        return if (fcmService != null) {
+            val tokenRequest = FCMTokenRequest(
+                token = fcmToken,
+                deviceId = deviceId,
+                platform = platform
+            )
+            fcmService.saveToken(userId, tokenRequest)
+        } else {
+            // If FCM service is not available, log warning and return false
+            println("Warning: FCM service not available, cannot save token")
+            false
+        }
     }
 
     private fun validateCreateUserRequest(request: CreateUserRequest) {

@@ -9,6 +9,8 @@ import com.example.database.tables.Complaints
 import com.example.database.tables.ExamResults
 import com.example.database.tables.ExamSchedules
 import com.example.database.tables.Exams
+import com.example.database.tables.FCMTokens
+import com.example.database.tables.FeesStructures
 import com.example.database.tables.Holidays
 import com.example.database.tables.OtpCodes
 import com.example.database.tables.Posts
@@ -46,7 +48,9 @@ fun Application.configureDatabases() {
             Exams,
             ExamSchedules,
             ExamResults,
-            Attendance
+            Attendance,
+            FeesStructures,
+            FCMTokens
         )
     }
 }

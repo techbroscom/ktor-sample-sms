@@ -27,6 +27,19 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
             ))
         }
 
+        //with FCM
+        post("/login-fcm") {
+            val request = call.receive<UserLoginFCMRequest>()
+            println(request.toString())
+            val response = userService.authenticateUserWithFCM(request)
+            println(response.toString())
+            call.respond(ApiResponse(
+                success = true,
+                data = response,
+                message = "Login successful"
+            ))
+        }
+
         // NEW: Send OTP to email
         post("/login/send-otp") {
             println("Received request to send OTP")

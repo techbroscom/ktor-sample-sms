@@ -48,6 +48,15 @@ data class UserLoginRequest(
 )
 
 @Serializable
+data class UserLoginFCMRequest(
+    val mobileNumber: String,
+    val password: String,
+    val fcmToken: String?,
+    val deviceId: String?,
+    val platform: String?
+)
+
+@Serializable
 data class UserLoginResponse(
     val user: List<UserDto>,
     val token: String? = null // For future JWT implementation

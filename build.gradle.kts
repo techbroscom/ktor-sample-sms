@@ -63,4 +63,8 @@ dependencies {
 
     implementation("software.amazon.awssdk:s3:2.21.29")
     implementation("software.amazon.awssdk:auth:2.21.29")
+
+    //FCM
+    implementation("com.google.firebase:firebase-admin:9.2.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 }
