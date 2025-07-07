@@ -1,5 +1,6 @@
 package com.example.models
 
+import com.example.database.tables.UserRole
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -15,7 +16,7 @@ data class BroadcastNotificationRequest(
     val title: String,
     val body: String,
     val schoolId: Int,
-    val targetRole: String? = null, // "student", "teacher", "admin" or null for all
+    val targetRole: UserRole? = null, // "student", "teacher", "admin" or null for all
     val data: Map<String, String> = emptyMap()
 )
 

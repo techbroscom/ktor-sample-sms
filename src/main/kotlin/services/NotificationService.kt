@@ -1,5 +1,6 @@
 package com.example.services
 
+import com.example.database.tables.UserRole
 import com.example.models.BroadcastNotificationRequest
 import com.example.models.PersonalNotificationRequest
 import com.example.repositories.UserRepository
@@ -64,7 +65,7 @@ class NotificationService(
             title = title,
             body = message,
             schoolId = schoolId,
-            targetRole = "student",
+            targetRole = UserRole.STUDENT,
             data = mapOf(
                 "type" to "school_announcement"
             )
@@ -111,7 +112,7 @@ class NotificationService(
             title = "New Assignment",
             body = "New $subject assignment for $className. Due date: $dueDate",
             schoolId = schoolId,
-            targetRole = "student",
+            targetRole = UserRole.STUDENT,
             data = mapOf(
                 "type" to "assignment",
                 "className" to className,
@@ -129,7 +130,7 @@ class NotificationService(
             title = "Exam Schedule Released",
             body = "$examName schedule has been released. Exam starts from $startDate",
             schoolId = schoolId,
-            targetRole = "student",
+            targetRole = UserRole.STUDENT,
             data = mapOf(
                 "type" to "exam_schedule",
                 "examName" to examName,
@@ -146,7 +147,7 @@ class NotificationService(
             title = title,
             body = message,
             schoolId = schoolId,
-            targetRole = "teacher",
+            targetRole = UserRole.STUDENT,
             data = mapOf(
                 "type" to "teacher_notification"
             )
@@ -161,7 +162,7 @@ class NotificationService(
             title = title,
             body = message,
             schoolId = schoolId,
-            targetRole = "parent",
+            targetRole = UserRole.STUDENT,
             data = mapOf(
                 "type" to "parent_notification"
             )

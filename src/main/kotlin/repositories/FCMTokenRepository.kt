@@ -60,10 +60,10 @@ class FCMTokenRepository {
         }
     }
 
-    fun getTokensByRole(role: String): List<String> {
+    fun getTokensByRole(role: UserRole): List<String> {
         return transaction {
             (FCMTokens innerJoin Users).selectAll().where {
-                        (Users.role eq UserRole.valueOf(role)) and
+                        (Users.role eq role) and
                         (FCMTokens.isActive eq true)
             }.map { it[FCMTokens.token] }
         }
