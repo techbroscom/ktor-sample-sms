@@ -127,10 +127,10 @@ class UserService(private val userRepository: UserRepository, private val fcmSer
     suspend fun authenticateUser(request: UserLoginRequest): UserLoginResponse {
         validateLoginRequest(request)
 
-        val user = userRepository.findByEmail(request.mobileNumber)
+        val user = userRepository.findByMobile(request.mobileNumber)
             ?: throw ApiException("Invalid email or password", HttpStatusCode.Unauthorized)
 
-        val passwordHash = userRepository.findPasswordHashByEmail(request.mobileNumber)
+        val passwordHash = userRepository.findPasswordHashByMobile(request.mobileNumber)
             ?: throw ApiException("Invalid email or password", HttpStatusCode.Unauthorized)
 
         if (!BCrypt.checkpw(request.password, passwordHash)) {

@@ -41,9 +41,22 @@ class UserRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByMobile(email: String): List<UserDto>? = dbQuery {
+        Users.selectAll()
+            .where { Users.mobileNumber eq email }
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun findPasswordHashByEmail(email: String): String? = dbQuery {
         Users.selectAll()
             .where { Users.email eq email }
+            .map { it[Users.passwordHash] }
+            .last()
+    }
+
+    suspend fun findPasswordHashByMobile(email: String): String? = dbQuery {
+        Users.selectAll()
+            .where { Users.mobileNumber eq email }
             .map { it[Users.passwordHash] }
             .last()
     }
