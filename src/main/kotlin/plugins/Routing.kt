@@ -59,6 +59,7 @@ import com.example.services.FCMService
 import com.example.services.FeesStructureService
 import com.example.services.FileService
 import com.example.services.HolidayService
+import com.example.services.NotificationService
 import com.example.services.OtpService
 import com.example.services.PostService
 import com.example.services.RulesAndRegulationsService
@@ -77,14 +78,17 @@ fun Application.configureRouting() {
     val fcmTokenRepository = FCMTokenRepository()
     val fcmService = FCMService(fcmTokenRepository)
 
+
     val userRepository = UserRepository()
     val userService = UserService(userRepository, fcmService)
+
+    val notificationService = NotificationService(fcmService, userRepository)
 
     val holidayRepository = HolidayRepository()
     val holidayService = HolidayService(holidayRepository)
 
     val postRepository = PostRepository()
-    val postService = PostService(postRepository)
+    val postService = PostService(postRepository, notificationService)
 
     val complaintRepository = ComplaintRepository()
     val complaintService = ComplaintService(complaintRepository)

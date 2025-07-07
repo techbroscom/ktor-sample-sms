@@ -2,6 +2,7 @@ package com.example.repositories
 
 import com.example.database.tables.FCMTokens
 import com.example.database.tables.SchoolConfig
+import com.example.database.tables.UserRole
 import com.example.database.tables.Users
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -51,23 +52,22 @@ class FCMTokenRepository {
         }
     }
 
-    fun getTokensBySchool(schoolId: Int): List<String> {
+    fun getTokensBySchool(): List<String> {
         return transaction {
             (FCMTokens innerJoin Users).selectAll().where {
-                (SchoolConfig.id eq schoolId) and (FCMTokens.isActive eq true)
+                (FCMTokens.isActive eq true)
             }.map { it[FCMTokens.token] }
         }
     }
 
-    /*fun getTokensByRole(schoolId: UUID, role: String): List<String> {
+    fun getTokensByRole(role: String): List<String> {
         return transaction {
             (FCMTokens innerJoin Users).selectAll().where {
-                (Users.schoolId eq schoolId) and
-                        (Users.role eq role) and
+                        (Users.role eq UserRole.valueOf(role)) and
                         (FCMTokens.isActive eq true)
             }.map { it[FCMTokens.token] }
         }
-    }*/
+    }
 
     fun deactivateToken(token: String): Boolean {
         return transaction {

@@ -100,10 +100,9 @@ class FCMService(
         return withContext(Dispatchers.IO) {
             try {
                 val tokens = if (request.targetRole != null) {
-//                    fcmTokenRepository.getTokensByRole(request.schoolId, request.targetRole)
-                    fcmTokenRepository.getTokensBySchool(request.schoolId)
+                    fcmTokenRepository.getTokensByRole(request.targetRole)
                 } else {
-                    fcmTokenRepository.getTokensBySchool(request.schoolId)
+                    fcmTokenRepository.getTokensBySchool()
                 }
 
                 if (tokens.isEmpty()) {

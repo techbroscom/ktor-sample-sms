@@ -7,12 +7,13 @@ import com.example.models.dto.UpdatePostRequest
 import com.example.repositories.PostRepository
 import io.ktor.http.*
 
-class PostService(private val postRepository: PostRepository) {
+class PostService(private val postRepository: PostRepository, private val notificationService: NotificationService?) {
 
     suspend fun createPost(request: CreatePostRequest): PostDto {
         validatePostRequest(request.title, request.content)
 
         val postId = postRepository.create(request)
+        notificationService?.sendSchoolAnnouncement(1, request.title, request.content)
         return getPostById(postId)
     }
 
