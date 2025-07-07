@@ -97,11 +97,14 @@ class FCMService(
     }
 
     suspend fun sendBroadcastNotification(request: BroadcastNotificationRequest): NotificationResponse {
+        println("Initiating broadcast notification send")
         return withContext(Dispatchers.IO) {
             try {
                 val tokens = if (request.targetRole != null) {
+                    println("Getting tokens by role: ${request.targetRole}")
                     fcmTokenRepository.getTokensByRole(request.targetRole)
                 } else {
+                    println("Getting tokens by school: ${request.schoolId}")
                     fcmTokenRepository.getTokensBySchool()
                 }
 

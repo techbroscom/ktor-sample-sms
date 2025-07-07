@@ -59,6 +59,7 @@ class NotificationService(
 
     // Send school announcement to all students
     suspend fun sendSchoolAnnouncement(schoolId: Int, title: String, message: String) {
+        println("Sending school announcement notification")
         val notification = BroadcastNotificationRequest(
             title = title,
             body = message,
