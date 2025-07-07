@@ -51,9 +51,9 @@ data class UserLoginRequest(
 data class UserLoginFCMRequest(
     val mobileNumber: String,
     val password: String,
-    val fcmToken: String?,
-    val deviceId: String?,
-    val platform: String?
+    val fcmToken: String? = null,
+    val deviceId: String? = null,
+    val platform: String? = null
 )
 
 @Serializable
