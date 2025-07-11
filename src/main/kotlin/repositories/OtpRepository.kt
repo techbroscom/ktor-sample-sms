@@ -2,6 +2,7 @@ package com.example.repositories
 
 import com.example.database.tables.OtpCodes
 import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
@@ -11,7 +12,7 @@ import java.util.*
 
 class OtpRepository {
 
-    suspend fun createOtp(email: String, otpCode: String, expiresAt: LocalDateTime): UUID = dbQuery {
+    suspend fun createOtp(email: String, otpCode: String, expiresAt: LocalDateTime): UUID = tenantDbQuery {
         // First, mark any existing unused OTPs for this email as used
         OtpCodes.update({ (OtpCodes.email eq email) and (OtpCodes.isUsed eq false) }) {
             it[isUsed] = true
@@ -31,7 +32,7 @@ class OtpRepository {
         otpId
     }
 
-    suspend fun verifyOtp(email: String, otpCode: String): Boolean = dbQuery {
+    suspend fun verifyOtp(email: String, otpCode: String): Boolean = tenantDbQuery {
         val now = LocalDateTime.now()
 
         // Find valid OTP
@@ -64,12 +65,12 @@ class OtpRepository {
         }
     }
 
-    suspend fun cleanupExpiredOtps() = dbQuery {
+    suspend fun cleanupExpiredOtps() = tenantDbQuery {
         val now = LocalDateTime.now()
         OtpCodes.deleteWhere { expiresAt less now }
     }
 
-    suspend fun getAttemptCount(email: String, otpCode: String): Int = dbQuery {
+    suspend fun getAttemptCount(email: String, otpCode: String): Int = tenantDbQuery {
         OtpCodes.selectAll()
             .where {
                 (OtpCodes.email eq email) and

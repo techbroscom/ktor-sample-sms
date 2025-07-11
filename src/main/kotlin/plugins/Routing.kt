@@ -44,6 +44,7 @@ import com.example.routes.api.staffClassSubjectRoutes
 import com.example.routes.api.staffSubjectAssignmentRoutes
 import com.example.routes.api.studentAssignmentRoutes
 import com.example.routes.api.subjectRoutes
+import com.example.routes.api.tenantRoutes
 import com.example.routes.api.userRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
@@ -68,6 +69,7 @@ import com.example.services.StaffClassAssignmentService
 import com.example.services.StaffSubjectAssignmentService
 import com.example.services.StudentAssignmentService
 import com.example.services.SubjectService
+import com.example.services.TenantService
 import com.example.services.UserService
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -81,6 +83,8 @@ fun Application.configureRouting() {
 
     val userRepository = UserRepository()
     val userService = UserService(userRepository, fcmService)
+
+    val tenantService = TenantService()
 
     val notificationService = NotificationService(fcmService, userRepository)
 
@@ -166,6 +170,9 @@ fun Application.configureRouting() {
         }
 
         // API routes
+
+        tenantRoutes(tenantService)
+
         userRoutes(userService, otpService)
         holidayRoutes(holidayService)
         postRoutes(postService)

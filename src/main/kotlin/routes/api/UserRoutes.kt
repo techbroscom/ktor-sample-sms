@@ -5,6 +5,7 @@ import com.example.models.dto.*
 import com.example.models.responses.ApiResponse
 import com.example.services.OtpService
 import com.example.services.UserService
+import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -13,6 +14,14 @@ import io.ktor.server.routing.*
 
 fun Route.userRoutes(userService: UserService, otpService: OtpService) {
     route("/api/v1/users") {
+
+        get("/tenant-info") {
+            val tenant = TenantContextHolder.getTenant()
+            call.respond(mapOf(
+                "tenant" to tenant?.name,
+                "schema" to tenant?.schemaName
+            ))
+        }
 
         // Authentication
         post("/login") {

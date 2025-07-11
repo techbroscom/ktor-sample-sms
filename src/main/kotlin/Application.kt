@@ -14,6 +14,7 @@ fun Application.module() {
     FCMConfig.initialize()
 
     configureDatabases()
+    configureTenantResolution() // Add this line
     configureSerialization()
     configureMonitoring()
     configureStatusPages()
