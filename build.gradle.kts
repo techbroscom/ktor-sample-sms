@@ -67,4 +67,6 @@ dependencies {
     //FCM
     implementation("com.google.firebase:firebase-admin:9.2.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+
+    implementation("com.zaxxer:HikariCP:5.0.1") // Use the latest stable version
 }
