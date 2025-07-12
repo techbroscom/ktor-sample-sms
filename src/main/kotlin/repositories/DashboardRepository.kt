@@ -3,6 +3,7 @@ package com.example.repositories
 import com.example.database.tables.*
 import com.example.models.dto.*
 import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -12,7 +13,7 @@ import java.util.UUID
 
 class DashboardRepository {
 
-    suspend fun getDashboardOverview(): DashboardOverviewDto = dbQuery {
+    suspend fun getDashboardOverview(): DashboardOverviewDto = tenantDbQuery {
         val today = LocalDate.now()
         val todayDateTime = LocalDateTime.now()
 
@@ -76,7 +77,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getAttendanceStatistics(): AttendanceStatisticsDto = dbQuery {
+    suspend fun getAttendanceStatistics(): AttendanceStatisticsDto = tenantDbQuery {
         val today = LocalDate.now()
         val weekStart = today.minusDays(7)
         val monthStart = today.minusDays(30)
@@ -219,7 +220,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getStudentStatistics(): StudentStatisticsDto = dbQuery {
+    suspend fun getStudentStatistics(): StudentStatisticsDto = tenantDbQuery {
         val totalStudents = Users.selectAll()
             .where { Users.role eq UserRole.STUDENT }
             .count().toInt()
@@ -287,7 +288,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getStaffStatistics(): StaffStatisticsDto = dbQuery {
+    suspend fun getStaffStatistics(): StaffStatisticsDto = tenantDbQuery {
         val totalStaff = Users.selectAll()
             .where { Users.role inList listOf(UserRole.ADMIN, UserRole.STAFF) }
             .count().toInt()
@@ -351,7 +352,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getExamStatistics(): ExamStatisticsDto = dbQuery {
+    suspend fun getExamStatistics(): ExamStatisticsDto = tenantDbQuery {
         val today = LocalDate.now()
 
         val totalExams = Exams.selectAll().count().toInt()
@@ -463,7 +464,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getComplaintStatistics(): ComplaintStatisticsDto = dbQuery {
+    suspend fun getComplaintStatistics(): ComplaintStatisticsDto = tenantDbQuery {
         val totalComplaints = Complaints.selectAll().count().toInt()
 
         val pendingComplaints = Complaints.selectAll()
@@ -529,7 +530,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getAcademicStatistics(): AcademicStatisticsDto = dbQuery {
+    suspend fun getAcademicStatistics(): AcademicStatisticsDto = tenantDbQuery {
         val totalAcademicYears = AcademicYears.selectAll().count().toInt()
 
         val activeAcademicYears = AcademicYears.selectAll()
@@ -581,7 +582,7 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getHolidayStatistics(): HolidayStatisticsDto = dbQuery {
+    suspend fun getHolidayStatistics(): HolidayStatisticsDto = tenantDbQuery {
         val today = LocalDate.now()
 
         val totalHolidays = Holidays.selectAll().count().toInt()
@@ -625,11 +626,11 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getStudentCompleteData(studentId: String): StudentCompleteDataDto? = dbQuery {
+    suspend fun getStudentCompleteData(studentId: String): StudentCompleteDataDto? = tenantDbQuery {
         // First, verify the student exists and get basic info
         val studentInfo = Users.selectAll()
             .where { (Users.id eq UUID.fromString(studentId)) and (Users.role eq UserRole.STUDENT) }
-            .singleOrNull() ?: return@dbQuery null
+            .singleOrNull() ?: return@tenantDbQuery null
 
         // Get student's academic assignments (classes across all years)
         val academicAssignments = StudentAssignments
@@ -874,11 +875,11 @@ class DashboardRepository {
         )
     }
 
-    suspend fun getStudentBasicData(studentId: String): StudentBasicDataDto? = dbQuery {
+    suspend fun getStudentBasicData(studentId: String): StudentBasicDataDto? = tenantDbQuery {
         // First, verify the student exists and get basic info
         val studentInfo = Users.selectAll()
             .where { (Users.id eq UUID.fromString(studentId)) and (Users.role eq UserRole.STUDENT) }
-            .singleOrNull() ?: return@dbQuery null
+            .singleOrNull() ?: return@tenantDbQuery null
 
         // Get student's academic assignments (classes across all years)
         val academicAssignments = StudentAssignments
