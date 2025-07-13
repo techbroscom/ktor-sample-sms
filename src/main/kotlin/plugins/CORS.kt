@@ -13,5 +13,6 @@ fun Application.configureCORS() {
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
         anyHost() //localhost support
+        allowHeader("X-Tenant") // ✅ Add this explicitly
     }
 }
