@@ -16,8 +16,8 @@ class TenantDatabaseConfig {
             val config = HikariConfig().apply {
                 driverClassName = "org.postgresql.Driver"
                 jdbcUrl = "jdbc:postgresql://ktor-sms-techbroscommunity-8b49.l.aivencloud.com:11174/defaultdb"
-                username = "sms"
-                password = "zN1HDRM3RfVsEfUivkO0jxdizxPdqs4o"
+                username = "avnadmin"
+                password = System.getenv("DB_PASSWORD")
                 schema = "public" // System schema
             }
             return Database.connect(HikariDataSource(config))
@@ -31,8 +31,8 @@ class TenantDatabaseConfig {
                 val config = HikariConfig().apply {
                     driverClassName = "org.postgresql.Driver"
                     jdbcUrl = "jdbc:postgresql://ktor-sms-techbroscommunity-8b49.l.aivencloud.com:11174/defaultdb"
-                    username = "sms"
-                    password = "zN1HDRM3RfVsEfUivkO0jxdizxPdqs4o"
+                    username = "avnadmin"
+                    password = System.getenv("DB_PASSWORD")
                     schema = schemaName
                 }
                 Database.connect(HikariDataSource(config))
