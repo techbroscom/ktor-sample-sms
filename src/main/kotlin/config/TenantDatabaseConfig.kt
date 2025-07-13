@@ -15,7 +15,7 @@ class TenantDatabaseConfig {
         private fun initSystemDatabase(): Database {
             val config = HikariConfig().apply {
                 driverClassName = "org.postgresql.Driver"
-                jdbcUrl = "jdbc:postgresql://dpg-d1keclh5pdvs73anec8g-a.singapore-postgres.render.com/sms_d7bq?sslmode=require"
+                jdbcUrl = "jdbc:postgresql://ktor-sms-techbroscommunity-8b49.l.aivencloud.com:11174/defaultdb"
                 username = "sms"
                 password = "zN1HDRM3RfVsEfUivkO0jxdizxPdqs4o"
                 schema = "public" // System schema
@@ -30,7 +30,7 @@ class TenantDatabaseConfig {
             return tenantDatabases.getOrPut(schemaName) {
                 val config = HikariConfig().apply {
                     driverClassName = "org.postgresql.Driver"
-                    jdbcUrl = "jdbc:postgresql://dpg-d1keclh5pdvs73anec8g-a.singapore-postgres.render.com/sms_d7bq?sslmode=require"
+                    jdbcUrl = "jdbc:postgresql://ktor-sms-techbroscommunity-8b49.l.aivencloud.com:11174/defaultdb"
                     username = "sms"
                     password = "zN1HDRM3RfVsEfUivkO0jxdizxPdqs4o"
                     schema = schemaName
