@@ -7,36 +7,52 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import java.util.*
 
 class TenantService {
 
     suspend fun createTenant(name: String): TenantContext {
         val tenantId = UUID.randomUUID()
-        val schemaName = "tenant_$name"
 
-        // 1. Create tenant record in system database
-        val tenantContext = transaction(TenantDatabaseConfig.getSystemDb()) {
+        // Step 1: Insert tenant with temporary schema_name
+        transaction(TenantDatabaseConfig.getSystemDb()) {
             Tenants.insert {
                 it[id] = tenantId
                 it[Tenants.name] = name
-                it[Tenants.schema_name] = schemaName
+                it[schema_name] = "" // placeholder, to be updated later
             }
-
-            TenantContext(
-                id = tenantId.toString(),
-                name = name,
-                schemaName = schemaName
-            )
         }
 
-        // 2. Create tenant schema and tables
+        // Step 2: Fetch tenant_number using selectAll().where
+        val tenantNumber = transaction(TenantDatabaseConfig.getSystemDb()) {
+            Tenants
+                .selectAll()
+                .where { Tenants.id eq tenantId }
+                .single()[Tenants.tenantNumber]
+        }
+
+        // Step 3: Format schema name like tenant_0001
+        val schemaName = "tenant_${tenantNumber.toString().padStart(4, '0')}"
+
+        // Step 4: Update schema_name in system DB
+        transaction(TenantDatabaseConfig.getSystemDb()) {
+            Tenants.update({ Tenants.id eq tenantId }) {
+                it[Tenants.schema_name] = schemaName
+            }
+        }
+
+        val tenantContext = TenantContext(
+            id = tenantId.toString(),
+            name = name,
+            schemaName = schemaName
+        )
+
+        // Step 5: Create schema and tenant tables
         val tenantDb = TenantDatabaseConfig.getTenantDatabase(schemaName)
         transaction(tenantDb) {
-            // Create schema
             exec("CREATE SCHEMA IF NOT EXISTS $schemaName")
 
-            // Create all tables for this tenant
             SchemaUtils.create(
                 Users,
                 Holidays,
@@ -63,6 +79,7 @@ class TenantService {
 
         return tenantContext
     }
+
 
     suspend fun getAllTenants(): List<TenantContext> {
         return transaction(TenantDatabaseConfig.getSystemDb()) {
