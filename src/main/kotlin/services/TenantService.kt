@@ -73,7 +73,9 @@ class TenantService {
                 ExamResults,
                 Attendance,
                 FeesStructures,
-                FCMTokens
+                FCMTokens,
+                StudentFees,
+                FeePayments
             )
         }
 

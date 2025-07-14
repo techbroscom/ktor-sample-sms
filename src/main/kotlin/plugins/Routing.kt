@@ -12,6 +12,7 @@ import com.example.repositories.ExamRepository
 import com.example.repositories.ExamResultRepository
 import com.example.repositories.ExamScheduleRepository
 import com.example.repositories.FCMTokenRepository
+import com.example.repositories.FeePaymentRepository
 import com.example.repositories.FeesStructureRepository
 import com.example.repositories.HolidayRepository
 import com.example.repositories.OtpRepository
@@ -21,6 +22,7 @@ import com.example.repositories.SchoolConfigRepository
 import com.example.repositories.StaffClassAssignmentRepository
 import com.example.repositories.StaffSubjectAssignmentRepository
 import com.example.repositories.StudentAssignmentRepository
+import com.example.repositories.StudentFeeRepository
 import com.example.repositories.SubjectRepository
 import com.example.repositories.UserRepository
 import com.example.routes.api.academicYearRoutes
@@ -33,6 +35,7 @@ import com.example.routes.api.examResultRoutes
 import com.example.routes.api.examRoutes
 import com.example.routes.api.examScheduleRoutes
 import com.example.routes.api.fcmRoutes
+import com.example.routes.api.feePaymentRoutes
 import com.example.routes.api.feesStructureRoutes
 import com.example.routes.api.fileRoutes
 import com.example.routes.api.holidayRoutes
@@ -43,6 +46,7 @@ import com.example.routes.api.staffClassAssignmentRoutes
 import com.example.routes.api.staffClassSubjectRoutes
 import com.example.routes.api.staffSubjectAssignmentRoutes
 import com.example.routes.api.studentAssignmentRoutes
+import com.example.routes.api.studentFeeRoutes
 import com.example.routes.api.subjectRoutes
 import com.example.routes.api.tenantRoutes
 import com.example.routes.api.userRoutes
@@ -57,6 +61,7 @@ import com.example.services.ExamResultService
 import com.example.services.ExamScheduleService
 import com.example.services.ExamService
 import com.example.services.FCMService
+import com.example.services.FeePaymentService
 import com.example.services.FeesStructureService
 import com.example.services.FileService
 import com.example.services.HolidayService
@@ -68,6 +73,7 @@ import com.example.services.SchoolConfigService
 import com.example.services.StaffClassAssignmentService
 import com.example.services.StaffSubjectAssignmentService
 import com.example.services.StudentAssignmentService
+import com.example.services.StudentFeeService
 import com.example.services.SubjectService
 import com.example.services.TenantService
 import com.example.services.UserService
@@ -146,6 +152,13 @@ fun Application.configureRouting() {
     val feesStructureRepository = FeesStructureRepository()
     val feesStructureService = FeesStructureService(feesStructureRepository, classService, academicYearService)
 
+    val feePaymentRepository = FeePaymentRepository()
+    val studentFeeRepository = StudentFeeRepository()
+
+    val feePaymentService = FeePaymentService(feePaymentRepository, studentFeeRepository)
+
+    val studentFeeService = StudentFeeService(studentFeeRepository, feePaymentRepository ,userService, feesStructureService)
+
     // NEW: Initialize FileService with Dropbox
     val dropboxConfig = DropboxConfig.fromEnvironment()
 
@@ -195,5 +208,7 @@ fun Application.configureRouting() {
         fileRoutes(fileService)
         feesStructureRoutes(feesStructureService)
         fcmRoutes(fcmService)
+        studentFeeRoutes(studentFeeService)
+        feePaymentRoutes(feePaymentService)
     }
 }

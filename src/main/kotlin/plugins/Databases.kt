@@ -44,7 +44,9 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             ExamResults,
             Attendance,
             FeesStructures,
-            FCMTokens
+            FCMTokens,
+            StudentFees,
+            FeePayments
         )
     }
 }
