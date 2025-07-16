@@ -75,7 +75,10 @@ class TenantService {
                 FeesStructures,
                 FCMTokens,
                 StudentFees,
-                FeePayments
+                FeePayments,
+                TransportRoutes,
+                TransportStops,
+                StudentTransportAssignments
             )
         }
 

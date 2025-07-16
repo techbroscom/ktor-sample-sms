@@ -23,7 +23,10 @@ import com.example.repositories.StaffClassAssignmentRepository
 import com.example.repositories.StaffSubjectAssignmentRepository
 import com.example.repositories.StudentAssignmentRepository
 import com.example.repositories.StudentFeeRepository
+import com.example.repositories.StudentTransportAssignmentRepository
 import com.example.repositories.SubjectRepository
+import com.example.repositories.TransportRouteRepository
+import com.example.repositories.TransportStopRepository
 import com.example.repositories.UserRepository
 import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.attendanceRoutes
@@ -47,8 +50,11 @@ import com.example.routes.api.staffClassSubjectRoutes
 import com.example.routes.api.staffSubjectAssignmentRoutes
 import com.example.routes.api.studentAssignmentRoutes
 import com.example.routes.api.studentFeeRoutes
+import com.example.routes.api.studentTransportAssignmentRoutes
 import com.example.routes.api.subjectRoutes
 import com.example.routes.api.tenantRoutes
+import com.example.routes.api.transportRouteRoutes
+import com.example.routes.api.transportStopRoutes
 import com.example.routes.api.userRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
@@ -74,8 +80,11 @@ import com.example.services.StaffClassAssignmentService
 import com.example.services.StaffSubjectAssignmentService
 import com.example.services.StudentAssignmentService
 import com.example.services.StudentFeeService
+import com.example.services.StudentTransportAssignmentService
 import com.example.services.SubjectService
 import com.example.services.TenantService
+import com.example.services.TransportRouteService
+import com.example.services.TransportStopService
 import com.example.services.UserService
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -159,6 +168,21 @@ fun Application.configureRouting() {
 
     val studentFeeService = StudentFeeService(studentFeeRepository, feePaymentRepository ,userService, feesStructureService)
 
+    val transportRouteRepository = TransportRouteRepository()
+    val transportRouteService = TransportRouteService(transportRouteRepository)
+
+    val transportStopRepository = TransportStopRepository()
+    val transportStopService = TransportStopService(transportStopRepository, transportRouteRepository)
+
+    val studentTransportAssignmentRepository = StudentTransportAssignmentRepository()
+    val studentTransportAssignmentService = StudentTransportAssignmentService(
+        studentTransportAssignmentRepository,
+        userRepository,
+        academicYearRepository,
+        transportRouteRepository,
+        transportStopRepository
+    )
+
     // NEW: Initialize FileService with Dropbox
     val dropboxConfig = DropboxConfig.fromEnvironment()
 
@@ -210,5 +234,8 @@ fun Application.configureRouting() {
         fcmRoutes(fcmService)
         studentFeeRoutes(studentFeeService)
         feePaymentRoutes(feePaymentService)
+        transportRouteRoutes(transportRouteService)
+        transportStopRoutes(transportStopService)
+        studentTransportAssignmentRoutes(studentTransportAssignmentService)
     }
 }
