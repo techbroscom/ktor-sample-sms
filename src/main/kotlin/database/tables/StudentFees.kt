@@ -22,9 +22,7 @@ object StudentFees : Table("student_fees") {
 
     // Index for common queries
     init {
-        uniqueIndex(studentId, month)
-        uniqueIndex(feeStructureId)
-        uniqueIndex(status)
+        uniqueIndex(studentId, feeStructureId)
     }
 }
 

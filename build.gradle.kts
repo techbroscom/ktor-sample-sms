@@ -69,4 +69,6 @@ dependencies {
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 
     implementation("com.zaxxer:HikariCP:5.0.1") // Use the latest stable version
+
+    implementation("io.ktor:ktor-server-websockets:2.3.9") // Use the latest version
 }

@@ -1,6 +1,11 @@
 package com.example.services
 
 import com.example.config.TenantDatabaseConfig
+import com.example.database.tables.ChatMessages
+import com.example.database.tables.ChatRoomMembers
+import com.example.database.tables.ChatRooms
+import com.example.database.tables.FeePayments
+import com.example.database.tables.StudentFees
 import com.example.database.tables.StudentTransportAssignments
 import com.example.database.tables.Tenants
 import com.example.database.tables.TransportStops
@@ -32,7 +37,7 @@ class MigrationService {
                         SELECT EXISTS (
                             SELECT 1 FROM information_schema.tables 
                             WHERE table_schema = '$schemaName' 
-                            AND table_name = 'student_transport_assignments'
+                            AND table_name = 'student_fees, fee_payments'
                         )
                     """) { rs ->
                         rs.next()
@@ -42,7 +47,10 @@ class MigrationService {
                     println("Checking table existence for $schemaName: $tableExists")
 
                     if (!tableExists) {
-                        SchemaUtils.create(StudentTransportAssignments)
+                        SchemaUtils.create(
+                            StudentFees,
+                            FeePayments,
+                            )
                         println("✓ Created student_transport_assignments table for tenant: $schemaName")
                     } else {
                         println("✓ Table already exists for tenant: $schemaName")

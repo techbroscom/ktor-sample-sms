@@ -6,7 +6,7 @@ import com.example.models.PersonalNotificationRequest
 import com.example.repositories.UserRepository
 
 class NotificationService(
-    private val fcmService: FCMService,
+    val fcmService: FCMService,
     private val userRepository: UserRepository
 ) {
 

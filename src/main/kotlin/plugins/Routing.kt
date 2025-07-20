@@ -4,6 +4,9 @@ import com.example.config.DropboxConfig
 import com.example.config.SupabaseConfig
 import com.example.repositories.AcademicYearRepository
 import com.example.repositories.AttendanceRepository
+import com.example.repositories.ChatMessageRepository
+import com.example.repositories.ChatRoomMemberRepository
+import com.example.repositories.ChatRoomRepository
 import com.example.repositories.ClassRepository
 import com.example.repositories.ClassSubjectRepository
 import com.example.repositories.ComplaintRepository
@@ -30,6 +33,7 @@ import com.example.repositories.TransportStopRepository
 import com.example.repositories.UserRepository
 import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.attendanceRoutes
+import com.example.routes.api.chatRoutes
 import com.example.routes.api.classRoutes
 import com.example.routes.api.classSubjectRoutes
 import com.example.routes.api.complaintRoutes
@@ -58,6 +62,8 @@ import com.example.routes.api.transportStopRoutes
 import com.example.routes.api.userRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
+import com.example.services.ChatService
+import com.example.services.ChatWebSocketService
 import com.example.services.ClassService
 import com.example.services.ClassSubjectService
 import com.example.services.ComplaintService
@@ -86,6 +92,7 @@ import com.example.services.TenantService
 import com.example.services.TransportRouteService
 import com.example.services.TransportStopService
 import com.example.services.UserService
+import com.example.websocket.ChatWebSocketManager
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -183,6 +190,29 @@ fun Application.configureRouting() {
         transportStopRepository
     )
 
+    val chatRoomMemberRepository = ChatRoomMemberRepository()
+    val chatRoomRepository = ChatRoomRepository()
+    val chatMessageRepository = ChatMessageRepository()
+
+    val webSocketManager = ChatWebSocketManager()
+    val chatWebSocketService = ChatWebSocketService(
+        webSocketManager,
+        chatRoomMemberRepository,
+        userRepository
+    )
+
+    // Update ChatService to include WebSocket service
+    val chatService = ChatService(
+        chatRoomRepository,
+        chatRoomMemberRepository,
+        chatMessageRepository,
+        userRepository,
+        classRepository,
+        classSubjectRepository,
+        academicYearRepository,
+        notificationService
+    )
+
     // NEW: Initialize FileService with Dropbox
     val dropboxConfig = DropboxConfig.fromEnvironment()
 
@@ -237,5 +267,6 @@ fun Application.configureRouting() {
         transportRouteRoutes(transportRouteService)
         transportStopRoutes(transportStopService)
         studentTransportAssignmentRoutes(studentTransportAssignmentService)
+        chatRoutes(chatService)
     }
 }

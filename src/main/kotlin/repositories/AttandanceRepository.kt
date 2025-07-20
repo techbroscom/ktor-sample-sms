@@ -5,7 +5,7 @@ import com.example.database.tables.AttendanceStatus
 import com.example.database.tables.Classes
 import com.example.database.tables.Users
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDate
@@ -13,7 +13,7 @@ import java.util.*
 
 class AttendanceRepository {
 
-    suspend fun create(request: CreateAttendanceRequest): String = dbQuery {
+    suspend fun create(request: CreateAttendanceRequest): String = tenantDbQuery {
         Attendance.insert {
             it[studentId] = UUID.fromString(request.studentId)
             it[classId] = UUID.fromString(request.classId)
@@ -22,7 +22,7 @@ class AttendanceRepository {
         }[Attendance.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateAttendanceRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateAttendanceRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             Attendance.insert {
                 it[studentId] = UUID.fromString(request.studentId)
@@ -33,7 +33,7 @@ class AttendanceRepository {
         }
     }
 
-    suspend fun findById(id: String): AttendanceDto? = dbQuery {
+    suspend fun findById(id: String): AttendanceDto? = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -43,7 +43,7 @@ class AttendanceRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<AttendanceDto> = dbQuery {
+    suspend fun findAll(): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -52,7 +52,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateAttendanceRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateAttendanceRequest): Boolean = tenantDbQuery {
         Attendance.update({ Attendance.id eq UUID.fromString(id) }) {
             it[studentId] = UUID.fromString(request.studentId)
             it[classId] = UUID.fromString(request.classId)
@@ -61,11 +61,11 @@ class AttendanceRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         Attendance.deleteWhere { Attendance.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByStudentId(studentId: String): List<AttendanceDto> = dbQuery {
+    suspend fun findByStudentId(studentId: String): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -75,7 +75,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassId(classId: String): List<AttendanceDto> = dbQuery {
+    suspend fun findByClassId(classId: String): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -85,7 +85,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByDate(date: LocalDate): List<AttendanceDto> = dbQuery {
+    suspend fun findByDate(date: LocalDate): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -95,7 +95,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndDate(classId: String, date: LocalDate): List<AttendanceDto> = dbQuery {
+    suspend fun findByClassAndDate(classId: String, date: LocalDate): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -108,7 +108,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStudentAndDateRange(studentId: String, startDate: LocalDate, endDate: LocalDate): List<AttendanceDto> = dbQuery {
+    suspend fun findByStudentAndDateRange(studentId: String, startDate: LocalDate, endDate: LocalDate): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -122,7 +122,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndDateRange(classId: String, startDate: LocalDate, endDate: LocalDate): List<AttendanceDto> = dbQuery {
+    suspend fun findByClassAndDateRange(classId: String, startDate: LocalDate, endDate: LocalDate): List<AttendanceDto> = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -136,7 +136,7 @@ class AttendanceRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStudentClassAndDate(studentId: String, classId: String, date: LocalDate): AttendanceDto? = dbQuery {
+    suspend fun findByStudentClassAndDate(studentId: String, classId: String, date: LocalDate): AttendanceDto? = tenantDbQuery {
         Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)
@@ -150,7 +150,7 @@ class AttendanceRepository {
             .singleOrNull()
     }
 
-    suspend fun checkDuplicate(studentId: String, classId: String, date: LocalDate, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicate(studentId: String, classId: String, date: LocalDate, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = Attendance.selectAll()
             .where {
                 (Attendance.studentId eq UUID.fromString(studentId)) and
@@ -165,19 +165,19 @@ class AttendanceRepository {
         query.count() > 0
     }
 
-    suspend fun deleteByStudentId(studentId: String): Int = dbQuery {
+    suspend fun deleteByStudentId(studentId: String): Int = tenantDbQuery {
         Attendance.deleteWhere { Attendance.studentId eq UUID.fromString(studentId) }
     }
 
-    suspend fun deleteByClassId(classId: String): Int = dbQuery {
+    suspend fun deleteByClassId(classId: String): Int = tenantDbQuery {
         Attendance.deleteWhere { Attendance.classId eq UUID.fromString(classId) }
     }
 
-    suspend fun deleteByDate(date: LocalDate): Int = dbQuery {
+    suspend fun deleteByDate(date: LocalDate): Int = tenantDbQuery {
         Attendance.deleteWhere { Attendance.date eq date }
     }
 
-    suspend fun getAttendanceStats(studentId: String, startDate: LocalDate, endDate: LocalDate): AttendanceStatsDto = dbQuery {
+    suspend fun getAttendanceStats(studentId: String, startDate: LocalDate, endDate: LocalDate): AttendanceStatsDto = tenantDbQuery {
         val records = Attendance.selectAll()
             .where {
                 (Attendance.studentId eq UUID.fromString(studentId)) and
@@ -201,7 +201,7 @@ class AttendanceRepository {
         )
     }
 
-    suspend fun getClassAttendanceForDate(classId: String, date: LocalDate): ClassAttendanceDto = dbQuery {
+    suspend fun getClassAttendanceForDate(classId: String, date: LocalDate): ClassAttendanceDto = tenantDbQuery {
         val records = Attendance
             .join(Users, JoinType.LEFT, Attendance.studentId, Users.id)
             .join(Classes, JoinType.LEFT, Attendance.classId, Classes.id)

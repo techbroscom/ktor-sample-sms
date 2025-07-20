@@ -78,7 +78,10 @@ class TenantService {
                 FeePayments,
                 TransportRoutes,
                 TransportStops,
-                StudentTransportAssignments
+                StudentTransportAssignments,
+                ChatRooms,
+                ChatRoomMembers,
+                ChatMessages,
             )
         }
 

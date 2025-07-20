@@ -17,12 +17,6 @@ object FeePayments : Table("fee_payments") {
 
     override val primaryKey = PrimaryKey(id)
 
-    // Index for common queries
-    init {
-        uniqueIndex(studentFeeId)
-        uniqueIndex(paymentDate)
-        uniqueIndex(receiptNumber)
-    }
 }
 
 enum class PaymentMode {

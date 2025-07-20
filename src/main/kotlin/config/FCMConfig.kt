@@ -10,14 +10,14 @@ import java.util.Base64
 object FCMConfig {
     fun initialize() {
         try {
-            val base64Key = System.getenv("FIREBASE_SERVICE_ACCOUNT")
+            /*val base64Key = System.getenv("FIREBASE_SERVICE_ACCOUNT")
                 ?: throw IllegalStateException("FIREBASE_SERVICE_ACCOUNT env variable not set")
 
             val decodedKey = Base64.getDecoder().decode(base64Key)
-            val serviceAccount = ByteArrayInputStream(decodedKey)
+            val serviceAccount = ByteArrayInputStream(decodedKey)*/
 
-            /*val serviceAccount = javaClass.getResourceAsStream("/sms-flutter-c6d80-firebase-adminsdk-fbsvc-bcfb4007ff.json")
-                ?: throw IllegalStateException("Firebase service account file not found in resources")*/
+            val serviceAccount = javaClass.getResourceAsStream("/sms-flutter-c6d80-firebase-adminsdk-fbsvc-bcfb4007ff.json")
+                ?: throw IllegalStateException("Firebase service account file not found in resources")
 
             val options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))

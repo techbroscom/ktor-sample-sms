@@ -4,7 +4,7 @@ import com.example.database.tables.TransportRoutes
 import com.example.models.dto.CreateTransportRouteRequest
 import com.example.models.dto.TransportRouteDto
 import com.example.models.dto.UpdateTransportRouteRequest
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

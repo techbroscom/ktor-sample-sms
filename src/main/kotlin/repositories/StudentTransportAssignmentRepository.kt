@@ -4,7 +4,7 @@ import com.example.database.tables.*
 import com.example.models.dto.CreateStudentTransportAssignmentRequest
 import com.example.models.dto.StudentTransportAssignmentDto
 import com.example.models.dto.UpdateStudentTransportAssignmentRequest
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDate
@@ -12,7 +12,7 @@ import java.util.*
 
 class StudentTransportAssignmentRepository {
 
-    suspend fun create(request: CreateStudentTransportAssignmentRequest): UUID = dbQuery {
+    suspend fun create(request: CreateStudentTransportAssignmentRequest): UUID = tenantDbQuery {
         val assignmentId = UUID.randomUUID()
         StudentTransportAssignments.insert {
             it[id] = assignmentId
@@ -27,7 +27,7 @@ class StudentTransportAssignmentRepository {
         assignmentId
     }
 
-    suspend fun bulkCreate(requests: List<CreateStudentTransportAssignmentRequest>): List<UUID> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateStudentTransportAssignmentRequest>): List<UUID> = tenantDbQuery {
         val assignmentIds = mutableListOf<UUID>()
         StudentTransportAssignments.batchInsert(requests) { request ->
             val assignmentId = UUID.randomUUID()
@@ -44,7 +44,7 @@ class StudentTransportAssignmentRepository {
         assignmentIds
     }
 
-    suspend fun findById(id: UUID): StudentTransportAssignmentDto? = dbQuery {
+    suspend fun findById(id: UUID): StudentTransportAssignmentDto? = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -56,7 +56,7 @@ class StudentTransportAssignmentRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findAll(): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -67,7 +67,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStudentId(studentId: UUID): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findByStudentId(studentId: UUID): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -79,7 +79,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByAcademicYearId(academicYearId: UUID): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findByAcademicYearId(academicYearId: UUID): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -91,7 +91,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByRouteId(routeId: UUID): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findByRouteId(routeId: UUID): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -103,7 +103,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStopId(stopId: UUID): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findByStopId(stopId: UUID): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -115,7 +115,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findActive(): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findActive(): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -127,7 +127,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findActiveByAcademicYear(academicYearId: UUID): List<StudentTransportAssignmentDto> = dbQuery {
+    suspend fun findActiveByAcademicYear(academicYearId: UUID): List<StudentTransportAssignmentDto> = tenantDbQuery {
         StudentTransportAssignments
             .join(Users, JoinType.INNER, StudentTransportAssignments.studentId, Users.id)
             .join(AcademicYears, JoinType.INNER, StudentTransportAssignments.academicYearId, AcademicYears.id)
@@ -142,7 +142,7 @@ class StudentTransportAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: UUID, request: UpdateStudentTransportAssignmentRequest): Boolean = dbQuery {
+    suspend fun update(id: UUID, request: UpdateStudentTransportAssignmentRequest): Boolean = tenantDbQuery {
         StudentTransportAssignments.update({ StudentTransportAssignments.id eq id }) {
             it[studentId] = UUID.fromString(request.studentId)
             it[academicYearId] = UUID.fromString(request.academicYearId)
@@ -154,11 +154,11 @@ class StudentTransportAssignmentRepository {
         } > 0
     }
 
-    suspend fun delete(id: UUID): Boolean = dbQuery {
+    suspend fun delete(id: UUID): Boolean = tenantDbQuery {
         StudentTransportAssignments.deleteWhere { StudentTransportAssignments.id eq id } > 0
     }
 
-    suspend fun assignmentExistsForStudentInAcademicYear(studentId: UUID, academicYearId: UUID): Boolean = dbQuery {
+    suspend fun assignmentExistsForStudentInAcademicYear(studentId: UUID, academicYearId: UUID): Boolean = tenantDbQuery {
         StudentTransportAssignments.selectAll()
             .where {
                 (StudentTransportAssignments.studentId eq studentId) and
@@ -171,7 +171,7 @@ class StudentTransportAssignmentRepository {
         studentId: UUID,
         academicYearId: UUID,
         excludeId: UUID
-    ): Boolean = dbQuery {
+    ): Boolean = tenantDbQuery {
         StudentTransportAssignments.selectAll()
             .where {
                 (StudentTransportAssignments.studentId eq studentId) and
@@ -181,7 +181,7 @@ class StudentTransportAssignmentRepository {
             .count() > 0
     }
 
-    suspend fun toggleActiveStatus(id: UUID): Boolean = dbQuery {
+    suspend fun toggleActiveStatus(id: UUID): Boolean = tenantDbQuery {
         val currentStatus = StudentTransportAssignments.selectAll()
             .where { StudentTransportAssignments.id eq id }
             .map { it[StudentTransportAssignments.isActive] }
@@ -201,7 +201,7 @@ class StudentTransportAssignmentRepository {
         academicYearId: UUID,
         newRouteId: UUID,
         newStopId: UUID
-    ): Int = dbQuery {
+    ): Int = tenantDbQuery {
         StudentTransportAssignments.update({
             (StudentTransportAssignments.studentId inList studentIds) and
                     (StudentTransportAssignments.academicYearId eq academicYearId)
@@ -211,13 +211,13 @@ class StudentTransportAssignmentRepository {
         }
     }
 
-    suspend fun deactivateAssignmentsByRouteId(routeId: UUID): Int = dbQuery {
+    suspend fun deactivateAssignmentsByRouteId(routeId: UUID): Int = tenantDbQuery {
         StudentTransportAssignments.update({ StudentTransportAssignments.routeId eq routeId }) {
             it[isActive] = false
         }
     }
 
-    suspend fun deactivateAssignmentsByStopId(stopId: UUID): Int = dbQuery {
+    suspend fun deactivateAssignmentsByStopId(stopId: UUID): Int = tenantDbQuery {
         StudentTransportAssignments.update({ StudentTransportAssignments.stopId eq stopId }) {
             it[isActive] = false
         }

@@ -2,7 +2,7 @@ package com.example.repositories
 
 import com.example.database.tables.*
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
@@ -14,7 +14,7 @@ import java.util.*
 
 class StudentFeeRepository {
 
-    suspend fun create(request: CreateStudentFeeRequest): String = dbQuery {
+    suspend fun create(request: CreateStudentFeeRequest): String = tenantDbQuery {
         StudentFees.insert {
             it[studentId] = UUID.fromString(request.studentId)
             it[feeStructureId] = UUID.fromString(request.feeStructureId)
@@ -28,7 +28,7 @@ class StudentFeeRepository {
         }[StudentFees.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateStudentFeeRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateStudentFeeRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             StudentFees.insert {
                 it[studentId] = UUID.fromString(request.studentId)
@@ -44,7 +44,7 @@ class StudentFeeRepository {
         }
     }
 
-    suspend fun findById(id: String): StudentFeeDto? = dbQuery {
+    suspend fun findById(id: String): StudentFeeDto? = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -56,7 +56,7 @@ class StudentFeeRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<StudentFeeDto> = dbQuery {
+    suspend fun findAll(): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -67,7 +67,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateStudentFeeRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateStudentFeeRequest): Boolean = tenantDbQuery {
         StudentFees.update({ StudentFees.id eq UUID.fromString(id) }) {
             it[amount] = BigDecimal(request.amount)
             it[dueDate] = LocalDate.parse(request.dueDate)
@@ -76,11 +76,11 @@ class StudentFeeRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         StudentFees.deleteWhere { StudentFees.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByStudentId(studentId: String): List<StudentFeeDto> = dbQuery {
+    suspend fun findByStudentId(studentId: String): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -92,7 +92,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByFeeStructureId(feeStructureId: String): List<StudentFeeDto> = dbQuery {
+    suspend fun findByFeeStructureId(feeStructureId: String): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -104,7 +104,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByMonth(month: String): List<StudentFeeDto> = dbQuery {
+    suspend fun findByMonth(month: String): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -116,7 +116,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStatus(status: FeeStatus): List<StudentFeeDto> = dbQuery {
+    suspend fun findByStatus(status: FeeStatus): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -128,7 +128,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findOverdueFees(): List<StudentFeeDto> = dbQuery {
+    suspend fun findOverdueFees(): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -143,7 +143,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndMonth(classId: String, month: String): List<StudentFeeDto> = dbQuery {
+    suspend fun findByClassAndMonth(classId: String, month: String): List<StudentFeeDto> = tenantDbQuery {
         StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
@@ -158,7 +158,7 @@ class StudentFeeRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun checkDuplicate(studentId: String, feeStructureId: String, month: String, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicate(studentId: String, feeStructureId: String, month: String, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = StudentFees.selectAll()
             .where {
                 (StudentFees.studentId eq UUID.fromString(studentId)) and
@@ -173,7 +173,7 @@ class StudentFeeRepository {
         query.count() > 0
     }
 
-    suspend fun updatePayment(id: String, paidAmount: BigDecimal): Boolean = dbQuery {
+    suspend fun updatePayment(id: String, paidAmount: BigDecimal): Boolean = tenantDbQuery {
         val currentFee = StudentFees.selectAll()
             .where { StudentFees.id eq UUID.fromString(id) }
             .singleOrNull()
@@ -201,7 +201,7 @@ class StudentFeeRepository {
         }
     }
 
-    suspend fun getStudentFeesSummary(studentId: String): StudentFeesSummaryDto? = dbQuery {
+    suspend fun getStudentFeesSummary(studentId: String): StudentFeesSummaryDto? = tenantDbQuery {
         val fees = StudentFees
             .join(Users, JoinType.LEFT, StudentFees.studentId, Users.id)
             .selectAll()
@@ -237,7 +237,7 @@ class StudentFeeRepository {
         }
     }
 
-    suspend fun getMonthlyFeeReport(month: String): MonthlyFeeReportDto = dbQuery {
+    suspend fun getMonthlyFeeReport(month: String): MonthlyFeeReportDto = tenantDbQuery {
         val fees = StudentFees
             .selectAll()
             .where { StudentFees.month eq month }
@@ -263,7 +263,7 @@ class StudentFeeRepository {
         )
     }
 
-    suspend fun getClassFeesSummary(classId: String, month: String): ClassFeesSummaryDto? = dbQuery {
+    suspend fun getClassFeesSummary(classId: String, month: String): ClassFeesSummaryDto? = tenantDbQuery {
         val fees = StudentFees
             .join(FeesStructures, JoinType.LEFT, StudentFees.feeStructureId, FeesStructures.id)
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
@@ -299,11 +299,11 @@ class StudentFeeRepository {
         }
     }
 
-    suspend fun deleteByStudentId(studentId: String): Int = dbQuery {
+    suspend fun deleteByStudentId(studentId: String): Int = tenantDbQuery {
         StudentFees.deleteWhere { StudentFees.studentId eq UUID.fromString(studentId) }
     }
 
-    suspend fun deleteByFeeStructureId(feeStructureId: String): Int = dbQuery {
+    suspend fun deleteByFeeStructureId(feeStructureId: String): Int = tenantDbQuery {
         StudentFees.deleteWhere { StudentFees.feeStructureId eq UUID.fromString(feeStructureId) }
     }
 
