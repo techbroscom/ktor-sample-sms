@@ -15,10 +15,10 @@ class TenantDatabaseConfig {
         private fun initSystemDatabase(): Database {
             val config = HikariConfig().apply {
                 driverClassName = "org.postgresql.Driver"
-                jdbcUrl = "jdbc:postgresql://dpg-d1keclh5pdvs73anec8g-a.singapore-postgres.render.com/sms_d7bq"
-                username = "sms"
-                password = "zN1HDRM3RfVsEfUivkO0jxdizxPdqs4o"
-                schema = "public" // System schema
+                jdbcUrl = "jdbc:postgresql://nozomi.proxy.rlwy.net:49285/railway"
+                username = "postgres"
+                password = "djoekYKIsYrtVRtWoPLMFtnYGikLkwkU"
+                schema = "public" // or leave empty, default is public
             }
             return Database.connect(HikariDataSource(config))
         }
@@ -30,9 +30,9 @@ class TenantDatabaseConfig {
             return tenantDatabases.getOrPut(schemaName) {
                 val config = HikariConfig().apply {
                     driverClassName = "org.postgresql.Driver"
-                    jdbcUrl = "jdbc:postgresql://dpg-d1keclh5pdvs73anec8g-a.singapore-postgres.render.com/sms_d7bq"
-                    username = "sms"
-                    password = "zN1HDRM3RfVsEfUivkO0jxdizxPdqs4o"
+                    jdbcUrl = "jdbc:postgresql://nozomi.proxy.rlwy.net:49285/railway"
+                    username = "postgres"
+                    password = "djoekYKIsYrtVRtWoPLMFtnYGikLkwkU"
                     schema = schemaName
                 }
                 Database.connect(HikariDataSource(config))
