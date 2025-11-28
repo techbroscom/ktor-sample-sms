@@ -29,6 +29,7 @@ fun Application.configureDatabases() {
 }
 
 // Utility function to create tenant tables
+/*
 fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
     transaction(tenantDatabase) {
         SchemaUtils.create(
@@ -56,4 +57,4 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             FeePayments
         )
     }
-}
+}*/
