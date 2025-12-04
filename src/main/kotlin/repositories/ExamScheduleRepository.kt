@@ -2,7 +2,7 @@ package com.example.repositories
 
 import com.example.database.tables.*
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDateTime
@@ -10,7 +10,7 @@ import java.util.*
 
 class ExamScheduleRepository {
 
-    suspend fun create(request: CreateExamScheduleRequest): String = dbQuery {
+    suspend fun create(request: CreateExamScheduleRequest): String = tenantDbQuery {
         ExamSchedules.insert {
             it[examId] = UUID.fromString(request.examId)
             it[classId] = UUID.fromString(request.classId)
@@ -19,7 +19,7 @@ class ExamScheduleRepository {
         }[ExamSchedules.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateExamScheduleRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateExamScheduleRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             ExamSchedules.insert {
                 it[examId] = UUID.fromString(request.examId)
@@ -30,7 +30,7 @@ class ExamScheduleRepository {
         }
     }
 
-    suspend fun findById(id: String): ExamScheduleDto? = dbQuery {
+    suspend fun findById(id: String): ExamScheduleDto? = tenantDbQuery {
         ExamSchedules
             .join(Exams, JoinType.LEFT, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.LEFT, ExamSchedules.classId, Classes.id)
@@ -42,7 +42,7 @@ class ExamScheduleRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<ExamScheduleDto> = dbQuery {
+    suspend fun findAll(): List<ExamScheduleDto> = tenantDbQuery {
         ExamSchedules
             .join(Exams, JoinType.LEFT, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.LEFT, ExamSchedules.classId, Classes.id)
@@ -53,7 +53,7 @@ class ExamScheduleRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateExamScheduleRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateExamScheduleRequest): Boolean = tenantDbQuery {
         ExamSchedules.update({ ExamSchedules.id eq UUID.fromString(id) }) {
             it[examId] = UUID.fromString(request.examId)
             it[classId] = UUID.fromString(request.classId)
@@ -62,11 +62,11 @@ class ExamScheduleRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         ExamSchedules.deleteWhere { ExamSchedules.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByExamId(examId: String): List<ExamScheduleDto> = dbQuery {
+    suspend fun findByExamId(examId: String): List<ExamScheduleDto> = tenantDbQuery {
         ExamSchedules
             .join(Exams, JoinType.LEFT, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.LEFT, ExamSchedules.classId, Classes.id)
@@ -78,7 +78,7 @@ class ExamScheduleRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassId(classId: String): List<ExamScheduleDto> = dbQuery {
+    suspend fun findByClassId(classId: String): List<ExamScheduleDto> = tenantDbQuery {
         ExamSchedules
             .join(Exams, JoinType.LEFT, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.LEFT, ExamSchedules.classId, Classes.id)
@@ -90,7 +90,7 @@ class ExamScheduleRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): List<ExamScheduleDto> = dbQuery {
+    suspend fun findByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): List<ExamScheduleDto> = tenantDbQuery {
         ExamSchedules
             .join(Exams, JoinType.LEFT, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.LEFT, ExamSchedules.classId, Classes.id)
@@ -105,7 +105,7 @@ class ExamScheduleRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun checkDuplicate(examId: String, classId: String, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicate(examId: String, classId: String, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = ExamSchedules.selectAll()
             .where {
                 (ExamSchedules.examId eq UUID.fromString(examId)) and
@@ -124,7 +124,7 @@ class ExamScheduleRepository {
         startTime: LocalDateTime,
         endTime: LocalDateTime,
         excludeId: String? = null
-    ): Boolean = dbQuery {
+    ): Boolean = tenantDbQuery {
         val query = ExamSchedules.selectAll()
             .where {
                 (ExamSchedules.classId eq UUID.fromString(classId)) and
@@ -142,15 +142,15 @@ class ExamScheduleRepository {
         query.count() > 0
     }
 
-    suspend fun deleteByExamId(examId: String): Int = dbQuery {
+    suspend fun deleteByExamId(examId: String): Int = tenantDbQuery {
         ExamSchedules.deleteWhere { ExamSchedules.examId eq UUID.fromString(examId) }
     }
 
-    suspend fun deleteByClassId(classId: String): Int = dbQuery {
+    suspend fun deleteByClassId(classId: String): Int = tenantDbQuery {
         ExamSchedules.deleteWhere { ExamSchedules.classId eq UUID.fromString(classId) }
     }
 
-    suspend fun getExamsWithSchedules(academicYearId: String): List<ExamWithSchedulesDto> = dbQuery {
+    suspend fun getExamsWithSchedules(academicYearId: String): List<ExamWithSchedulesDto> = tenantDbQuery {
         val examSchedules = ExamSchedules
             .join(Exams, JoinType.INNER, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.INNER, ExamSchedules.classId, Classes.id)
@@ -194,7 +194,7 @@ class ExamScheduleRepository {
         }
     }
 
-    suspend fun getClassesWithExamSchedules(academicYearId: String): List<ClassWithExamSchedulesDto> = dbQuery {
+    suspend fun getClassesWithExamSchedules(academicYearId: String): List<ClassWithExamSchedulesDto> = tenantDbQuery {
         val examSchedules = ExamSchedules
             .join(Exams, JoinType.INNER, ExamSchedules.examId, Exams.id)
             .join(Classes, JoinType.INNER, ExamSchedules.classId, Classes.id)

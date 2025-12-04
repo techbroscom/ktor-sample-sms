@@ -5,14 +5,14 @@ import com.example.database.tables.Classes
 import com.example.models.dto.ClassDto
 import com.example.models.dto.CreateClassRequest
 import com.example.models.dto.UpdateClassRequest
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
 class ClassRepository {
 
-    suspend fun create(request: CreateClassRequest): String = dbQuery {
+    suspend fun create(request: CreateClassRequest): String = tenantDbQuery {
         Classes.insert {
             it[className] = request.className
             it[sectionName] = request.sectionName
@@ -20,7 +20,7 @@ class ClassRepository {
         }[Classes.id].toString()
     }
 
-    suspend fun findById(id: String): ClassDto? = dbQuery {
+    suspend fun findById(id: String): ClassDto? = tenantDbQuery {
         Classes.join(AcademicYears, JoinType.LEFT, Classes.academicYearId, AcademicYears.id)
             .selectAll()
             .where { Classes.id eq UUID.fromString(id) }
@@ -28,14 +28,14 @@ class ClassRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<ClassDto> = dbQuery {
+    suspend fun findAll(): List<ClassDto> = tenantDbQuery {
         Classes.join(AcademicYears, JoinType.LEFT, Classes.academicYearId, AcademicYears.id)
             .selectAll()
             .orderBy(Classes.className to SortOrder.ASC, Classes.sectionName to SortOrder.ASC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateClassRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateClassRequest): Boolean = tenantDbQuery {
         Classes.update({ Classes.id eq UUID.fromString(id) }) {
             it[className] = request.className
             it[sectionName] = request.sectionName
@@ -43,11 +43,11 @@ class ClassRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         Classes.deleteWhere { Classes.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByAcademicYear(academicYearId: String): List<ClassDto> = dbQuery {
+    suspend fun findByAcademicYear(academicYearId: String): List<ClassDto> = tenantDbQuery {
         Classes.join(AcademicYears, JoinType.LEFT, Classes.academicYearId, AcademicYears.id)
             .selectAll()
             .where { Classes.academicYearId eq UUID.fromString(academicYearId) }
@@ -55,7 +55,7 @@ class ClassRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassNameAndSection(className: String, sectionName: String): List<ClassDto> = dbQuery {
+    suspend fun findByClassNameAndSection(className: String, sectionName: String): List<ClassDto> = tenantDbQuery {
         Classes.join(AcademicYears, JoinType.LEFT, Classes.academicYearId, AcademicYears.id)
             .selectAll()
             .where { (Classes.className eq className) and (Classes.sectionName eq sectionName) }
@@ -63,7 +63,7 @@ class ClassRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassNameAndSectionAndAcademicYear(className: String, sectionName: String, academicYearId: String): List<ClassDto> = dbQuery {
+    suspend fun findByClassNameAndSectionAndAcademicYear(className: String, sectionName: String, academicYearId: String): List<ClassDto> = tenantDbQuery {
         Classes.join(AcademicYears, JoinType.LEFT, Classes.academicYearId, AcademicYears.id)
             .selectAll()
             .where { (Classes.className eq className) and (Classes.sectionName eq sectionName) and (AcademicYears.id  eq UUID.fromString(academicYearId)) }
@@ -71,7 +71,7 @@ class ClassRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun checkDuplicateClass(className: String, sectionName: String, academicYearId: String, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicateClass(className: String, sectionName: String, academicYearId: String, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = Classes.selectAll()
             .where {
                 (Classes.className eq className) and

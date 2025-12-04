@@ -4,7 +4,7 @@ import com.example.database.tables.AcademicYears
 import com.example.database.tables.Classes
 import com.example.database.tables.FeesStructures
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.javatime.CurrentDateTime
@@ -14,7 +14,7 @@ import java.util.*
 
 class FeesStructureRepository {
 
-    suspend fun create(request: CreateFeesStructureRequest): String = dbQuery {
+    suspend fun create(request: CreateFeesStructureRequest): String = tenantDbQuery {
         FeesStructures.insert {
             it[classId] = UUID.fromString(request.classId)
             it[academicYearId] = UUID.fromString(request.academicYearId)
@@ -26,7 +26,7 @@ class FeesStructureRepository {
         }[FeesStructures.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateFeesStructureRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateFeesStructureRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             FeesStructures.insert {
                 it[classId] = UUID.fromString(request.classId)
@@ -40,7 +40,7 @@ class FeesStructureRepository {
         }
     }
 
-    suspend fun findById(id: String): FeesStructureDto? = dbQuery {
+    suspend fun findById(id: String): FeesStructureDto? = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -50,7 +50,7 @@ class FeesStructureRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<FeesStructureDto> = dbQuery {
+    suspend fun findAll(): List<FeesStructureDto> = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -59,7 +59,7 @@ class FeesStructureRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateFeesStructureRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateFeesStructureRequest): Boolean = tenantDbQuery {
         FeesStructures.update({ FeesStructures.id eq UUID.fromString(id) }) {
             it[classId] = UUID.fromString(request.classId)
             it[academicYearId] = UUID.fromString(request.academicYearId)
@@ -70,11 +70,11 @@ class FeesStructureRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         FeesStructures.deleteWhere { FeesStructures.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByClassId(classId: String): List<FeesStructureDto> = dbQuery {
+    suspend fun findByClassId(classId: String): List<FeesStructureDto> = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -84,7 +84,7 @@ class FeesStructureRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByAcademicYear(academicYearId: String): List<FeesStructureDto> = dbQuery {
+    suspend fun findByAcademicYear(academicYearId: String): List<FeesStructureDto> = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -94,7 +94,7 @@ class FeesStructureRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<FeesStructureDto> = dbQuery {
+    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<FeesStructureDto> = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -107,7 +107,7 @@ class FeesStructureRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findMandatoryFees(classId: String, academicYearId: String): List<FeesStructureDto> = dbQuery {
+    suspend fun findMandatoryFees(classId: String, academicYearId: String): List<FeesStructureDto> = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -121,7 +121,7 @@ class FeesStructureRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findOptionalFees(classId: String, academicYearId: String): List<FeesStructureDto> = dbQuery {
+    suspend fun findOptionalFees(classId: String, academicYearId: String): List<FeesStructureDto> = tenantDbQuery {
         FeesStructures
             .join(Classes, JoinType.LEFT, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.LEFT, FeesStructures.academicYearId, AcademicYears.id)
@@ -135,7 +135,7 @@ class FeesStructureRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun checkDuplicate(classId: String, academicYearId: String, name: String, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicate(classId: String, academicYearId: String, name: String, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = FeesStructures.selectAll()
             .where {
                 (FeesStructures.classId eq UUID.fromString(classId)) and
@@ -150,15 +150,15 @@ class FeesStructureRepository {
         query.count() > 0
     }
 
-    suspend fun deleteByClassId(classId: String): Int = dbQuery {
+    suspend fun deleteByClassId(classId: String): Int = tenantDbQuery {
         FeesStructures.deleteWhere { FeesStructures.classId eq UUID.fromString(classId) }
     }
 
-    suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {
+    suspend fun deleteByAcademicYear(academicYearId: String): Int = tenantDbQuery {
         FeesStructures.deleteWhere { FeesStructures.academicYearId eq UUID.fromString(academicYearId) }
     }
 
-    suspend fun getClassFeesStructures(academicYearId: String): List<ClassFeesStructureDto> = dbQuery {
+    suspend fun getClassFeesStructures(academicYearId: String): List<ClassFeesStructureDto> = tenantDbQuery {
         val feeStructures = FeesStructures
             .join(Classes, JoinType.INNER, FeesStructures.classId, Classes.id)
             .join(AcademicYears, JoinType.INNER, FeesStructures.academicYearId, AcademicYears.id)
@@ -193,7 +193,7 @@ class FeesStructureRepository {
         }
     }
 
-    suspend fun getFeesStructureSummary(academicYearId: String): FeesStructureSummaryDto = dbQuery {
+    suspend fun getFeesStructureSummary(academicYearId: String): FeesStructureSummaryDto = tenantDbQuery {
         val classSummaries = getClassFeesStructures(academicYearId)
         val totalMandatoryFees = classSummaries.sumOf { BigDecimal(it.totalMandatoryFees) }
         val totalOptionalFees = classSummaries.sumOf { BigDecimal(it.totalOptionalFees) }

@@ -3,13 +3,13 @@ package com.example.repositories
 import com.example.database.tables.SchoolConfig
 import com.example.models.dto.SchoolConfigDto
 import com.example.models.dto.UpdateSchoolConfigRequest
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 class SchoolConfigRepository {
 
-    suspend fun insertDefaultIfNotExists() = dbQuery {
+    suspend fun insertDefaultIfNotExists() = tenantDbQuery {
         val exists = SchoolConfig
             .selectAll()
             .where { SchoolConfig.id eq 1 }
@@ -31,20 +31,20 @@ class SchoolConfigRepository {
         }
     }
 
-    suspend fun findById(id: Int): SchoolConfigDto? = dbQuery {
+    suspend fun findById(id: Int): SchoolConfigDto? = tenantDbQuery {
         SchoolConfig.selectAll()
             .where { SchoolConfig.id eq id }
             .map { mapRowToDto(it) }
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<SchoolConfigDto> = dbQuery {
+    suspend fun findAll(): List<SchoolConfigDto> = tenantDbQuery {
         SchoolConfig.selectAll()
             .orderBy(SchoolConfig.id to SortOrder.ASC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: Int, request: UpdateSchoolConfigRequest): Boolean = dbQuery {
+    suspend fun update(id: Int, request: UpdateSchoolConfigRequest): Boolean = tenantDbQuery {
         SchoolConfig.update({ SchoolConfig.id eq id }) {
             it[schoolName] = request.schoolName
             it[address] = request.address

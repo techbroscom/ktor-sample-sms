@@ -4,14 +4,14 @@ import com.example.database.tables.Holidays
 import com.example.models.dto.CreateHolidayRequest
 import com.example.models.dto.HolidayDto
 import com.example.models.dto.UpdateHolidayRequest
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDate
 
 class HolidayRepository {
 
-    suspend fun create(request: CreateHolidayRequest): Int = dbQuery {
+    suspend fun create(request: CreateHolidayRequest): Int = tenantDbQuery {
         Holidays.insert {
             it[name] = request.name
             it[date] = LocalDate.parse(request.date)
@@ -20,20 +20,20 @@ class HolidayRepository {
         }[Holidays.id]
     }
 
-    suspend fun findById(id: Int): HolidayDto? = dbQuery {
+    suspend fun findById(id: Int): HolidayDto? = tenantDbQuery {
         Holidays.selectAll()
             .where { Holidays.id eq id }
             .map { mapRowToDto(it) }
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<HolidayDto> = dbQuery {
+    suspend fun findAll(): List<HolidayDto> = tenantDbQuery {
         Holidays.selectAll()
             .orderBy(Holidays.date to SortOrder.ASC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: Int, request: UpdateHolidayRequest): Boolean = dbQuery {
+    suspend fun update(id: Int, request: UpdateHolidayRequest): Boolean = tenantDbQuery {
         Holidays.update({ Holidays.id eq id }) {
             it[name] = request.name
             it[date] = LocalDate.parse(request.date)
@@ -42,11 +42,11 @@ class HolidayRepository {
         } > 0
     }
 
-    suspend fun delete(id: Int): Boolean = dbQuery {
+    suspend fun delete(id: Int): Boolean = tenantDbQuery {
         Holidays.deleteWhere { Holidays.id eq id } > 0
     }
 
-    suspend fun findByDateRange(startDate: String, endDate: String): List<HolidayDto> = dbQuery {
+    suspend fun findByDateRange(startDate: String, endDate: String): List<HolidayDto> = tenantDbQuery {
         val start = LocalDate.parse(startDate)
         val end = LocalDate.parse(endDate)
 
@@ -56,7 +56,7 @@ class HolidayRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findPublicHolidays(): List<HolidayDto> = dbQuery {
+    suspend fun findPublicHolidays(): List<HolidayDto> = tenantDbQuery {
         Holidays.selectAll()
             .where { Holidays.isPublicHoliday eq true }
             .orderBy(Holidays.date to SortOrder.ASC)

@@ -5,7 +5,7 @@ import com.example.database.tables.Classes
 import com.example.database.tables.Exams
 import com.example.database.tables.Subjects
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDate
@@ -13,7 +13,7 @@ import java.util.*
 
 class ExamRepository {
 
-    suspend fun create(request: CreateExamRequest): String = dbQuery {
+    suspend fun create(request: CreateExamRequest): String = tenantDbQuery {
         println("Create in Repo Called")
         Exams.insert {
             it[name] = request.name
@@ -25,7 +25,7 @@ class ExamRepository {
         }[Exams.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateExamRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateExamRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             Exams.insert {
                 it[name] = request.name
@@ -38,7 +38,7 @@ class ExamRepository {
         }
     }
 
-    suspend fun findById(id: String): ExamDto? = dbQuery {
+    suspend fun findById(id: String): ExamDto? = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -49,7 +49,7 @@ class ExamRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<ExamDto> = dbQuery {
+    suspend fun findAll(): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -59,7 +59,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateExamRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateExamRequest): Boolean = tenantDbQuery {
         Exams.update({ Exams.id eq UUID.fromString(id) }) {
             it[name] = request.name
             it[subjectId] = UUID.fromString(request.subjectId)
@@ -70,11 +70,11 @@ class ExamRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         Exams.deleteWhere { Exams.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByClassId(classId: String): List<ExamDto> = dbQuery {
+    suspend fun findByClassId(classId: String): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -85,7 +85,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findBySubjectId(subjectId: String): List<ExamDto> = dbQuery {
+    suspend fun findBySubjectId(subjectId: String): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -96,7 +96,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByAcademicYear(academicYearId: String): List<ExamDto> = dbQuery {
+    suspend fun findByAcademicYear(academicYearId: String): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -107,7 +107,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<ExamDto> = dbQuery {
+    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -121,7 +121,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findBySubjectAndAcademicYear(subjectId: String, academicYearId: String): List<ExamDto> = dbQuery {
+    suspend fun findBySubjectAndAcademicYear(subjectId: String, academicYearId: String): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -139,7 +139,7 @@ class ExamRepository {
         classId: String,
         subjectId: String,
         academicYearId: String
-    ): List<ExamDto> = dbQuery {
+    ): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -154,7 +154,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByDateRange(startDate: String, endDate: String, academicYearId: String? = null): List<ExamDto> = dbQuery {
+    suspend fun findByDateRange(startDate: String, endDate: String, academicYearId: String? = null): List<ExamDto> = tenantDbQuery {
         val query = Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -172,7 +172,7 @@ class ExamRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByDate(date: String): List<ExamDto> = dbQuery {
+    suspend fun findByDate(date: String): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)
@@ -189,7 +189,7 @@ class ExamRepository {
         subjectId: String,
         academicYearId: String,
         excludeId: String? = null
-    ): Boolean = dbQuery {
+    ): Boolean = tenantDbQuery {
         val query = Exams.selectAll()
             .where {
                 (Exams.name eq name) and
@@ -205,19 +205,19 @@ class ExamRepository {
         query.count() > 0
     }
 
-    suspend fun deleteByClassId(classId: String): Int = dbQuery {
+    suspend fun deleteByClassId(classId: String): Int = tenantDbQuery {
         Exams.deleteWhere { Exams.classId eq UUID.fromString(classId) }
     }
 
-    suspend fun deleteBySubjectId(subjectId: String): Int = dbQuery {
+    suspend fun deleteBySubjectId(subjectId: String): Int = tenantDbQuery {
         Exams.deleteWhere { Exams.subjectId eq UUID.fromString(subjectId) }
     }
 
-    suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {
+    suspend fun deleteByAcademicYear(academicYearId: String): Int = tenantDbQuery {
         Exams.deleteWhere { Exams.academicYearId eq UUID.fromString(academicYearId) }
     }
 
-    suspend fun getExamsByClass(academicYearId: String): List<ClassExamsDto> = dbQuery {
+    suspend fun getExamsByClass(academicYearId: String): List<ClassExamsDto> = tenantDbQuery {
         val exams = Exams
             .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
@@ -245,7 +245,7 @@ class ExamRepository {
         }
     }
 
-    suspend fun getExamsBySubject(academicYearId: String): List<SubjectExamsDto> = dbQuery {
+    suspend fun getExamsBySubject(academicYearId: String): List<SubjectExamsDto> = tenantDbQuery {
         val exams = Exams
             .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
@@ -271,7 +271,7 @@ class ExamRepository {
         }
     }
 
-    suspend fun getExamsByDate(academicYearId: String): List<ExamsByDateDto> = dbQuery {
+    suspend fun getExamsByDate(academicYearId: String): List<ExamsByDateDto> = tenantDbQuery {
         val exams = Exams
             .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
@@ -307,7 +307,7 @@ class ExamRepository {
         )
     }
 
-    suspend fun getExamsByNameGrouped(examName: String?, academicYearId: String): List<ExamByNameDto> = dbQuery {
+    suspend fun getExamsByNameGrouped(examName: String?, academicYearId: String): List<ExamByNameDto> = tenantDbQuery {
         val query = Exams
             .join(Subjects, JoinType.INNER, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
@@ -371,7 +371,7 @@ class ExamRepository {
         examsByName
     }
 
-    suspend fun getExamsName(academicYearId: String): List<String> = dbQuery {
+    suspend fun getExamsName(academicYearId: String): List<String> = tenantDbQuery {
         Exams
             .selectAll()
             .where { Exams.academicYearId eq UUID.fromString(academicYearId) }
@@ -380,7 +380,7 @@ class ExamRepository {
             .distinct()
     }
 
-    suspend fun getExamsClassesName(examName: String, academicYearId: String): List<ClassByExamNameDto> = dbQuery {
+    suspend fun getExamsClassesName(examName: String, academicYearId: String): List<ClassByExamNameDto> = tenantDbQuery {
         Exams
             .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
             .selectAll()
@@ -406,7 +406,7 @@ class ExamRepository {
         classId: String,
         examName: String,
         academicYearId: String
-    ): List<ExamDto> = dbQuery {
+    ): List<ExamDto> = tenantDbQuery {
         Exams
             .join(Subjects, JoinType.LEFT, Exams.subjectId, Subjects.id)
             .join(Classes, JoinType.LEFT, Exams.classId, Classes.id)

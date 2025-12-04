@@ -16,13 +16,6 @@ object FeePayments : Table("fee_payments") {
     val updatedAt = datetime("updated_at").defaultExpression(org.jetbrains.exposed.sql.javatime.CurrentDateTime)
 
     override val primaryKey = PrimaryKey(id)
-
-    // Index for common queries
-    init {
-        uniqueIndex(studentFeeId)
-        uniqueIndex(paymentDate)
-        uniqueIndex(receiptNumber)
-    }
 }
 
 enum class PaymentMode {

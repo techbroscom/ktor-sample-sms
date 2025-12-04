@@ -4,14 +4,14 @@ package com.example.repositories
 import com.example.database.tables.*
 import com.example.exceptions.ApiException
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
 class ExamResultRepository {
 
-    suspend fun create(request: CreateExamResultRequest): String = dbQuery {
+    suspend fun create(request: CreateExamResultRequest): String = tenantDbQuery {
         ExamResults.insert {
             it[examId] = UUID.fromString(request.examId)
             it[studentId] = UUID.fromString(request.studentId)
@@ -20,7 +20,7 @@ class ExamResultRepository {
         }[ExamResults.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateExamResultRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateExamResultRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             val existingResult = ExamResults
                 .selectAll()
@@ -52,7 +52,7 @@ class ExamResultRepository {
         }
     }
 
-    suspend fun findById(id: String): ExamResultDto? = dbQuery {
+    suspend fun findById(id: String): ExamResultDto? = tenantDbQuery {
         ExamResults
             .join(Exams, JoinType.LEFT, ExamResults.examId, Exams.id)
             .join(Users, JoinType.LEFT, ExamResults.studentId, Users.id)
@@ -70,7 +70,7 @@ class ExamResultRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<ExamResultDto> = dbQuery {
+    suspend fun findAll(): List<ExamResultDto> = tenantDbQuery {
         ExamResults
             .join(Exams, JoinType.LEFT, ExamResults.examId, Exams.id)
             .join(Users, JoinType.LEFT, ExamResults.studentId, Users.id)
@@ -87,7 +87,7 @@ class ExamResultRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateExamResultRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateExamResultRequest): Boolean = tenantDbQuery {
         ExamResults.update({ ExamResults.id eq UUID.fromString(id) }) {
             it[examId] = UUID.fromString(request.examId)
             it[studentId] = UUID.fromString(request.studentId)
@@ -96,11 +96,11 @@ class ExamResultRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         ExamResults.deleteWhere { ExamResults.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByExamId(examId: String): List<ExamResultDto> = dbQuery {
+    suspend fun findByExamId(examId: String): List<ExamResultDto> = tenantDbQuery {
         val examUUID = UUID.fromString(examId)
 
         // First, fetch exam row to get classId and academicYearId
@@ -108,7 +108,7 @@ class ExamResultRepository {
         val classId = examRow?.get(Exams.classId)
         val academicYearId = examRow?.get(Exams.academicYearId)
 
-        if (classId == null || academicYearId == null) return@dbQuery emptyList()
+        if (classId == null || academicYearId == null) return@tenantDbQuery emptyList()
 
         StudentAssignments
             .join(Users, JoinType.LEFT, StudentAssignments.studentId, Users.id)
@@ -130,7 +130,7 @@ class ExamResultRepository {
     }
 
 
-    suspend fun findByStudentId(studentId: String): List<ExamResultDto> = dbQuery {
+    suspend fun findByStudentId(studentId: String): List<ExamResultDto> = tenantDbQuery {
         ExamResults
             .join(Exams, JoinType.LEFT, ExamResults.examId, Exams.id)
             .join(Users, JoinType.LEFT, ExamResults.studentId, Users.id)
@@ -148,7 +148,7 @@ class ExamResultRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndExam(classId: String, examId: String): List<ExamResultDto> = dbQuery {
+    suspend fun findByClassAndExam(classId: String, examId: String): List<ExamResultDto> = tenantDbQuery {
         ExamResults
             .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
             .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
@@ -169,7 +169,7 @@ class ExamResultRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun checkDuplicate(examId: String, studentId: String, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicate(examId: String, studentId: String, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = ExamResults.selectAll()
             .where {
                 (ExamResults.examId eq UUID.fromString(examId)) and
@@ -183,15 +183,15 @@ class ExamResultRepository {
         query.count() > 0
     }
 
-    suspend fun deleteByExamId(examId: String): Int = dbQuery {
+    suspend fun deleteByExamId(examId: String): Int = tenantDbQuery {
         ExamResults.deleteWhere { ExamResults.examId eq UUID.fromString(examId) }
     }
 
-    suspend fun deleteByStudentId(studentId: String): Int = dbQuery {
+    suspend fun deleteByStudentId(studentId: String): Int = tenantDbQuery {
         ExamResults.deleteWhere { ExamResults.studentId eq UUID.fromString(studentId) }
     }
 
-    suspend fun getExamsWithResults(academicYearId: String): List<ExamWithResultsDto> = dbQuery {
+    suspend fun getExamsWithResults(academicYearId: String): List<ExamWithResultsDto> = tenantDbQuery {
         val examResults = ExamResults
             .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
             .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
@@ -244,7 +244,7 @@ class ExamResultRepository {
         }
     }
 
-    suspend fun getStudentsWithExamResults(academicYearId: String): List<StudentWithExamResultsDto> = dbQuery {
+    suspend fun getStudentsWithExamResults(academicYearId: String): List<StudentWithExamResultsDto> = tenantDbQuery {
         val examResults = ExamResults
             .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
             .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
@@ -297,7 +297,7 @@ class ExamResultRepository {
         }
     }
 
-    suspend fun getClassResultSummary(classId: String, examId: String): ClassResultSummaryDto? = dbQuery {
+    suspend fun getClassResultSummary(classId: String, examId: String): ClassResultSummaryDto? = tenantDbQuery {
         val results = ExamResults
             .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
             .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
@@ -315,7 +315,7 @@ class ExamResultRepository {
             }
             .toList()
 
-        if (results.isEmpty()) return@dbQuery null
+        if (results.isEmpty()) return@tenantDbQuery null
 
         val firstResult = results.first()
         val marks = results.map { it[ExamResults.marksObtained] }
@@ -348,7 +348,7 @@ class ExamResultRepository {
         )
     }
 
-    suspend fun getStudentReportByExamName(examName: String): List<StudentExamReportDto> = dbQuery {
+    suspend fun getStudentReportByExamName(examName: String): List<StudentExamReportDto> = tenantDbQuery {
         println("Repo Called")
         val examResults = ExamResults
             .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
@@ -401,7 +401,7 @@ class ExamResultRepository {
     suspend fun getStudentReportByExamNameAndClass(
         examName: String,
         classId: String
-    ): ExamReportResponseDto = dbQuery {
+    ): ExamReportResponseDto = tenantDbQuery {
         val examResults = ExamResults
             .join(Exams, JoinType.INNER, ExamResults.examId, Exams.id)
             .join(Users, JoinType.INNER, ExamResults.studentId, Users.id)
@@ -465,7 +465,7 @@ class ExamResultRepository {
                 )
             }
 
-        return@dbQuery ExamReportResponseDto(
+        return@tenantDbQuery ExamReportResponseDto(
             className = firstRow[Classes.className],
             sectionName = firstRow[Classes.sectionName],
             academicYear = firstRow[AcademicYears.year],

@@ -2,14 +2,14 @@ package com.example.repositories
 
 import com.example.database.tables.*
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.*
 
 class StaffSubjectAssignmentRepository {
 
-    suspend fun create(request: CreateStaffSubjectAssignmentRequest): String = dbQuery {
+    suspend fun create(request: CreateStaffSubjectAssignmentRequest): String = tenantDbQuery {
         StaffSubjectAssignments.insert {
             it[staffId] = UUID.fromString(request.staffId)
             it[classSubjectId] = UUID.fromString(request.classSubjectId)
@@ -18,7 +18,7 @@ class StaffSubjectAssignmentRepository {
         }[StaffSubjectAssignments.id].toString()
     }
 
-    suspend fun bulkCreate(requests: List<CreateStaffSubjectAssignmentRequest>): List<String> = dbQuery {
+    suspend fun bulkCreate(requests: List<CreateStaffSubjectAssignmentRequest>): List<String> = tenantDbQuery {
         requests.map { request ->
             StaffSubjectAssignments.insert {
                 it[staffId] = UUID.fromString(request.staffId)
@@ -29,7 +29,7 @@ class StaffSubjectAssignmentRepository {
         }
     }
 
-    suspend fun findById(id: String): StaffSubjectAssignmentDto? = dbQuery {
+    suspend fun findById(id: String): StaffSubjectAssignmentDto? = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -42,7 +42,7 @@ class StaffSubjectAssignmentRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findAll(): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -54,7 +54,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateStaffSubjectAssignmentRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateStaffSubjectAssignmentRequest): Boolean = tenantDbQuery {
         StaffSubjectAssignments.update({ StaffSubjectAssignments.id eq UUID.fromString(id) }) {
             it[staffId] = UUID.fromString(request.staffId)
             it[classSubjectId] = UUID.fromString(request.classSubjectId)
@@ -63,11 +63,11 @@ class StaffSubjectAssignmentRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.id eq UUID.fromString(id) } > 0
     }
 
-    suspend fun findByStaffId(staffId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByStaffId(staffId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -80,7 +80,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassId(classId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByClassId(classId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -93,7 +93,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassSubjectId(classSubjectId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByClassSubjectId(classSubjectId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -106,7 +106,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassSubjectAndAcademicYear(classSubjectId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByClassSubjectAndAcademicYear(classSubjectId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -119,7 +119,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByAcademicYear(academicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByAcademicYear(academicYearId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -132,7 +132,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStaffAndAcademicYear(staffId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByStaffAndAcademicYear(staffId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -148,7 +148,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByClassAndAcademicYear(classId: String, academicYearId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         StaffSubjectAssignments
             .join(Users, JoinType.LEFT, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.LEFT, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -164,7 +164,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun checkDuplicate(staffId: String, classSubjectId: String, classId: String, academicYearId: String, excludeId: String? = null): Boolean = dbQuery {
+    suspend fun checkDuplicate(staffId: String, classSubjectId: String, classId: String, academicYearId: String, excludeId: String? = null): Boolean = tenantDbQuery {
         val query = StaffSubjectAssignments.selectAll()
             .where {
                 (StaffSubjectAssignments.staffId eq UUID.fromString(staffId)) and
@@ -180,35 +180,35 @@ class StaffSubjectAssignmentRepository {
         query.count() > 0
     }
 
-    suspend fun deleteByStaffId(staffId: String): Int = dbQuery {
+    suspend fun deleteByStaffId(staffId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.staffId eq UUID.fromString(staffId) }
     }
 
-    suspend fun deleteByStaffAndAcademicYear(staffId: String, academicYearId: String): Int = dbQuery {
+    suspend fun deleteByStaffAndAcademicYear(staffId: String, academicYearId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { (StaffSubjectAssignments.staffId eq UUID.fromString(staffId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId))}
     }
 
-    suspend fun deleteByClassId(classId: String): Int = dbQuery {
+    suspend fun deleteByClassId(classId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.classId eq UUID.fromString(classId) }
     }
 
-    suspend fun deleteByClassAndAcademicYear(classId: String, academicYearId: String): Int = dbQuery {
+    suspend fun deleteByClassAndAcademicYear(classId: String, academicYearId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { (StaffSubjectAssignments.classId eq UUID.fromString(classId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId)) }
     }
 
-    suspend fun deleteByClassSubjectId(classSubjectId: String): Int = dbQuery {
+    suspend fun deleteByClassSubjectId(classSubjectId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.classSubjectId eq UUID.fromString(classSubjectId) }
     }
 
-    suspend fun deleteByClassSubjectAndAcademicYear(classSubjectId: String, academicYearId: String): Int = dbQuery {
+    suspend fun deleteByClassSubjectAndAcademicYear(classSubjectId: String, academicYearId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { (StaffSubjectAssignments.classSubjectId eq UUID.fromString(classSubjectId)) and (StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId)) }
     }
 
-    suspend fun deleteByAcademicYear(academicYearId: String): Int = dbQuery {
+    suspend fun deleteByAcademicYear(academicYearId: String): Int = tenantDbQuery {
         StaffSubjectAssignments.deleteWhere { StaffSubjectAssignments.academicYearId eq UUID.fromString(academicYearId) }
     }
 
-    suspend fun getStaffWithSubjects(academicYearId: String): List<StaffWithSubjectsDto> = dbQuery {
+    suspend fun getStaffWithSubjects(academicYearId: String): List<StaffWithSubjectsDto> = tenantDbQuery {
         val staffAssignments = StaffSubjectAssignments
             .join(Users, JoinType.INNER, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.INNER, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -247,7 +247,7 @@ class StaffSubjectAssignmentRepository {
         }
     }
 
-    suspend fun getClassesWithSubjectStaff(academicYearId: String): List<ClassWithSubjectStaffDto> = dbQuery {
+    suspend fun getClassesWithSubjectStaff(academicYearId: String): List<ClassWithSubjectStaffDto> = tenantDbQuery {
         val staffAssignments = StaffSubjectAssignments
             .join(Users, JoinType.INNER, StaffSubjectAssignments.staffId, Users.id)
             .join(ClassSubjects, JoinType.INNER, StaffSubjectAssignments.classSubjectId, ClassSubjects.id)
@@ -315,7 +315,7 @@ class StaffSubjectAssignmentRepository {
         )
     }
 
-    suspend fun findByClassIdWithAllSubjects(classId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByClassIdWithAllSubjects(classId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         ClassSubjects
             .join(Subjects, JoinType.INNER, ClassSubjects.subjectId, Subjects.id)
             .join(Classes, JoinType.INNER, ClassSubjects.classId, Classes.id)
@@ -328,7 +328,7 @@ class StaffSubjectAssignmentRepository {
             .map { mapRowToDtoWithNullableStaff(it) }
     }
 
-    suspend fun findByClassIdWithAllSubjectsForActiveYear(classId: String, activeAcademicYearId: String): List<StaffSubjectAssignmentDto> = dbQuery {
+    suspend fun findByClassIdWithAllSubjectsForActiveYear(classId: String, activeAcademicYearId: String): List<StaffSubjectAssignmentDto> = tenantDbQuery {
         ClassSubjects
             .join(Subjects, JoinType.INNER, ClassSubjects.subjectId, Subjects.id)
             .join(Classes, JoinType.INNER, ClassSubjects.classId, Classes.id)

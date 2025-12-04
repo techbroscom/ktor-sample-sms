@@ -5,7 +5,7 @@ import com.example.database.tables.TransportStops
 import com.example.models.dto.CreateTransportStopRequest
 import com.example.models.dto.TransportStopDto
 import com.example.models.dto.UpdateTransportStopRequest
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.math.BigDecimal
@@ -13,7 +13,7 @@ import java.util.*
 
 class TransportStopRepository {
 
-    suspend fun create(request: CreateTransportStopRequest): UUID = dbQuery {
+    suspend fun create(request: CreateTransportStopRequest): UUID = tenantDbQuery {
         val stopId = UUID.randomUUID()
         TransportStops.insert {
             it[id] = stopId
@@ -26,7 +26,7 @@ class TransportStopRepository {
         stopId
     }
 
-    suspend fun findById(id: UUID): TransportStopDto? = dbQuery {
+    suspend fun findById(id: UUID): TransportStopDto? = tenantDbQuery {
         TransportStops.join(
             TransportRoutes,
             JoinType.INNER,
@@ -38,7 +38,7 @@ class TransportStopRepository {
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<TransportStopDto> = dbQuery {
+    suspend fun findAll(): List<TransportStopDto> = tenantDbQuery {
         TransportStops.join(
             TransportRoutes,
             JoinType.INNER,
@@ -49,7 +49,7 @@ class TransportStopRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByRouteId(routeId: UUID): List<TransportStopDto> = dbQuery {
+    suspend fun findByRouteId(routeId: UUID): List<TransportStopDto> = tenantDbQuery {
         TransportStops.join(
             TransportRoutes,
             JoinType.INNER,
@@ -61,7 +61,7 @@ class TransportStopRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findActiveByRouteId(routeId: UUID): List<TransportStopDto> = dbQuery {
+    suspend fun findActiveByRouteId(routeId: UUID): List<TransportStopDto> = tenantDbQuery {
         TransportStops.join(
             TransportRoutes,
             JoinType.INNER,
@@ -73,7 +73,7 @@ class TransportStopRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findActive(): List<TransportStopDto> = dbQuery {
+    suspend fun findActive(): List<TransportStopDto> = tenantDbQuery {
         TransportStops.join(
             TransportRoutes,
             JoinType.INNER,
@@ -85,7 +85,7 @@ class TransportStopRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByName(name: String): List<TransportStopDto> = dbQuery {
+    suspend fun findByName(name: String): List<TransportStopDto> = tenantDbQuery {
         TransportStops.join(
             TransportRoutes,
             JoinType.INNER,
@@ -97,7 +97,7 @@ class TransportStopRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: UUID, request: UpdateTransportStopRequest): Boolean = dbQuery {
+    suspend fun update(id: UUID, request: UpdateTransportStopRequest): Boolean = tenantDbQuery {
         TransportStops.update({ TransportStops.id eq id }) {
             it[routeId] = UUID.fromString(request.routeId)
             it[name] = request.name
@@ -107,17 +107,17 @@ class TransportStopRepository {
         } > 0
     }
 
-    suspend fun delete(id: UUID): Boolean = dbQuery {
+    suspend fun delete(id: UUID): Boolean = tenantDbQuery {
         TransportStops.deleteWhere { TransportStops.id eq id } > 0
     }
 
-    suspend fun nameExistsInRoute(routeId: UUID, name: String): Boolean = dbQuery {
+    suspend fun nameExistsInRoute(routeId: UUID, name: String): Boolean = tenantDbQuery {
         TransportStops.selectAll()
             .where { (TransportStops.routeId eq routeId) and (TransportStops.name eq name) }
             .count() > 0
     }
 
-    suspend fun nameExistsInRouteForOtherStop(routeId: UUID, name: String, stopId: UUID): Boolean = dbQuery {
+    suspend fun nameExistsInRouteForOtherStop(routeId: UUID, name: String, stopId: UUID): Boolean = tenantDbQuery {
         TransportStops.selectAll()
             .where {
                 (TransportStops.routeId eq routeId) and
@@ -127,7 +127,7 @@ class TransportStopRepository {
             .count() > 0
     }
 
-    suspend fun toggleActiveStatus(id: UUID): Boolean = dbQuery {
+    suspend fun toggleActiveStatus(id: UUID): Boolean = tenantDbQuery {
         val currentStatus = TransportStops.selectAll()
             .where { TransportStops.id eq id }
             .map { it[TransportStops.isActive] }
@@ -142,13 +142,13 @@ class TransportStopRepository {
         }
     }
 
-    suspend fun getMaxOrderIndexForRoute(routeId: UUID): Int = dbQuery {
+    suspend fun getMaxOrderIndexForRoute(routeId: UUID): Int = tenantDbQuery {
         TransportStops.selectAll()
             .where { TransportStops.routeId eq routeId }
             .maxOfOrNull { it[TransportStops.orderIndex] } ?: 0
     }
 
-    suspend fun reorderStops(routeId: UUID, stopOrderMap: Map<String, Int>): Boolean = dbQuery {
+    suspend fun reorderStops(routeId: UUID, stopOrderMap: Map<String, Int>): Boolean = tenantDbQuery {
         var success = true
         stopOrderMap.forEach { (stopId, newOrder) ->
             val updated = TransportStops.update({

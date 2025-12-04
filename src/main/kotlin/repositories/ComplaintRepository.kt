@@ -2,7 +2,7 @@ package com.example.repositories
 
 import com.example.database.tables.Complaints
 import com.example.models.dto.*
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -20,7 +20,7 @@ class ComplaintRepository {
         ignoreUnknownKeys = true
     }
 
-    suspend fun create(request: CreateComplaintRequest): String = dbQuery {
+    suspend fun create(request: CreateComplaintRequest): String = tenantDbQuery {
         val complaintId = UUID.randomUUID().toString()
         val now = LocalDateTime.now()
 
@@ -39,27 +39,27 @@ class ComplaintRepository {
         complaintId
     }
 
-    suspend fun findById(id: String): ComplaintDto? = dbQuery {
+    suspend fun findById(id: String): ComplaintDto? = tenantDbQuery {
         Complaints.selectAll()
             .where { Complaints.id eq id }
             .map { mapRowToDto(it) }
             .singleOrNull()
     }
 
-    suspend fun findAll(): List<ComplaintDto> = dbQuery {
+    suspend fun findAll(): List<ComplaintDto> = tenantDbQuery {
         Complaints.selectAll()
             .orderBy(Complaints.createdAt to SortOrder.DESC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByAuthor(authorId: String): List<ComplaintDto> = dbQuery {
+    suspend fun findByAuthor(authorId: String): List<ComplaintDto> = tenantDbQuery {
         Complaints.selectAll()
             .where { Complaints.author eq authorId }
             .orderBy(Complaints.createdAt to SortOrder.DESC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(id: String, request: UpdateComplaintRequest): Boolean = dbQuery {
+    suspend fun update(id: String, request: UpdateComplaintRequest): Boolean = tenantDbQuery {
         Complaints.update({ Complaints.id eq id }) {
             it[title] = request.title
             it[content] = request.content
@@ -68,22 +68,22 @@ class ComplaintRepository {
         } > 0
     }
 
-    suspend fun delete(id: String): Boolean = dbQuery {
+    suspend fun delete(id: String): Boolean = tenantDbQuery {
         Complaints.deleteWhere { Complaints.id eq id } > 0
     }
 
-    suspend fun updateStatus(id: String, status: String): Boolean = dbQuery {
+    suspend fun updateStatus(id: String, status: String): Boolean = tenantDbQuery {
         Complaints.update({ Complaints.id eq id }) {
             it[Complaints.status] = status
         } > 0
     }
 
-    suspend fun addComment(id: String, comment: CommentDto): Boolean = dbQuery {
+    suspend fun addComment(id: String, comment: CommentDto): Boolean = tenantDbQuery {
         // First, get the current complaint
         val currentComplaint = Complaints.selectAll()
             .where { Complaints.id eq id }
             .singleOrNull()
-            ?: return@dbQuery false
+            ?: return@tenantDbQuery false
 
         // Deserialize current comments
         val currentCommentsJson = currentComplaint[Complaints.comments]
@@ -103,14 +103,14 @@ class ComplaintRepository {
         } > 0
     }
 
-    suspend fun findByCategory(category: String): List<ComplaintDto> = dbQuery {
+    suspend fun findByCategory(category: String): List<ComplaintDto> = tenantDbQuery {
         Complaints.selectAll()
             .where { Complaints.category eq category }
             .orderBy(Complaints.createdAt to SortOrder.DESC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByStatus(status: String): List<ComplaintDto> = dbQuery {
+    suspend fun findByStatus(status: String): List<ComplaintDto> = tenantDbQuery {
         Complaints.selectAll()
             .where { Complaints.status eq status }
             .orderBy(Complaints.createdAt to SortOrder.DESC)

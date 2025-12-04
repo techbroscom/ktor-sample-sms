@@ -2,7 +2,6 @@ package com.example.repositories
 
 import com.example.database.tables.*
 import com.example.models.dto.*
-import com.example.utils.dbQuery
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import java.time.LocalDate
