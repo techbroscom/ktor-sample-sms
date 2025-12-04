@@ -45,6 +45,11 @@ class UserService(private val userRepository: UserRepository, private val fcmSer
             ?: throw ApiException("User not found", HttpStatusCode.NotFound)
     }
 
+    suspend fun getAdminUsers(): List<UserDto> {
+        return userRepository.findByAdminType()
+            ?: throw ApiException("User not found", HttpStatusCode.NotFound)
+    }
+
     suspend fun getAllUsers(): List<UserDto> {
         return userRepository.findAll()
     }

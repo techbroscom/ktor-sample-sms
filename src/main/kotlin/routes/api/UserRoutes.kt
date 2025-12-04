@@ -137,6 +137,15 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
             ))
         }
 
+        // Get user by ADMIN
+        get("/ADMIN") {
+            val user = userService.getAdminUsers()
+            call.respond(ApiResponse(
+                success = true,
+                data = user
+            ))
+        }
+
         // Create user
         post {
             val request = call.receive<CreateUserRequest>()

@@ -41,6 +41,12 @@ class UserRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByAdminType(): List<UserDto>? = tenantDbQuery {
+        Users.selectAll()
+            .where { Users.role eq UserRole.ADMIN }
+            .map { mapRowToDto(it) }
+    }
+
     suspend fun findByMobile(mobile: String): List<UserDto>? = tenantDbQuery {
         Users.selectAll()
             .where { Users.mobileNumber eq mobile }
