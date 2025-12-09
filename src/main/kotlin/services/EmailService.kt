@@ -7,7 +7,6 @@ import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 
-/*
 class EmailService {
 
     private val gmailUsername = "smstechbros@gmail.com"
@@ -72,9 +71,9 @@ class EmailService {
             }
         }
     }
-}*/
+}
 
-class EmailService {
+/*class EmailService {
 
     private val smtpUsername = "9cd105001@smtp-brevo.com"
     private val smtpPassword = System.getenv("BREVO_SMTP_KEY")
@@ -137,4 +136,4 @@ class EmailService {
             }
         }
     }
-}
+}*/

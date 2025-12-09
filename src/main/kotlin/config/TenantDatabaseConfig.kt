@@ -4,36 +4,45 @@ import com.example.tenant.TenantContextHolder
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.transactions.TransactionManager
-import java.sql.Connection
 
 class TenantDatabaseConfig {
     companion object {
+
         private val systemDatabase by lazy { initSystemDatabase() }
         private val tenantDatabases = mutableMapOf<String, Database>()
+
+        // 🔵 Production DB (inside VPS)
+        private const val DB_URL = "jdbc:postgresql://localhost:5432/saas_db"
+        private const val DB_USER = "postgres"
+        private const val DB_PASS = "smstechdb"
 
         private fun initSystemDatabase(): Database {
             val config = HikariConfig().apply {
                 driverClassName = "org.postgresql.Driver"
-                jdbcUrl = "jdbc:postgresql://nozomi.proxy.rlwy.net:49285/railway"
-                username = "postgres"
-                password = "djoekYKIsYrtVRtWoPLMFtnYGikLkwkU"
-                schema = "public" // or leave empty, default is public
+                jdbcUrl = DB_URL
+                username = DB_USER
+                password = DB_PASS
+                schema = "public"
+                maximumPoolSize = 5
+                isAutoCommit = false
+                transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             }
             return Database.connect(HikariDataSource(config))
         }
 
-        // Remove the explicit getSystemDatabase() function since the property already provides access
         fun getSystemDb(): Database = systemDatabase
 
         fun getTenantDatabase(schemaName: String): Database {
             return tenantDatabases.getOrPut(schemaName) {
                 val config = HikariConfig().apply {
                     driverClassName = "org.postgresql.Driver"
-                    jdbcUrl = "jdbc:postgresql://nozomi.proxy.rlwy.net:49285/railway"
-                    username = "postgres"
-                    password = "djoekYKIsYrtVRtWoPLMFtnYGikLkwkU"
+                    jdbcUrl = DB_URL
+                    username = DB_USER
+                    password = DB_PASS
                     schema = schemaName
+                    maximumPoolSize = 5
+                    isAutoCommit = false
+                    transactionIsolation = "TRANSACTION_REPEATABLE_READ"
                 }
                 Database.connect(HikariDataSource(config))
             }
