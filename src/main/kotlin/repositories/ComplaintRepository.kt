@@ -30,7 +30,7 @@ class ComplaintRepository {
             it[content] = request.content
             it[author] = request.author
             it[category] = request.category
-            it[status] = "Open" // Default status
+            it[status] = "OPEN" // Default status
             it[isAnonymous] = request.isAnonymous
             it[createdAt] = now
             it[comments] = json.encodeToString(ListSerializer(CommentDto.serializer()), emptyList())
