@@ -12,7 +12,7 @@ import java.util.*
 
 class TenantService {
 
-    suspend fun createTenant(name: String): TenantContext {
+    suspend fun createTenant(name: String, subDomain: String): TenantContext {
         val tenantId = UUID.randomUUID()
 
         // Step 1: Insert tenant with temporary schema_name
@@ -20,6 +20,7 @@ class TenantService {
             Tenants.insert {
                 it[id] = tenantId
                 it[Tenants.name] = name
+                it[Tenants.subDomain] = subDomain
                 it[schema_name] = "" // placeholder, to be updated later
             }
         }
@@ -45,6 +46,7 @@ class TenantService {
         val tenantContext = TenantContext(
             id = tenantId.toString(),
             name = name,
+            subDomain = schemaName,
             schemaName = schemaName
         )
 
@@ -92,25 +94,26 @@ class TenantService {
                 TenantContext(
                     id = it[Tenants.id].toString(),
                     name = it[Tenants.name],
+                    subDomain = it[Tenants.subDomain],
                     schemaName = it[Tenants.schema_name]
                 )
             }
         }
     }
 
-    /*suspend fun getTenantBySubdomain(subdomain: String): TenantContext? {
+    suspend fun getTenantBySubdomain(subdomain: String): TenantContext? {
         return transaction(TenantDatabaseConfig.getSystemDb()) {
             Tenants.selectAll()
-                .where { Tenants.subdomain eq subdomain }
+                .where { Tenants.subDomain eq subdomain }
                 .map {
                     TenantContext(
-                        id = it[Tenants.id],
+                        id = it[Tenants.id].toString(),
                         name = it[Tenants.name],
-                        subdomain = it[Tenants.subdomain],
-                        schemaName = it[Tenants.schemaName]
+                        subDomain = it[Tenants.subDomain],
+                        schemaName = it[Tenants.schema_name]
                     )
                 }
                 .singleOrNull()
         }
-    }*/
+    }
 }

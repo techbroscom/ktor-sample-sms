@@ -57,6 +57,7 @@ private suspend fun resolveTenant(call: ApplicationCall): TenantContext? {
                     TenantContext(
                         id = it[Tenants.id].toString(),
                         name = it[Tenants.name],
+                        subDomain = it[Tenants.subDomain],
                         schemaName = it[Tenants.schema_name]
                     )
                 }

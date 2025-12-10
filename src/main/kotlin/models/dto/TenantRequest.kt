@@ -5,4 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CreateTenantRequest(
     val name: String,
+    val subDomain: String
 )

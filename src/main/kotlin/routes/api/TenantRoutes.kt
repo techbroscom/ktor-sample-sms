@@ -16,7 +16,7 @@ fun Route.tenantRoutes(tenantService: TenantService) {
         // Create new tenant
         post {
             val request = call.receive<CreateTenantRequest>()
-            val tenant = tenantService.createTenant(request.name)
+            val tenant = tenantService.createTenant(request.name, request.subDomain)
             call.respond(HttpStatusCode.Created, ApiResponse(
                 success = true,
                 data = tenant,
@@ -27,6 +27,18 @@ fun Route.tenantRoutes(tenantService: TenantService) {
         // Get all tenants
         get {
             val tenants = tenantService.getAllTenants()
+            call.respond(ApiResponse(
+                success = true,
+                data = tenants
+            ))
+        }
+
+        // Get all tenants
+        get("/web/{subdomain}") {
+            val subDomain = call.parameters["subdomain"]
+                ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
+
+            val tenants = tenantService.getTenantBySubdomain(subDomain)
             call.respond(ApiResponse(
                 success = true,
                 data = tenants

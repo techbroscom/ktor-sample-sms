@@ -7,6 +7,7 @@ import java.util.*
 data class TenantContext(
     val id: String,
     val name: String,
+    val subDomain: String,
     val schemaName: String
 )
 

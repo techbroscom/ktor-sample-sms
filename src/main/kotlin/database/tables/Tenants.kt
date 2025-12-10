@@ -7,6 +7,7 @@ import java.time.LocalDateTime
 object Tenants : Table("tenants") {
     val id = uuid("id")
     val name = varchar("name", 100)
+    val subDomain = varchar("sub_domain", 100)
     val schema_name = varchar("schema_name", 50).uniqueIndex()
     val tenantNumber = integer("tenant_number").autoIncrement().uniqueIndex() // <- NEW
     val isActive = bool("is_active").default(true)

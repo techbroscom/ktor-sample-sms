@@ -24,7 +24,7 @@ fun Application.configureDatabases() {
     // Run migration for existing tenants on startup
     val migrationService = MigrationService()
     runBlocking {
-        migrationService.migrateTransportRoutesTable()
+        migrationService.migrateTenantsTable()
     }
 }
 
