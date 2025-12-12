@@ -1,6 +1,7 @@
 package com.example.routes.api
 
 import com.example.services.FileService
+import com.example.services.LocalFileService
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -11,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 
-fun Route.fileRoutes(fileService: FileService) {
+/*fun Route.fileRoutes(fileService: FileService) {
 
     route("/api/v1/files") {
 
@@ -224,7 +225,7 @@ fun Route.fileRoutes(fileService: FileService) {
         }
 
         // Get shareable link
-        /*get("/share/{filePath...}") {
+        *//*get("/share/{filePath...}") {
             try {
                 val filePath = call.parameters.getAll("filePath")?.joinToString("/") ?: ""
 
@@ -247,11 +248,137 @@ fun Route.fileRoutes(fileService: FileService) {
                     mapOf("error" to "Failed to get shareable link: ${e.message}")
                 )
             }
-        }*/
+        }*//*
 
-        /*get("/test-dropbox") {
+        *//*get("/test-dropbox") {
             val result = fileService.testDropboxConnection()
             call.respond(HttpStatusCode.OK, mapOf("result" to result))
-        }*/
+        }*//*
+    }
+}*/
+
+fun Route.fileRoutes(fileService: LocalFileService) {
+
+    route("/api/v1/files") {
+
+        // ----------------------
+        // Upload Profile Picture
+        //------------------------
+        post("/upload/profile") {
+            val tenantId = call.request.headers["X-Tenant"]
+            if (tenantId == null) {
+                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "X-Tenant header required"))
+                return@post
+            }
+
+            var userId: String? = null
+            var fileBytes: ByteArray? = null
+            var originalFileName: String? = null
+
+            val multipart = call.receiveMultipart()
+
+            multipart.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        if (part.name == "userId") userId = part.value
+                    }
+
+                    is PartData.FileItem -> {
+                        originalFileName = part.originalFileName
+                        fileBytes = part.streamProvider().readBytes()
+                    }
+
+                    // 🔥 This branch fixes the compiler error
+                    else -> {
+                        println("Skipping part type: ${part::class.simpleName}")
+                    }
+                }
+                part.dispose()
+            }
+
+            if (userId == null || originalFileName == null || fileBytes == null) {
+                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing data"))
+                return@post
+            }
+
+            val result = fileService.uploadProfilePicture(
+                tenantId = tenantId,
+                userId = userId!!,
+                fileName = originalFileName!!,
+                bytes = fileBytes!!
+            )
+
+            call.respond(result)
+        }
+
+        // ----------------------
+        // Upload Document
+        //------------------------
+        post("/upload/document") {
+            val tenantId = call.request.headers["X-Tenant"]
+            if (tenantId == null) {
+                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "X-Tenant header required"))
+                return@post
+            }
+
+            var userId: String? = null
+            var category = "general"
+            var fileBytes: ByteArray? = null
+            var originalFileName: String? = null
+
+            val multipart = call.receiveMultipart()
+
+            multipart.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        when (part.name) {
+                            "userId" -> userId = part.value
+                            "category" -> category = part.value
+                        }
+                    }
+
+                    is PartData.FileItem -> {
+                        originalFileName = part.originalFileName
+                        fileBytes = part.streamProvider().readBytes()
+                    }
+
+                    // 🔥 Required for exhaustive `when`
+                    else -> {
+                        println("Skipping part type: ${part::class.simpleName}")
+                    }
+                }
+                part.dispose()
+            }
+
+            if (userId == null || originalFileName == null || fileBytes == null) {
+                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing data"))
+                return@post
+            }
+
+            val result = fileService.uploadDocument(
+                tenantId = tenantId,
+                userId = userId!!,
+                category = category,
+                originalName = originalFileName!!,
+                bytes = fileBytes!!
+            )
+
+            call.respond(result)
+        }
+
+        // ----------------------
+        // Delete File
+        //------------------------
+        delete("/delete") {
+            val path = call.request.queryParameters["path"]
+            if (path == null) {
+                call.respond(HttpStatusCode.BadRequest, "path required")
+                return@delete
+            }
+
+            val result = fileService.deleteFile(path)
+            call.respond(result)
+        }
     }
 }
+

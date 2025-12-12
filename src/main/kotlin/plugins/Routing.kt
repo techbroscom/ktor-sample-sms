@@ -71,6 +71,7 @@ import com.example.services.FeePaymentService
 import com.example.services.FeesStructureService
 import com.example.services.FileService
 import com.example.services.HolidayService
+import com.example.services.LocalFileService
 import com.example.services.NotificationService
 import com.example.services.OtpService
 import com.example.services.PostService
@@ -193,7 +194,10 @@ fun Application.configureRouting() {
         bucket = "sms"
     )
 
-    val fileService = FileService(supabaseConfig)
+//    val fileService = FileService(supabaseConfig)
+
+    val fileService = LocalFileService("/var/www/uploads")
+
 
     // API routes
 
