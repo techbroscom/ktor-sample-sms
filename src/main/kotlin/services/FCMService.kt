@@ -12,7 +12,8 @@ class FCMService(
     private val fcmTokenRepository: FCMTokenRepository
 ) {
 
-    private val messaging = FCMConfig.getMessaging()
+    // Lazy nullable messaging instance; service will gracefully handle missing config
+    private val messaging get() = FCMConfig.getMessaging()
 
     suspend fun saveToken(userId: UUID, tokenRequest: FCMTokenRequest): Boolean {
         return withContext(Dispatchers.IO) {
@@ -75,7 +76,12 @@ class FCMService(
                     )
                     .build()
 
-                val response = messaging.sendEachForMulticast(message)
+                val msg = messaging ?: return@withContext NotificationResponse(
+                    success = false,
+                    message = "Firebase not configured. Set FIREBASE_SERVICE_ACCOUNT env variable."
+                )
+
+                val response = msg.sendEachForMulticast(message)
 
                 // Handle failed tokens
                 handleFailedTokens(tokens, response)
@@ -139,7 +145,7 @@ class FCMService(
 
                 // Check Firebase messaging instance
                 println("Checking Firebase messaging instance...")
-                println("Firebase messaging instance: ${messaging::class.java.name}")
+                println("Firebase messaging instance: ${messaging?.let { it::class.java.name } ?: "unavailable"}")
 
                 // Send in batches (FCM allows max 500 tokens per request)
                 val batchSize = 500
@@ -196,7 +202,12 @@ class FCMService(
                         println("Sending multicast message...")
 
                         val startTime = System.currentTimeMillis()
-                        val response = messaging.sendEachForMulticast(message)
+                        val msg = messaging ?: return@withContext NotificationResponse(
+                            success = false,
+                            message = "Firebase not configured. Set FIREBASE_SERVICE_ACCOUNT env variable."
+                        )
+
+                        val response = msg.sendEachForMulticast(message)
                         val endTime = System.currentTimeMillis()
 
                         println("FCM Response received in ${endTime - startTime}ms")
@@ -318,8 +329,10 @@ class FCMService(
         return withContext(Dispatchers.IO) {
             try {
                 val tokens = fcmTokenRepository.getTokensByUserId(userId)
+                val msg = messaging ?: return@withContext false
+
                 if (tokens.isNotEmpty()) {
-                    messaging.subscribeToTopic(tokens, topic)
+                    msg.subscribeToTopic(tokens, topic)
                     true
                 } else {
                     false
@@ -334,8 +347,10 @@ class FCMService(
         return withContext(Dispatchers.IO) {
             try {
                 val tokens = fcmTokenRepository.getTokensByUserId(userId)
+                val msg = messaging ?: return@withContext false
+
                 if (tokens.isNotEmpty()) {
-                    messaging.unsubscribeFromTopic(tokens, topic)
+                    msg.unsubscribeFromTopic(tokens, topic)
                     true
                 } else {
                     false

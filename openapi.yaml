@@ -1,0 +1,1894 @@
+openapi: 3.0.0
+info:
+  title: School Management System API
+  description: Comprehensive API for school management including users, classes, exams, attendance, and more
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.school-management.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and login endpoints
+  - name: Users
+    description: User management operations
+  - name: Academic Structure
+    description: Classes, subjects, and academic year management
+  - name: Assignments
+    description: Student and staff assignments
+  - name: Exams
+    description: Exam management, schedules, and results
+  - name: Attendance
+    description: Attendance tracking
+  - name: Fees
+    description: Fee structure and management
+  - name: Posts
+    description: Post and announcements
+  - name: Complaints
+    description: Complaint management
+  - name: Holidays
+    description: Holiday management
+  - name: School Config
+    description: School configuration settings
+  - name: Rules & Regulations
+    description: School rules and regulations
+  - name: Files
+    description: File upload and management
+  - name: Notifications
+    description: Push notifications via FCM
+  - name: Dashboard
+    description: Dashboard analytics
+
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      operationId: getRootStatus
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Server is running
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "School Management Server"
+
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+
+  /api/v1/users/login:
+    post:
+      summary: User login
+      operationId: userLogin
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Invalid credentials
+
+  /api/v1/users/login-fcm:
+    post:
+      summary: Login with FCM token
+      operationId: userLoginFCM
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginFCMRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users/login/send-otp:
+    post:
+      summary: Send OTP to email
+      operationId: sendOTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtpRequest'
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users/login/verify-otp:
+    post:
+      summary: Verify OTP and login
+      operationId: verifyOTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: OTP verified and login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users:
+    get:
+      summary: Get all users
+      operationId: getAllUsers
+      tags:
+        - Users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create user
+      operationId: createUser
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users/role/{role}:
+    get:
+      summary: Get users by role
+      operationId: getUsersByRole
+      tags:
+        - Users
+      parameters:
+        - name: role
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "teacher"
+      responses:
+        '200':
+          description: Users with specified role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users/email/{email}:
+    get:
+      summary: Get user by email
+      operationId: getUserByEmail
+      tags:
+        - Users
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users/{id}:
+    get:
+      summary: Get user by ID
+      operationId: getUserById
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update user
+      operationId: updateUser
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete user
+      operationId: deleteUser
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/users/{id}/password:
+    put:
+      summary: Change password
+      operationId: changePassword
+      tags:
+        - Users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/classes:
+    get:
+      summary: Get all classes
+      operationId: getAllClasses
+      tags:
+        - Academic Structure
+      responses:
+        '200':
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create class
+      operationId: createClass
+      tags:
+        - Academic Structure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClassRequest'
+      responses:
+        '201':
+          description: Class created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/classes/active:
+    get:
+      summary: Get classes for active academic year
+      operationId: getActiveClasses
+      tags:
+        - Academic Structure
+      responses:
+        '200':
+          description: Classes for active academic year
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/classes/{id}:
+    get:
+      summary: Get class by ID
+      operationId: getClassById
+      tags:
+        - Academic Structure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Class found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update class
+      operationId: updateClass
+      tags:
+        - Academic Structure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClassRequest'
+      responses:
+        '200':
+          description: Class updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete class
+      operationId: deleteClass
+      tags:
+        - Academic Structure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Class deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/subjects:
+    get:
+      summary: Get all subjects
+      operationId: getAllSubjects
+      tags:
+        - Academic Structure
+      responses:
+        '200':
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create subject
+      operationId: createSubject
+      tags:
+        - Academic Structure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubjectRequest'
+      responses:
+        '201':
+          description: Subject created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/subjects/{id}:
+    get:
+      summary: Get subject by ID
+      operationId: getSubjectById
+      tags:
+        - Academic Structure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subject found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update subject
+      operationId: updateSubject
+      tags:
+        - Academic Structure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubjectRequest'
+      responses:
+        '200':
+          description: Subject updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete subject
+      operationId: deleteSubject
+      tags:
+        - Academic Structure
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Subject deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/student-assignments:
+    get:
+      summary: Get all student assignments
+      operationId: getStudentAssignments
+      tags:
+        - Assignments
+      responses:
+        '200':
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create student assignment
+      operationId: createStudentAssignment
+      tags:
+        - Assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStudentAssignmentRequest'
+      responses:
+        '201':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/student-assignments/active:
+    get:
+      summary: Get active student assignments
+      operationId: getActiveStudentAssignments
+      tags:
+        - Assignments
+      responses:
+        '200':
+          description: Active assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/student-assignments/class/{classId}/students:
+    get:
+      summary: Get students in a class
+      operationId: getStudentsInClass
+      tags:
+        - Assignments
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Students in class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/student-assignments/student/{studentId}/classes:
+    get:
+      summary: Get classes for a student
+      operationId: getStudentClasses
+      tags:
+        - Assignments
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Classes for student
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/exams:
+    get:
+      summary: Get all exams
+      operationId: getAllExams
+      tags:
+        - Exams
+      responses:
+        '200':
+          description: List of exams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create exam
+      operationId: createExam
+      tags:
+        - Exams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamRequest'
+      responses:
+        '201':
+          description: Exam created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/exams/upcoming:
+    get:
+      summary: Get upcoming exams
+      operationId: getUpcomingExams
+      tags:
+        - Exams
+      responses:
+        '200':
+          description: List of upcoming exams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/exams/calendar:
+    get:
+      summary: Get exam calendar
+      operationId: getExamCalendar
+      tags:
+        - Exams
+      responses:
+        '200':
+          description: Exam calendar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/exams/{id}:
+    get:
+      summary: Get exam by ID
+      operationId: getExamById
+      tags:
+        - Exams
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exam found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update exam
+      operationId: updateExam
+      tags:
+        - Exams
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExamRequest'
+      responses:
+        '200':
+          description: Exam updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete exam
+      operationId: deleteExam
+      tags:
+        - Exams
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Exam deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/exam-schedules:
+    get:
+      summary: Get all exam schedules
+      operationId: getAllExamSchedules
+      tags:
+        - Exams
+      responses:
+        '200':
+          description: List of exam schedules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create exam schedule
+      operationId: createExamSchedule
+      tags:
+        - Exams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamScheduleRequest'
+      responses:
+        '201':
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/exam-results:
+    get:
+      summary: Get all exam results
+      operationId: getAllExamResults
+      tags:
+        - Exams
+      responses:
+        '200':
+          description: List of exam results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create exam result
+      operationId: createExamResult
+      tags:
+        - Exams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamResultRequest'
+      responses:
+        '201':
+          description: Result created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/attendance:
+    get:
+      summary: Get all attendance records
+      operationId: getAllAttendance
+      tags:
+        - Attendance
+      responses:
+        '200':
+          description: List of attendance records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Mark attendance
+      operationId: markAttendance
+      tags:
+        - Attendance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAttendanceRequest'
+      responses:
+        '201':
+          description: Attendance marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/fees-structures:
+    get:
+      summary: Get all fee structures
+      operationId: getAllFeeStructures
+      tags:
+        - Fees
+      responses:
+        '200':
+          description: List of fee structures
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create fee structure
+      operationId: createFeeStructure
+      tags:
+        - Fees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeeStructureRequest'
+      responses:
+        '201':
+          description: Fee structure created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/posts:
+    get:
+      summary: Get all posts
+      operationId: getAllPosts
+      tags:
+        - Posts
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create post
+      operationId: createPost
+      tags:
+        - Posts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/posts/search:
+    get:
+      summary: Search posts
+      operationId: searchPosts
+      tags:
+        - Posts
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/posts/{id}:
+    get:
+      summary: Get post by ID
+      operationId: getPostById
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update post
+      operationId: updatePost
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: Post updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete post
+      operationId: deletePost
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/holidays:
+    get:
+      summary: Get all holidays
+      operationId: getAllHolidays
+      tags:
+        - Holidays
+      responses:
+        '200':
+          description: List of holidays
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create holiday
+      operationId: createHoliday
+      tags:
+        - Holidays
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHolidayRequest'
+      responses:
+        '201':
+          description: Holiday created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/holidays/public:
+    get:
+      summary: Get public holidays
+      operationId: getPublicHolidays
+      tags:
+        - Holidays
+      responses:
+        '200':
+          description: List of public holidays
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/holidays/{id}:
+    get:
+      summary: Get holiday by ID
+      operationId: getHolidayById
+      tags:
+        - Holidays
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Holiday found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update holiday
+      operationId: updateHoliday
+      tags:
+        - Holidays
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHolidayRequest'
+      responses:
+        '200':
+          description: Holiday updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      summary: Delete holiday
+      operationId: deleteHoliday
+      tags:
+        - Holidays
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Holiday deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/files/upload/profile:
+    post:
+      summary: Upload profile picture
+      operationId: uploadProfilePicture
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/files/upload/document:
+    post:
+      summary: Upload document
+      operationId: uploadDocument
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/files/{filePath}:
+    delete:
+      summary: Delete file
+      operationId: deleteFile
+      tags:
+        - Files
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/fcm/token:
+    post:
+      summary: Save FCM token
+      operationId: saveFCMToken
+      tags:
+        - Notifications
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FCMTokenRequest'
+      responses:
+        '200':
+          description: Token saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/fcm/notification/personal:
+    post:
+      summary: Send personal notification
+      operationId: sendPersonalNotification
+      tags:
+        - Notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalNotificationRequest'
+      responses:
+        '200':
+          description: Notification sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+
+  /api/v1/fcm/notification/broadcast:
+    post:
+      summary: Send broadcast notification
+      operationId: sendBroadcastNotification
+      tags:
+        - Notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BroadcastNotificationRequest'
+      responses:
+        '200':
+          description: Broadcast sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+
+  /api/v1/fcm/topic/subscribe:
+    post:
+      summary: Subscribe to topic
+      operationId: subscribeToTopic
+      tags:
+        - Notifications
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+      responses:
+        '200':
+          description: Subscribed to topic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/fcm/topic/unsubscribe:
+    post:
+      summary: Unsubscribe from topic
+      operationId: unsubscribeFromTopic
+      tags:
+        - Notifications
+      parameters:
+        - name: userId
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+      responses:
+        '200':
+          description: Unsubscribed from topic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/school-config/{id}:
+    get:
+      summary: Get school config
+      operationId: getSchoolConfig
+      tags:
+        - School Config
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: School config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      summary: Update school config
+      operationId: updateSchoolConfig
+      tags:
+        - School Config
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSchoolConfigRequest'
+      responses:
+        '200':
+          description: Config updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/rules-and-regulations:
+    get:
+      summary: Get all rules and regulations
+      operationId: getAllRulesAndRegulations
+      tags:
+        - Rules & Regulations
+      responses:
+        '200':
+          description: List of rules and regulations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create rule or regulation
+      operationId: createRuleOrRegulation
+      tags:
+        - Rules & Regulations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRuleOrRegulationRequest'
+      responses:
+        '201':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/v1/complaints:
+    get:
+      summary: Get all complaints
+      operationId: getAllComplaints
+      tags:
+        - Complaints
+      responses:
+        '200':
+          description: List of complaints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      summary: Create complaint
+      operationId: createComplaint
+      tags:
+        - Complaints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComplaintRequest'
+      responses:
+        '201':
+          description: Complaint created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        message:
+          type: string
+      example:
+        success: true
+        data: {}
+        message: "Success"
+
+    UserLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    UserLoginFCMRequest:
+      type: object
+      required:
+        - email
+        - password
+        - fcmToken
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        fcmToken:
+          type: string
+        deviceId:
+          type: string
+        platform:
+          type: string
+          enum: [android, ios]
+
+    SendOtpRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - email
+        - otpCode
+      properties:
+        email:
+          type: string
+          format: email
+        otpCode:
+          type: string
+          minLength: 6
+          maxLength: 6
+
+    CreateUserRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - role
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [student, teacher, admin, parent]
+        phone:
+          type: string
+        address:
+          type: string
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
+
+    CreateClassRequest:
+      type: object
+      required:
+        - className
+        - section
+      properties:
+        className:
+          type: string
+          example: "10"
+        section:
+          type: string
+          example: "A"
+        academicYearId:
+          type: string
+          format: uuid
+
+    UpdateClassRequest:
+      type: object
+      properties:
+        className:
+          type: string
+        section:
+          type: string
+
+    CreateSubjectRequest:
+      type: object
+      required:
+        - subjectName
+        - subjectCode
+      properties:
+        subjectName:
+          type: string
+        subjectCode:
+          type: string
+
+    UpdateSubjectRequest:
+      type: object
+      properties:
+        subjectName:
+          type: string
+        subjectCode:
+          type: string
+
+    CreateStudentAssignmentRequest:
+      type: object
+      required:
+        - studentId
+        - classId
+        - academicYearId
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        classId:
+          type: string
+          format: uuid
+        academicYearId:
+          type: string
+          format: uuid
+
+    CreateExamRequest:
+      type: object
+      required:
+        - examName
+        - examDate
+      properties:
+        examName:
+          type: string
+        examDate:
+          type: string
+          format: date
+        classId:
+          type: string
+          format: uuid
+        subjectId:
+          type: string
+          format: uuid
+        academicYearId:
+          type: string
+          format: uuid
+
+    UpdateExamRequest:
+      type: object
+      properties:
+        examName:
+          type: string
+        examDate:
+          type: string
+          format: date
+
+    CreateExamScheduleRequest:
+      type: object
+      required:
+        - examId
+        - classId
+        - date
+        - startTime
+        - endTime
+      properties:
+        examId:
+          type: string
+          format: uuid
+        classId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+        room:
+          type: string
+
+    CreateExamResultRequest:
+      type: object
+      required:
+        - examId
+        - studentId
+        - marks
+        - totalMarks
+      properties:
+        examId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        marks:
+          type: number
+          format: double
+        totalMarks:
+          type: number
+          format: double
+        grade:
+          type: string
+
+    CreateAttendanceRequest:
+      type: object
+      required:
+        - studentId
+        - classId
+        - date
+        - status
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        classId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [present, absent, leave]
+
+    CreateFeeStructureRequest:
+      type: object
+      required:
+        - classId
+        - feeType
+        - amount
+      properties:
+        classId:
+          type: string
+          format: uuid
+        feeType:
+          type: string
+        amount:
+          type: number
+          format: double
+        mandatory:
+          type: boolean
+
+    CreatePostRequest:
+      type: object
+      required:
+        - title
+        - content
+        - author
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+        imageUrl:
+          type: string
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        imageUrl:
+          type: string
+
+    CreateHolidayRequest:
+      type: object
+      required:
+        - holidayName
+        - holidayDate
+      properties:
+        holidayName:
+          type: string
+        holidayDate:
+          type: string
+          format: date
+        isPublic:
+          type: boolean
+          default: true
+
+    UpdateHolidayRequest:
+      type: object
+      properties:
+        holidayName:
+          type: string
+        holidayDate:
+          type: string
+          format: date
+        isPublic:
+          type: boolean
+
+    UpdateSchoolConfigRequest:
+      type: object
+      properties:
+        schoolName:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+
+    CreateRuleOrRegulationRequest:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+
+    CreateComplaintRequest:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        complaintType:
+          type: string
+
+    FCMTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+        deviceId:
+          type: string
+        platform:
+          type: string
+          enum: [android, ios]
+
+    PersonalNotificationRequest:
+      type: object
+      required:
+        - userId
+        - title
+        - body
+      properties:
+        userId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            type: string
+
+    BroadcastNotificationRequest:
+      type: object
+      required:
+        - title
+        - body
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        schoolId:
+          type: string
+          format: uuid
+        targetRole:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            type: string
+
+    NotificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        sentCount:
+          type: integer
+        failedCount:
+          type: integer

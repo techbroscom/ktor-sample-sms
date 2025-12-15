@@ -33,7 +33,12 @@ object FCMConfig {
         }
     }
 
-    fun getMessaging(): FirebaseMessaging {
-        return FirebaseMessaging.getInstance()
+    fun getMessaging(): FirebaseMessaging? {
+        return try {
+            FirebaseMessaging.getInstance()
+        } catch (e: IllegalStateException) {
+            println("Firebase messaging instance unavailable: ${e.message}")
+            null
+        }
     }
 }

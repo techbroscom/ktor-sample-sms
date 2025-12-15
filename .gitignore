@@ -1,4 +1,10 @@
 .gradle
+# Ignore Gradle build outputs and compiled classes
+build/
+**/build/
+*.class
+out/
+**/out/
 #build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
