@@ -55,6 +55,8 @@ class TenantService {
         transaction(tenantDb) {
             exec("CREATE SCHEMA IF NOT EXISTS $schemaName")
 
+            exec("SET search_path TO $schemaName")
+
             SchemaUtils.create(
                 Users,
                 Holidays,
