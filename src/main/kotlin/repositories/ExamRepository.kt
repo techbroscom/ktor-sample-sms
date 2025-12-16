@@ -3,12 +3,14 @@ package com.example.repositories
 import com.example.database.tables.AcademicYears
 import com.example.database.tables.Classes
 import com.example.database.tables.Exams
+import com.example.database.tables.ResultStatus
 import com.example.database.tables.Subjects
 import com.example.models.dto.*
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 class ExamRepository {
@@ -303,7 +305,9 @@ class ExamRepository {
             subjectCode = row.getOrNull(Subjects.code),
             className = row.getOrNull(Classes.className),
             sectionName = row.getOrNull(Classes.sectionName),
-            academicYearName = row.getOrNull(AcademicYears.year)
+            academicYearName = row.getOrNull(AcademicYears.year),
+            resultStatus = row[Exams.resultStatus].name,
+            resultsPublishedAt = row[Exams.resultsPublishedAt]?.toString()
         )
     }
 
@@ -420,4 +424,28 @@ class ExamRepository {
             .orderBy(Exams.date to SortOrder.ASC, Exams.name to SortOrder.ASC)
             .map { mapRowToDto(it) }
     }
+
+    suspend fun updateResultStatus(
+        examId: String,
+        status: ResultStatus
+    ) = tenantDbQuery {
+
+        println("Exam ID: $examId, Status: $status")
+
+        Exams.update({ Exams.id eq UUID.fromString(examId) }) {
+            it[resultStatus] = status
+        }
+    }
+
+    suspend fun publishResults(
+        examId: String,
+        publishedAt: LocalDateTime
+    ) = tenantDbQuery {
+
+        Exams.update({ Exams.id eq UUID.fromString(examId) }) {
+            it[resultStatus] = ResultStatus.PUBLISHED
+            it[resultsPublishedAt] = publishedAt
+        }
+    }
+
 }

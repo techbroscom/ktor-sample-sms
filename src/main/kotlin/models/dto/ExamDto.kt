@@ -17,7 +17,11 @@ data class ExamDto(
     val subjectCode: String? = null,
     val className: String? = null,
     val sectionName: String? = null,
-    val academicYearName: String? = null
+    val academicYearName: String? = null,
+
+    // ✅ NEW
+    val resultStatus: String,
+    val resultsPublishedAt: String? = null
 )
 
 @Serializable

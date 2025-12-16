@@ -1,12 +1,15 @@
 package com.example.services
 
+import com.example.database.tables.ResultStatus
 import com.example.exceptions.ApiException
 import com.example.models.dto.*
+import com.example.repositories.ExamRepository
 import com.example.repositories.ExamResultRepository
 import io.ktor.http.*
 
 class ExamResultService(
     private val examResultRepository: ExamResultRepository,
+    private val examRepository: ExamRepository,
     private val examService: ExamService,
     private val userService: UserService
 ) {
@@ -104,6 +107,12 @@ class ExamResultService(
         }
 
         val examResultIds = examResultRepository.bulkCreate(createRequests)
+
+        examRepository.updateResultStatus(
+            request.examId,
+            ResultStatus.IN_PROGRESS
+        )
+
         return examResultIds.map { getExamResultById(it) }
     }
 

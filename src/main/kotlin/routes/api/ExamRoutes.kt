@@ -133,6 +133,31 @@ fun Route.examRoutes(examService: ExamService) {
             ))
         }
 
+        post("/{id}/publish-results") {
+            val examId = call.getPathParameter("id", "Exam ID")
+
+            examService.publishResults(examId)
+
+            call.respond(ApiResponse<Unit>(
+                    success = true,
+                    message = "Results published successfully"
+            ))
+        }
+
+        post("/{id}/results-ready") {
+            val examId = call.getPathParameter("id", "Exam ID")
+
+            examService.markResultsReady(examId)
+
+            call.respond(
+                ApiResponse<Unit>(
+                    success = true,
+                    message = "Results marked as READY"
+                )
+            )
+        }
+
+
         // Get exams by date
         /*get("/date/{date}") {
             val date = call.getPathParameter("date", "Date")

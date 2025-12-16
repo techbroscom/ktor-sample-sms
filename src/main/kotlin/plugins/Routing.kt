@@ -151,7 +151,7 @@ fun Application.configureRouting() {
     val examScheduleService = ExamScheduleService(examScheduleRepository, examService, classService)
 
     val examResultRepository = ExamResultRepository()
-    val examResultService = ExamResultService(examResultRepository, examService, userService)
+    val examResultService = ExamResultService(examResultRepository, examRepository, examService, userService)
 
     val attendanceRepository = AttendanceRepository()
     val attendanceService = AttendanceService(attendanceRepository, userService, classService, studentAssignmentService)

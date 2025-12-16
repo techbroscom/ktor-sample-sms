@@ -1,10 +1,12 @@
 package com.example.services
 
+import com.example.database.tables.ResultStatus
 import com.example.exceptions.ApiException
 import com.example.models.dto.*
 import com.example.repositories.ExamRepository
 import io.ktor.http.*
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 
 class ExamService(
@@ -414,4 +416,39 @@ class ExamService(
 
         return examRepository.getExamsByClassesAndExamsName(classId, examName, finalAcademicYearId)
     }
+
+    suspend fun publishResults(examId: String) {
+        val exam = getExamById(examId)
+
+        if (exam.resultStatus != ResultStatus.READY.name) {
+            throw ApiException(
+                "Results are not ready to publish",
+                HttpStatusCode.BadRequest
+            )
+        }
+
+        examRepository.publishResults(
+            examId,
+            LocalDateTime.now()
+        )
+    }
+
+
+    suspend fun markResultsReady(examId: String) {
+        val exam = getExamById(examId)
+
+        if (exam.resultStatus == ResultStatus.PUBLISHED.name) {
+            throw ApiException(
+                "Results already published",
+                HttpStatusCode.BadRequest
+            )
+        }
+
+        examRepository.updateResultStatus(
+            examId,
+            ResultStatus.READY
+        )
+    }
+
+
 }
