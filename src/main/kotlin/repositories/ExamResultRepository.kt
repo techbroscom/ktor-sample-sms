@@ -522,7 +522,8 @@ class ExamResultRepository {
             className = row.getOrNull(Classes.className),
             sectionName = row.getOrNull(Classes.sectionName),
             academicYearName = row.getOrNull(AcademicYears.year),
-            resultStatus = row[Exams.resultStatus].name
+            resultStatus = row.getOrNull(Exams.resultStatus)?.name
+                ?: ResultStatus.NOT_STARTED.name
         )
     }
 
