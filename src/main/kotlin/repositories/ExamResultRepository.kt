@@ -496,7 +496,8 @@ class ExamResultRepository {
             rollNumber = "", // You may want to add rollNumber to StudentAssignments table
             className = row.getOrNull(Classes.className),
             sectionName = row.getOrNull(Classes.sectionName),
-            academicYearName = row.getOrNull(AcademicYears.year)
+            academicYearName = row.getOrNull(AcademicYears.year),
+            resultStatus = row[Exams.resultStatus].name
         )
     }
 
@@ -520,7 +521,8 @@ class ExamResultRepository {
             rollNumber = "",
             className = row.getOrNull(Classes.className),
             sectionName = row.getOrNull(Classes.sectionName),
-            academicYearName = row.getOrNull(AcademicYears.year)
+            academicYearName = row.getOrNull(AcademicYears.year),
+            resultStatus = row[Exams.resultStatus].name
         )
     }
 

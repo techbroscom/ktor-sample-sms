@@ -20,7 +20,8 @@ data class ExamResultDto(
     val rollNumber: String? = null,
     val className: String? = null,
     val sectionName: String? = null,
-    val academicYearName: String? = null
+    val academicYearName: String? = null,
+    val resultStatus: String? = null
 )
 
 @Serializable
