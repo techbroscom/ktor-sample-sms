@@ -433,7 +433,6 @@ class ExamService(
         )
     }
 
-
     suspend fun markResultsReady(examId: String) {
         val exam = getExamById(examId)
 
@@ -448,6 +447,79 @@ class ExamService(
             examId,
             ResultStatus.READY
         )
+    }
+
+    suspend fun publishResultsByExamNameAndClassId(
+        classId: String,
+        examName: String
+    ) {
+        validateUUID(classId, "Class ID")
+
+        if (examName.isBlank()) {
+            throw ApiException("Exam name cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        val exams = examRepository.findByExamNameAndClassId(examName, classId)
+
+        if (exams.isEmpty()) {
+            throw ApiException(
+                "No exams found for exam '$examName' in this class",
+                HttpStatusCode.NotFound
+            )
+        }
+
+        val readyExams = exams.filter {
+            it.resultStatus == ResultStatus.READY.name
+        }
+
+        if (readyExams.isEmpty()) {
+            throw ApiException(
+                "No READY exams found to publish",
+                HttpStatusCode.BadRequest
+            )
+        }
+
+        // Publish all READY exams
+        readyExams.forEach { exam ->
+            examRepository.publishResults(
+                exam.id!!,
+                LocalDateTime.now()
+            )
+        }
+    }
+
+    suspend fun publishResultsByExamName(examName: String) {
+
+        if (examName.isBlank()) {
+            throw ApiException("Exam name cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        val exams = examRepository.findByExamName(examName)
+
+        if (exams.isEmpty()) {
+            throw ApiException(
+                "No exams found with name '$examName'",
+                HttpStatusCode.NotFound
+            )
+        }
+
+        val readyExams = exams.filter {
+            it.resultStatus == ResultStatus.READY.name
+        }
+
+        if (readyExams.isEmpty()) {
+            throw ApiException(
+                "No READY exams found to publish",
+                HttpStatusCode.BadRequest
+            )
+        }
+
+        readyExams.forEach { exam ->
+            examRepository.publishResults(
+                exam.id!!,
+                LocalDateTime.now()
+            )
+        }
     }
 
 

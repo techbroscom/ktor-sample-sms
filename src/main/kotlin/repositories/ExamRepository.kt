@@ -448,4 +448,29 @@ class ExamRepository {
         }
     }
 
+    suspend fun findByExamNameAndClassId(
+        examName: String,
+        classId: String
+    ): List<ExamDto> = tenantDbQuery {
+
+        Exams
+            .join(Classes, JoinType.INNER, Exams.classId, Classes.id)
+            .selectAll()
+            .where {
+                (Exams.name eq examName) and
+                        (Exams.classId eq UUID.fromString(classId))
+            }
+            .map { mapRowToDto(it) }
+    }
+
+    suspend fun findByExamName(
+        examName: String
+    ): List<ExamDto> = tenantDbQuery {
+
+        Exams
+            .selectAll()
+            .where { Exams.name eq examName }
+            .map { mapRowToDto(it) }
+    }
+
 }

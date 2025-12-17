@@ -144,6 +144,30 @@ fun Route.examRoutes(examService: ExamService) {
             ))
         }
 
+        post("/publish/by-exam-name/{examName}/class/{classId}") {
+            val examName = call.getPathParameter("examName", "Exam Name")
+            val classId = call.getPathParameter("classId", "Class ID")
+
+            examService.publishResultsByExamNameAndClassId(classId, examName)
+
+            call.respond(ApiResponse<Unit>(
+                success = true,
+                message = "Results published successfully"
+            ))
+        }
+
+        post("/publish/by-exam-name/{examName}") {
+            val examName = call.getPathParameter("examName", "Exam Name")
+
+            examService.publishResultsByExamName(examName)
+
+            call.respond(ApiResponse<Unit>(
+                success = true,
+                message = "Results published successfully"
+            ))
+        }
+
+
         post("/{id}/results-ready") {
             val examId = call.getPathParameter("id", "Exam ID")
 
