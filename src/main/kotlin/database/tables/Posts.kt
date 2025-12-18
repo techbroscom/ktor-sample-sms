@@ -8,6 +8,8 @@ object Posts : Table("posts") {
     val title = varchar("title", 255)
     val content = text("content")
     val author = varchar("author", 100).nullable()
+    val imageUrl = varchar("image_url", 500).nullable()
+    val imageS3Key = varchar("image_s3_key", 500).nullable()
     val createdAt = datetime("created_at")
 
     override val primaryKey = PrimaryKey(id)

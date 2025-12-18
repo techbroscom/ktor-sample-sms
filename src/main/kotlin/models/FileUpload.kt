@@ -8,6 +8,7 @@ data class FileUploadResponse(
     val fileUrl: String? = null,
     val fileName: String? = null,
     val fileSize: Long? = null,
+    val objectKey: String? = null,
     val message: String? = null
 )
 

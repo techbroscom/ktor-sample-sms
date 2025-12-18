@@ -6,14 +6,68 @@ import com.example.models.dto.PostDto
 import com.example.models.dto.UpdatePostRequest
 import com.example.repositories.PostRepository
 import io.ktor.http.*
+import services.S3FileService
+import java.io.InputStream
 
-class PostService(private val postRepository: PostRepository, private val notificationService: NotificationService?) {
+class PostService(
+    private val postRepository: PostRepository,
+    private val notificationService: NotificationService?,
+    private val s3FileService: S3FileService?
+) {
 
     suspend fun createPost(request: CreatePostRequest): PostDto {
         validatePostRequest(request.title, request.content)
 
         val postId = postRepository.create(request)
         notificationService?.sendSchoolAnnouncement(1, request.title, request.content)
+        return getPostById(postId)
+    }
+
+    suspend fun createPostWithImage(
+        tenantId: String,
+        title: String,
+        content: String,
+        author: String?,
+        imageInputStream: InputStream?,
+        imageFileName: String?,
+        userId: String
+    ): PostDto {
+        validatePostRequest(title, content)
+
+        var imageUrl: String? = null
+        var imageS3Key: String? = null
+
+        // Upload image if provided
+        if (imageInputStream != null && imageFileName != null) {
+            val uploadResponse = s3FileService?.uploadPostImage(
+                tenantId = tenantId,
+                inputStream = imageInputStream,
+                originalFileName = imageFileName,
+                postId = "temp_${System.currentTimeMillis()}",
+                userId = userId
+            )
+
+            if (uploadResponse?.success == true) {
+                imageUrl = uploadResponse.fileUrl
+                imageS3Key = uploadResponse.objectKey
+            } else {
+                throw ApiException(
+                    "Image upload failed: ${uploadResponse?.message ?: "Unknown error"}",
+                    HttpStatusCode.InternalServerError
+                )
+            }
+        }
+
+        val request = CreatePostRequest(
+            title = title,
+            content = content,
+            author = author,
+            imageUrl = imageUrl,
+            imageS3Key = imageS3Key
+        )
+
+        val postId = postRepository.create(request)
+        notificationService?.sendSchoolAnnouncement(1, title, content)
         return getPostById(postId)
     }
 
@@ -44,7 +98,76 @@ class PostService(private val postRepository: PostRepository, private val notifi
         return getPostById(id)
     }
 
+    suspend fun updatePostWithImage(
+        tenantId: String,
+        id: Int,
+        title: String,
+        content: String,
+        author: String?,
+        imageInputStream: InputStream?,
+        imageFileName: String?,
+        userId: String,
+        keepExistingImage: Boolean = false
+    ): PostDto {
+        validatePostRequest(title, content)
+
+        // Get existing post to check for old image
+        val existingPost = getPostById(id)
+
+        var imageUrl: String? = if (keepExistingImage) existingPost.imageUrl else null
+        var imageS3Key: String? = if (keepExistingImage) existingPost.imageS3Key else null
+
+        // Upload new image if provided
+        if (imageInputStream != null && imageFileName != null) {
+            // Delete old image if exists
+            if (!existingPost.imageS3Key.isNullOrBlank()) {
+                s3FileService?.deleteFile(existingPost.imageS3Key)
+            }
+
+            val uploadResponse = s3FileService?.uploadPostImage(
+                tenantId = tenantId,
+                inputStream = imageInputStream,
+                originalFileName = imageFileName,
+                postId = id.toString(),
+                userId = userId
+            )
+
+            if (uploadResponse?.success == true) {
+                imageUrl = uploadResponse.fileUrl
+                imageS3Key = uploadResponse.objectKey
+            } else {
+                throw ApiException(
+                    "Image upload failed: ${uploadResponse?.message ?: "Unknown error"}",
+                    HttpStatusCode.InternalServerError
+                )
+            }
+        }
+
+        val request = UpdatePostRequest(
+            title = title,
+            content = content,
+            author = author,
+            imageUrl = imageUrl,
+            imageS3Key = imageS3Key
+        )
+
+        val updated = postRepository.update(id, request)
+        if (!updated) {
+            throw ApiException("Post not found", HttpStatusCode.NotFound)
+        }
+
+        return getPostById(id)
+    }
+
     suspend fun deletePost(id: Int) {
+        // Get post to delete associated image
+        val post = getPostById(id)
+
+        // Delete image from S3 if exists
+        if (!post.imageS3Key.isNullOrBlank()) {
+            s3FileService?.deleteFile(post.imageS3Key)
+        }
+
         val deleted = postRepository.delete(id)
         if (!deleted) {
             throw ApiException("Post not found", HttpStatusCode.NotFound)

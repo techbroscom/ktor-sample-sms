@@ -107,8 +107,19 @@ fun Application.configureRouting() {
     val holidayRepository = HolidayRepository()
     val holidayService = HolidayService(holidayRepository)
 
+    // File storage service - S3-based with Backblaze B2
+    val s3StorageConfig = S3StorageConfig.forBackblazeB2(
+        accessKeyId = "005627b76e5aa4b0000000001",
+        secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
+        region = "us-east-005",
+        bucketName = "schoolmate"
+    )
+    val fileStorage = S3CompatibleStorage(s3StorageConfig)
+    val fileRepository = FileRepository()
+    val s3FileService = S3FileService(fileStorage, fileRepository)
+
     val postRepository = PostRepository()
-    val postService = PostService(postRepository, notificationService)
+    val postService = PostService(postRepository, notificationService, s3FileService)
 
     val complaintRepository = ComplaintRepository()
     val complaintService = ComplaintService(complaintRepository)
@@ -183,17 +194,6 @@ fun Application.configureRouting() {
         transportRouteRepository,
         transportStopRepository
     )
-
-    // File storage service - S3-based with Backblaze B2
-    val s3StorageConfig = S3StorageConfig.forBackblazeB2(
-        accessKeyId = "005627b76e5aa4b0000000001",
-        secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
-        region = "us-east-005",
-        bucketName = "schoolmate"
-    )
-    val fileStorage = S3CompatibleStorage(s3StorageConfig)
-    val fileRepository = FileRepository()
-    val s3FileService = S3FileService(fileStorage, fileRepository)
 
     // API routes
 

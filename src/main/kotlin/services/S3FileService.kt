@@ -105,6 +105,7 @@ class S3FileService(
                 fileUrl = signedUrl,
                 fileName = uniqueFileName,
                 fileSize = fileBytes.size.toLong(),
+                objectKey = objectKey,
                 message = "File uploaded successfully"
             )
 
@@ -178,6 +179,46 @@ class S3FileService(
             tenantId = tenantId,
             inputStream = bytes.inputStream(),
             originalFileName = fileName,
+            userId = userId
+        )
+    }
+
+    /**
+     * Upload post image (convenience method)
+     */
+    suspend fun uploadPostImage(
+        tenantId: String,
+        inputStream: InputStream,
+        originalFileName: String,
+        postId: String,
+        userId: String
+    ): FileUploadResponse {
+        return uploadFile(
+            tenantId = tenantId,
+            module = "posts",
+            type = "image",
+            inputStream = inputStream,
+            originalFileName = originalFileName,
+            uploadedBy = userId,
+            validateAsImage = true
+        )
+    }
+
+    /**
+     * Upload post image with bytes (for compatibility)
+     */
+    suspend fun uploadPostImage(
+        tenantId: String,
+        postId: String,
+        userId: String,
+        fileName: String,
+        bytes: ByteArray
+    ): FileUploadResponse {
+        return uploadPostImage(
+            tenantId = tenantId,
+            inputStream = bytes.inputStream(),
+            originalFileName = fileName,
+            postId = postId,
             userId = userId
         )
     }
