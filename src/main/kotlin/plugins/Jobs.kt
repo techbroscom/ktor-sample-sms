@@ -4,21 +4,17 @@ import com.example.jobs.FCMCleanupJob
 import com.example.jobs.OtpCleanupJob
 import com.example.repositories.FCMTokenRepository
 import com.example.repositories.OtpRepository
-import com.example.repositories.UserRepository
-import com.example.services.EmailService
-import com.example.services.OtpService
+import com.example.services.TenantService
 import io.ktor.server.application.*
 
 fun Application.configureJobs() {
 
-    /*val userRepository = UserRepository()
     val otpRepository = OtpRepository()
-    val emailService = EmailService()
-    val otpService = OtpService(otpRepository, userRepository, emailService)
-    val otpCleanupJob = OtpCleanupJob(otpService, this)
+    val tenantService = TenantService()
+    val otpCleanupJob = OtpCleanupJob(otpRepository, tenantService, this)
 
     val fcmTokenRepository = FCMTokenRepository()
-    val fcmCleanupJob = FCMCleanupJob(fcmTokenRepository, this)
+    val fcmCleanupJob = FCMCleanupJob(fcmTokenRepository, tenantService, this)
 
     otpCleanupJob.start()
     fcmCleanupJob.start()
@@ -27,5 +23,5 @@ fun Application.configureJobs() {
     environment.monitor.subscribe(ApplicationStopped) {
         otpCleanupJob.stop()
         fcmCleanupJob.stop()
-    }*/
+    }
 }
