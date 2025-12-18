@@ -4,6 +4,7 @@ import com.example.database.tables.FCMTokens
 import com.example.database.tables.SchoolConfig
 import com.example.database.tables.UserRole
 import com.example.database.tables.Users
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
@@ -13,101 +14,113 @@ import java.util.UUID
 
 class FCMTokenRepository {
 
-    fun saveToken(userId: UUID, token: String, deviceId: String?, platform: String): Boolean {
-        return transaction {
-            // Check if token already exists for this user and device
-            val existingToken = FCMTokens.selectAll().where {
-                (FCMTokens.userId eq userId) and (FCMTokens.deviceId eq deviceId)
-            }.singleOrNull()
+    suspend fun saveToken(
+        userId: UUID,
+        token: String,
+        deviceId: String?,
+        platform: String
+    ): Boolean = tenantDbQuery {
 
-            if (existingToken != null) {
-                // Update existing token
-                FCMTokens.update({
-                    (FCMTokens.userId eq userId) and (FCMTokens.deviceId eq deviceId)
-                }) {
-                    it[FCMTokens.token] = token
-                    it[FCMTokens.platform] = platform
-                    it[FCMTokens.isActive] = true
-                    it[FCMTokens.updatedAt] = LocalDateTime.now()
-                }
-            } else {
-                // Insert new token
-                FCMTokens.insert {
-                    it[FCMTokens.userId] = userId
-                    it[FCMTokens.token] = token
-                    it[FCMTokens.deviceId] = deviceId
-                    it[FCMTokens.platform] = platform
-                    it[FCMTokens.isActive] = true
-                }
+        println("[FCM][DB] saveToken | userId=$userId | deviceId=$deviceId")
+
+        val existingToken = FCMTokens
+            .selectAll()
+            .where {
+                (FCMTokens.userId eq userId) and
+                        (FCMTokens.deviceId eq deviceId)
             }
-            true
+            .singleOrNull()
+
+        if (existingToken != null) {
+            FCMTokens.update({
+                (FCMTokens.userId eq userId) and
+                        (FCMTokens.deviceId eq deviceId)
+            }) {
+                it[FCMTokens.token] = token
+                it[FCMTokens.platform] = platform
+                it[isActive] = true
+                it[updatedAt] = LocalDateTime.now()
+            }
+        } else {
+            FCMTokens.insert {
+                it[FCMTokens.userId] = userId
+                it[this.token] = token
+                it[this.deviceId] = deviceId
+                it[this.platform] = platform
+                it[isActive] = true
+            }
         }
+
+        true
     }
 
-    fun getTokensByUserId(userId: UUID): List<String> {
-        return transaction {
-            FCMTokens.selectAll().where {
-                (FCMTokens.userId eq userId) and (FCMTokens.isActive eq true)
-            }.map { it[FCMTokens.token] }
-        }
-    }
-
-    fun getTokensBySchool(): List<String> {
-        return transaction {
-            (FCMTokens innerJoin Users).selectAll().where {
-                (FCMTokens.isActive eq true)
-            }.map { it[FCMTokens.token] }
-        }
-    }
-
-    fun getTokensByRole(role: UserRole): List<String> {
-        return transaction {
-            (FCMTokens innerJoin Users).selectAll().where {
-                        (Users.role eq role) and
+    suspend fun getTokensByUserId(userId: UUID): List<String> = tenantDbQuery {
+        FCMTokens
+            .selectAll()
+            .where {
+                (FCMTokens.userId eq userId) and
                         (FCMTokens.isActive eq true)
-            }.map { it[FCMTokens.token] }
-        }
-    }
-
-    fun deactivateToken(token: String): Boolean {
-        return transaction {
-            FCMTokens.update({ FCMTokens.token eq token }) {
-                it[FCMTokens.isActive] = false
-                it[FCMTokens.updatedAt] = LocalDateTime.now()
-            } > 0
-        }
-    }
-
-    fun deleteExpiredTokens(days: Int = 30): Int {
-        return transaction {
-            val cutoffDate = LocalDateTime.now().minusDays(days.toLong())
-            FCMTokens.deleteWhere {
-                (FCMTokens.updatedAt less cutoffDate) and (FCMTokens.isActive eq false)
             }
+            .map { it[FCMTokens.token] }
+    }
+
+    suspend fun getTokensBySchool(): List<String> = tenantDbQuery {
+        (FCMTokens innerJoin Users)
+            .selectAll()
+            .where { FCMTokens.isActive eq true }
+            .map { it[FCMTokens.token] }
+    }
+
+    suspend fun getTokensByRole(role: UserRole): List<String> = tenantDbQuery {
+        (FCMTokens innerJoin Users)
+            .selectAll()
+            .where {
+                (Users.role eq role) and
+                        (FCMTokens.isActive eq true)
+            }
+            .map { it[FCMTokens.token] }
+    }
+
+    suspend fun deactivateToken(token: String): Boolean = tenantDbQuery {
+        FCMTokens.update({ FCMTokens.token eq token }) {
+            it[isActive] = false
+            it[updatedAt] = LocalDateTime.now()
+        } > 0
+    }
+
+    suspend fun deleteExpiredTokens(days: Int = 30): Int = tenantDbQuery {
+        val cutoffDate = LocalDateTime.now().minusDays(days.toLong())
+        FCMTokens.deleteWhere {
+            (updatedAt less cutoffDate) and
+                    (isActive eq false)
         }
     }
 
-    fun getAllActiveTokens(): List<String> {
-        return transaction {
-            FCMTokens.selectAll().where {
-                FCMTokens.isActive eq true
-            }.map { it[FCMTokens.token] }
-        }
+    suspend fun getAllActiveTokens(): List<String> = tenantDbQuery {
+        FCMTokens
+            .selectAll()
+            .where { FCMTokens.isActive eq true }
+            .map { it[FCMTokens.token] }
     }
 
-    fun getTokensByPlatform(platform: String): List<String> {
-        return transaction {
-            FCMTokens.selectAll().where {
-                (FCMTokens.platform eq platform) and (FCMTokens.isActive eq true)
-            }.map { it[FCMTokens.token] }
-        }
+    suspend fun getTokensByPlatform(platform: String): List<String> = tenantDbQuery {
+        FCMTokens
+            .selectAll()
+            .where {
+                (FCMTokens.platform eq platform) and
+                        (FCMTokens.isActive eq true)
+            }
+            .map { it[FCMTokens.token] }
     }
 
-    fun getTokenByDeviceId(deviceId: String): String? {
-        return transaction {
-            FCMTokens.selectAll().where {
-                (FCMTokens.deviceId eq deviceId) and (FCMTokens.isActive eq true)
-            }.singleOrNull()?.get(FCMTokens.token)
-        }
+    suspend fun getTokenByDeviceId(deviceId: String): String? = tenantDbQuery {
+        FCMTokens
+            .selectAll()
+            .where {
+                (FCMTokens.deviceId eq deviceId) and
+                        (FCMTokens.isActive eq true)
+            }
+            .singleOrNull()
+            ?.get(FCMTokens.token)
     }
 }
