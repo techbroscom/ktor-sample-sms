@@ -3,6 +3,7 @@ package com.example.plugins
 import com.example.config.TenantDatabaseConfig
 import com.example.database.tables.*
 import com.example.services.MigrationService
+import database.tables.Files
 import io.ktor.server.application.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -53,7 +54,8 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             FeesStructures,
             FCMTokens,
             StudentFees,
-            FeePayments
+            FeePayments,
+            Files
         )
     }
 }
