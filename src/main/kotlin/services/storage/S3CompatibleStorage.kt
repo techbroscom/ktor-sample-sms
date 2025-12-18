@@ -77,6 +77,8 @@ class S3CompatibleStorage(private val config: S3StorageConfig) : FileStorage {
         contentLength: Long
     ): String = withContext(Dispatchers.IO) {
         try {
+            println("S3 DEBUG → endpoint=${config.endpoint}, bucket=${config.bucketName}, key=$objectKey")
+
             val putObjectRequest = PutObjectRequest.builder()
                 .bucket(config.bucketName)
                 .key(objectKey)
@@ -94,7 +96,7 @@ class S3CompatibleStorage(private val config: S3StorageConfig) : FileStorage {
         }
     }
 
-    override suspend fun deleteFile(objectKey: String) = withContext(Dispatchers.IO) {
+    override suspend fun deleteFile(objectKey: String): Unit = withContext(Dispatchers.IO) {
         try {
             val deleteObjectRequest = DeleteObjectRequest.builder()
                 .bucket(config.bucketName)

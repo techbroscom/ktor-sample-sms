@@ -82,7 +82,8 @@ class TenantService {
                 FeePayments,
                 TransportRoutes,
                 TransportStops,
-                StudentTransportAssignments
+                StudentTransportAssignments,
+                Files
             )
         }
 

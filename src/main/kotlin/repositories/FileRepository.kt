@@ -1,18 +1,18 @@
-package repositories
+package com.example.repositories
 
-import database.tables.Files
+import com.example.database.tables.Files
+import com.example.utils.dbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
 
 class FileRepository {
 
     /**
-     * Create a new file record
+     * Create a new file record within the tenant context
      */
-    fun create(
+    suspend fun create(
         tenantId: String,
         module: String,
         type: String,
@@ -20,8 +20,8 @@ class FileRepository {
         originalFileName: String,
         fileSize: Long,
         mimeType: String,
-        uploadedBy: UUID
-    ): UUID = transaction {
+        uploadedBy: String
+    ): UUID = dbQuery {
         val fileId = UUID.randomUUID()
 
         Files.insert {
@@ -33,7 +33,7 @@ class FileRepository {
             it[Files.originalFileName] = originalFileName
             it[Files.fileSize] = fileSize
             it[Files.mimeType] = mimeType
-            it[Files.uploadedBy] = uploadedBy
+            it[Files.uploadedBy] = uuid(uploadedBy)
             it[createdAt] = LocalDateTime.now()
         }
 
@@ -43,8 +43,9 @@ class FileRepository {
     /**
      * Find a file by ID
      */
-    fun findById(fileId: UUID): FileRecord? = transaction {
-        Files.select { (Files.id eq fileId) and (Files.deletedAt.isNull()) }
+    suspend fun findById(fileId: UUID): FileRecord? = dbQuery {
+        Files.selectAll()
+            .where { (Files.id eq fileId) and (Files.deletedAt.isNull()) }
             .map { it.toFileRecord() }
             .singleOrNull()
     }
@@ -52,8 +53,9 @@ class FileRepository {
     /**
      * Find a file by object key
      */
-    fun findByObjectKey(objectKey: String): FileRecord? = transaction {
-        Files.select { (Files.objectKey eq objectKey) and (Files.deletedAt.isNull()) }
+    suspend fun findByObjectKey(objectKey: String): FileRecord? = dbQuery {
+        Files.selectAll()
+            .where { (Files.objectKey eq objectKey) and (Files.deletedAt.isNull()) }
             .map { it.toFileRecord() }
             .singleOrNull()
     }
@@ -61,28 +63,30 @@ class FileRepository {
     /**
      * Find all files uploaded by a user
      */
-    fun findByUploadedBy(userId: UUID): List<FileRecord> = transaction {
-        Files.select { (Files.uploadedBy eq userId) and (Files.deletedAt.isNull()) }
+    suspend fun findByUploadedBy(userId: UUID): List<FileRecord> = dbQuery {
+        Files.selectAll()
+            .where { (Files.uploadedBy eq userId) and (Files.deletedAt.isNull()) }
             .map { it.toFileRecord() }
     }
 
     /**
      * Find files by tenant, module, and type
      */
-    fun findByTenantModuleType(tenantId: String, module: String, type: String): List<FileRecord> = transaction {
-        Files.select {
-            (Files.tenantId eq tenantId) and
-                    (Files.module eq module) and
-                    (Files.type eq type) and
-                    (Files.deletedAt.isNull())
-        }
+    suspend fun findByTenantModuleType(tenantId: String, module: String, type: String): List<FileRecord> = dbQuery {
+        Files.selectAll()
+            .where {
+                (Files.tenantId eq tenantId) and
+                        (Files.module eq module) and
+                        (Files.type eq type) and
+                        (Files.deletedAt.isNull())
+            }
             .map { it.toFileRecord() }
     }
 
     /**
      * Soft delete a file by ID
      */
-    fun softDelete(fileId: UUID): Boolean = transaction {
+    suspend fun softDelete(fileId: UUID): Boolean = dbQuery {
         Files.update({ Files.id eq fileId }) {
             it[deletedAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()
@@ -92,7 +96,7 @@ class FileRepository {
     /**
      * Soft delete a file by object key
      */
-    fun softDeleteByObjectKey(objectKey: String): Boolean = transaction {
+    suspend fun softDeleteByObjectKey(objectKey: String): Boolean = dbQuery {
         Files.update({ Files.objectKey eq objectKey }) {
             it[deletedAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()
@@ -102,14 +106,14 @@ class FileRepository {
     /**
      * Hard delete a file by ID
      */
-    fun hardDelete(fileId: UUID): Boolean = transaction {
+    suspend fun hardDelete(fileId: UUID): Boolean = dbQuery {
         Files.deleteWhere { id eq fileId } > 0
     }
 
     /**
      * Update file metadata
      */
-    fun update(fileId: UUID, updates: Map<String, Any>): Boolean = transaction {
+    suspend fun update(fileId: UUID, updates: Map<String, Any>): Boolean = dbQuery {
         Files.update({ Files.id eq fileId }) { statement ->
             updates.forEach { (key, value) ->
                 when (key) {
@@ -125,9 +129,10 @@ class FileRepository {
     /**
      * Get total storage used by tenant
      */
-    fun getTotalStorageByTenant(tenantId: String): Long = transaction {
-        Files.slice(Files.fileSize.sum())
-            .select { (Files.tenantId eq tenantId) and (Files.deletedAt.isNull()) }
+    suspend fun getTotalStorageByTenant(tenantId: String): Long = dbQuery {
+        // In newer Exposed, use select() with the columns/aggregations you need directly
+        Files.select(Files.fileSize.sum())
+            .where { (Files.tenantId eq tenantId) and (Files.deletedAt.isNull()) }
             .map { it[Files.fileSize.sum()] ?: 0L }
             .firstOrNull() ?: 0L
     }
@@ -135,9 +140,9 @@ class FileRepository {
     /**
      * Get total storage used by user
      */
-    fun getTotalStorageByUser(userId: UUID): Long = transaction {
-        Files.slice(Files.fileSize.sum())
-            .select { (Files.uploadedBy eq userId) and (Files.deletedAt.isNull()) }
+    suspend fun getTotalStorageByUser(userId: UUID): Long = dbQuery {
+        Files.select(Files.fileSize.sum())
+            .where { (Files.uploadedBy eq userId) and (Files.deletedAt.isNull()) }
             .map { it[Files.fileSize.sum()] ?: 0L }
             .firstOrNull() ?: 0L
     }

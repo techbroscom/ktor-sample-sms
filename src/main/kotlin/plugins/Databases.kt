@@ -3,7 +3,6 @@ package com.example.plugins
 import com.example.config.TenantDatabaseConfig
 import com.example.database.tables.*
 import com.example.services.MigrationService
-import database.tables.Files
 import io.ktor.server.application.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -25,7 +24,7 @@ fun Application.configureDatabases() {
     // Run migration for existing tenants on startup
     val migrationService = MigrationService()
     runBlocking {
-        migrationService.migrateTenantExamTables()
+        migrationService.migrateTenantFilesTable()
     }
 }
 

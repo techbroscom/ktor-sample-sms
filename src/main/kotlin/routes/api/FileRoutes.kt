@@ -265,6 +265,7 @@ fun Route.fileRoutes(fileService: LocalFileService) {
         // Upload Profile Picture
         //------------------------
         post("/upload/profile") {
+            println("Reached File Route upload profile")
             val tenantId = call.request.headers["X-Tenant"]
             if (tenantId == null) {
                 call.respond(HttpStatusCode.BadRequest, mapOf("error" to "X-Tenant header required"))

@@ -14,6 +14,7 @@ import com.example.repositories.ExamScheduleRepository
 import com.example.repositories.FCMTokenRepository
 import com.example.repositories.FeePaymentRepository
 import com.example.repositories.FeesStructureRepository
+import com.example.repositories.FileRepository
 import com.example.repositories.HolidayRepository
 import com.example.repositories.OtpRepository
 import com.example.repositories.PostRepository
@@ -89,7 +90,6 @@ import com.example.services.TransportRouteService
 import com.example.services.TransportStopService
 import com.example.services.UserService
 import config.S3StorageConfig
-import repositories.FileRepository
 import services.S3FileService
 import services.storage.S3CompatibleStorage
 import io.ktor.server.application.*
@@ -208,8 +208,8 @@ fun Application.configureRouting() {
     val s3StorageConfig = S3StorageConfig.forBackblazeB2(
         accessKeyId = "005627b76e5aa4b0000000001",
         secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
-        region = "us-west-002",
-        bucketName = "ktor-backedn"  // Match the keyName you provided
+        region = "us-east-005", // ✅ MATCH BUCKET
+        bucketName = "schoolmate"  // Match the keyName you provided
     )
     val fileStorage = S3CompatibleStorage(s3StorageConfig)
     val fileRepository = FileRepository()

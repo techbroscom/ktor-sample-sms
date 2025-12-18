@@ -2,9 +2,9 @@ package services
 
 import com.example.models.FileUploadResponse
 import com.example.models.FileDeleteResponse
+import com.example.repositories.FileRecord
+import com.example.repositories.FileRepository
 import org.apache.tika.Tika
-import repositories.FileRecord
-import repositories.FileRepository
 import services.storage.FileStorage
 import services.storage.FileStorageException
 import java.io.InputStream
@@ -44,7 +44,7 @@ class S3FileService(
         type: String,
         inputStream: InputStream,
         originalFileName: String,
-        uploadedBy: UUID,
+        uploadedBy: String,
         validateAsImage: Boolean = false
     ): FileUploadResponse {
         return try {
@@ -144,7 +144,7 @@ class S3FileService(
         tenantId: String,
         inputStream: InputStream,
         originalFileName: String,
-        userId: UUID
+        userId: String
     ): FileUploadResponse {
         return uploadFile(
             tenantId = tenantId,
@@ -166,20 +166,12 @@ class S3FileService(
         fileName: String,
         bytes: ByteArray
     ): FileUploadResponse {
-        val userUuid = try {
-            UUID.fromString(userId)
-        } catch (e: Exception) {
-            return FileUploadResponse(
-                success = false,
-                message = "Invalid userId format"
-            )
-        }
 
         return uploadProfilePicture(
             tenantId = tenantId,
             inputStream = bytes.inputStream(),
             originalFileName = fileName,
-            userId = userUuid
+            userId = userId
         )
     }
 
@@ -191,7 +183,7 @@ class S3FileService(
         category: String,
         inputStream: InputStream,
         originalFileName: String,
-        userId: UUID
+        userId: String
     ): FileUploadResponse {
         val fileExtension = getFileExtension(originalFileName).lowercase()
         val type = when (fileExtension) {
@@ -224,21 +216,13 @@ class S3FileService(
         originalName: String,
         bytes: ByteArray
     ): FileUploadResponse {
-        val userUuid = try {
-            UUID.fromString(userId)
-        } catch (e: Exception) {
-            return FileUploadResponse(
-                success = false,
-                message = "Invalid userId format"
-            )
-        }
 
         return uploadDocument(
             tenantId = tenantId,
             category = category,
             inputStream = bytes.inputStream(),
             originalFileName = originalName,
-            userId = userUuid
+            userId = userId
         )
     }
 
@@ -320,42 +304,42 @@ class S3FileService(
     /**
      * Get file metadata from database
      */
-    fun getFileById(fileId: UUID): FileRecord? {
+    suspend fun getFileById(fileId: UUID): FileRecord? {
         return fileRepository.findById(fileId)
     }
 
     /**
      * Get file metadata by object key
      */
-    fun getFileByObjectKey(objectKey: String): FileRecord? {
+    suspend fun getFileByObjectKey(objectKey: String): FileRecord? {
         return fileRepository.findByObjectKey(objectKey)
     }
 
     /**
      * Get all files uploaded by a user
      */
-    fun getFilesByUser(userId: UUID): List<FileRecord> {
+    suspend fun getFilesByUser(userId: UUID): List<FileRecord> {
         return fileRepository.findByUploadedBy(userId)
     }
 
     /**
      * Get files by tenant, module, and type
      */
-    fun getFilesByTenantModuleType(tenantId: String, module: String, type: String): List<FileRecord> {
+    suspend fun getFilesByTenantModuleType(tenantId: String, module: String, type: String): List<FileRecord> {
         return fileRepository.findByTenantModuleType(tenantId, module, type)
     }
 
     /**
      * Get total storage used by tenant
      */
-    fun getTotalStorageByTenant(tenantId: String): Long {
+    suspend fun getTotalStorageByTenant(tenantId: String): Long {
         return fileRepository.getTotalStorageByTenant(tenantId)
     }
 
     /**
      * Get total storage used by user
      */
-    fun getTotalStorageByUser(userId: UUID): Long {
+    suspend fun getTotalStorageByUser(userId: UUID): Long {
         return fileRepository.getTotalStorageByUser(userId)
     }
 
