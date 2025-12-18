@@ -40,6 +40,10 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
         post("/login-fcm") {
             val request = call.receive<UserLoginFCMRequest>()
             println(request.toString())
+            // ADD THIS DEBUG LOG
+            val currentTenant = TenantContextHolder.getTenant()
+            println("[Debug] Current Tenant Schema: ${currentTenant?.schemaName}")
+
             val response = userService.authenticateUserWithFCM(request)
             println(response.toString())
             call.respond(ApiResponse(
