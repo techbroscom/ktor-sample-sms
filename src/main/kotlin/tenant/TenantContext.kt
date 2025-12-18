@@ -12,6 +12,7 @@ data class TenantContext(
 )
 
 object TenantContextHolder {
+    // Must be a ThreadLocal for asContextElement to hook into it
     val threadLocal = ThreadLocal<TenantContext>()
 
     fun setTenant(tenant: TenantContext) = threadLocal.set(tenant)
