@@ -13,7 +13,7 @@ object Files : Table("files") {
     val originalFileName = varchar("original_file_name", 255)
     val fileSize = long("file_size") // in bytes
     val mimeType = varchar("mime_type", 100)
-    val uploadedBy = uuid(Users.id.toString()) // User who uploaded the file
+    val uploadedBy = uuid("uploaded_by") references Users.id // User who uploaded the file
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").nullable()
     val deletedAt = datetime("deleted_at").nullable() // Soft delete

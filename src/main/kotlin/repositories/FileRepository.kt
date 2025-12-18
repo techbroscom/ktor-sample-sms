@@ -33,7 +33,7 @@ class FileRepository {
             it[Files.originalFileName] = originalFileName
             it[Files.fileSize] = fileSize
             it[Files.mimeType] = mimeType
-            it[Files.uploadedBy] = uuid(uploadedBy)
+            it[Files.uploadedBy] = UUID.fromString(uploadedBy)
             it[createdAt] = LocalDateTime.now()
         }
 
