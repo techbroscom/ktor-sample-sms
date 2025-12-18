@@ -11,7 +11,7 @@ import io.ktor.server.application.*
 
 fun Application.configureJobs() {
 
-    /*val userRepository = UserRepository()
+    val userRepository = UserRepository()
     val otpRepository = OtpRepository()
     val emailService = EmailService()
     val otpService = OtpService(otpRepository, userRepository, emailService)
@@ -27,5 +27,5 @@ fun Application.configureJobs() {
     environment.monitor.subscribe(ApplicationStopped) {
         otpCleanupJob.stop()
         fcmCleanupJob.stop()
-    }*/
+    }
 }
