@@ -14,13 +14,7 @@ data class TenantContext(
 object TenantContextHolder {
     val threadLocal = ThreadLocal<TenantContext>()
 
-    fun setTenant(tenant: TenantContext) {
-        threadLocal.set(tenant)
-    }
-
+    fun setTenant(tenant: TenantContext) = threadLocal.set(tenant)
     fun getTenant(): TenantContext? = threadLocal.get()
-
-    fun clear() {
-        threadLocal.remove()
-    }
+    fun clear() = threadLocal.remove()
 }

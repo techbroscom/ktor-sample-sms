@@ -5,6 +5,7 @@ import com.example.exceptions.ApiException
 import com.example.models.FCMTokenRequest
 import com.example.models.dto.*
 import com.example.repositories.UserRepository
+import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
 import org.mindrot.jbcrypt.BCrypt
 import java.util.*
@@ -181,6 +182,9 @@ class UserService(private val userRepository: UserRepository, private val fcmSer
         deviceId: String?,
         platform: String
     ): Boolean {
+
+        val tenant = TenantContextHolder.getTenant()
+            ?: throw ApiException("Tenant context missing in service", HttpStatusCode.InternalServerError)
 
         println("[FCM] Login token update started | userId=$userId")
 

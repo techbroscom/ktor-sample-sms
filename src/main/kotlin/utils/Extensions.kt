@@ -15,11 +15,10 @@ suspend fun <T> tenantDbQuery(block: suspend () -> T): T {
     val currentTenant = TenantContextHolder.getTenant()
         ?: error("No tenant context found in coroutine scope")
 
-    // Use asContextElement to carry the ThreadLocal value across dispatcher switches
-    return newSuspendedTransaction(
-        context = Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)
-    ) {
+    // The context MUST combine the dispatcher and the context element
+    return newSuspendedTransaction(Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)) {
         val schema = currentTenant.schemaName
+        // Ensure the search path is set for this specific transaction thread
         exec("SET search_path TO $schema")
         block()
     }
