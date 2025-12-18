@@ -204,11 +204,12 @@ fun Application.configureRouting() {
     val fileService = LocalFileService("/var/www/uploads")
 
     // Initialize S3-based FileService with Backblaze B2
+    // NOTE: Bucket must exist in Backblaze B2 before use
     val s3StorageConfig = S3StorageConfig.forBackblazeB2(
         accessKeyId = "005627b76e5aa4b0000000001",
         secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
         region = "us-west-002",
-        bucketName = "ktor-backend"
+        bucketName = "ktor-backedn"  // Match the keyName you provided
     )
     val fileStorage = S3CompatibleStorage(s3StorageConfig)
     val fileRepository = FileRepository()

@@ -1,6 +1,7 @@
 package services.storage
 
 import config.S3StorageConfig
+import config.StorageProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -37,6 +38,15 @@ class S3CompatibleStorage(private val config: S3StorageConfig) : FileStorage {
         // Set custom endpoint for Backblaze B2 and Cloudflare R2
         if (config.endpoint != null) {
             builder.endpointOverride(URI.create(config.endpoint))
+        }
+
+        // Enable path-style access for Backblaze B2
+        if (config.provider == StorageProvider.BACKBLAZE_B2) {
+            builder.serviceConfiguration(
+                software.amazon.awssdk.services.s3.S3Configuration.builder()
+                    .pathStyleAccessEnabled(true)
+                    .build()
+            )
         }
 
         builder.build()
