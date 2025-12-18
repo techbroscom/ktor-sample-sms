@@ -181,20 +181,30 @@ class UserService(private val userRepository: UserRepository, private val fcmSer
         deviceId: String?,
         platform: String
     ): Boolean {
-        // Validate input
+
+        println("[FCM] Login token update started | userId=$userId")
+
+        // Step 1: Validate FCM token
         if (fcmToken.isBlank()) {
+            println("[FCM] Validation failed: FCM token is empty | userId=$userId")
             throw ApiException("FCM token cannot be empty", HttpStatusCode.BadRequest)
         }
 
+        // Step 2: Validate platform
         if (platform.isBlank()) {
+            println("[FCM] Validation failed: Platform is empty | userId=$userId")
             throw ApiException("Platform cannot be empty", HttpStatusCode.BadRequest)
         }
 
-        // Check if user exists
+        println("[FCM] Validation passed | platform=$platform | deviceId=$deviceId")
+
+        // Step 3: Check user existence
         val userExists = try {
+            println("[FCM] Checking if user exists | userId=$userId")
             getUserById(userId)
             true
         } catch (e: ApiException) {
+            println("[FCM] User not found | userId=$userId | error=${e.message}")
             false
         }
 
@@ -202,19 +212,28 @@ class UserService(private val userRepository: UserRepository, private val fcmSer
             throw ApiException("User not found", HttpStatusCode.NotFound)
         }
 
-        // Save FCM token if service is available
-        return if (fcmService != null) {
-            val tokenRequest = FCMTokenRequest(
-                token = fcmToken,
-                deviceId = deviceId,
-                platform = platform
-            )
-            fcmService.saveToken(userId, tokenRequest)
-        } else {
-            // If FCM service is not available, log warning and return false
-            println("Warning: FCM service not available, cannot save token")
-            false
+        println("[FCM] User exists | userId=$userId")
+
+        // Step 4: Check FCM service availability
+        if (fcmService == null) {
+            println("[FCM] Warning: FCM service not available | userId=$userId")
+            return false
         }
+
+        // Step 5: Save FCM token
+        val tokenRequest = FCMTokenRequest(
+            token = fcmToken,
+            deviceId = deviceId,
+            platform = platform
+        )
+
+        println("[FCM] Saving FCM token | userId=$userId | platform=$platform")
+
+        val result = fcmService.saveToken(userId, tokenRequest)
+
+        println("[FCM] Token save result=$result | userId=$userId")
+
+        return result
     }
 
     private fun validateCreateUserRequest(request: CreateUserRequest) {
