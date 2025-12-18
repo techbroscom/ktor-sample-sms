@@ -1,7 +1,5 @@
 package com.example.plugins
 
-import com.example.config.DropboxConfig
-import com.example.config.SupabaseConfig
 import com.example.repositories.AcademicYearRepository
 import com.example.repositories.AttendanceRepository
 import com.example.repositories.ClassRepository
@@ -41,7 +39,6 @@ import com.example.routes.api.examScheduleRoutes
 import com.example.routes.api.fcmRoutes
 import com.example.routes.api.feePaymentRoutes
 import com.example.routes.api.feesStructureRoutes
-import com.example.routes.api.fileRoutes
 import routes.api.s3FileRoutes
 import com.example.routes.api.holidayRoutes
 import com.example.routes.api.postRoutes
@@ -71,9 +68,7 @@ import com.example.services.ExamService
 import com.example.services.FCMService
 import com.example.services.FeePaymentService
 import com.example.services.FeesStructureService
-import com.example.services.FileService
 import com.example.services.HolidayService
-import com.example.services.LocalFileService
 import com.example.services.NotificationService
 import com.example.services.OtpService
 import com.example.services.PostService
@@ -189,27 +184,12 @@ fun Application.configureRouting() {
         transportStopRepository
     )
 
-    // NEW: Initialize FileService with Dropbox
-    val dropboxConfig = DropboxConfig.fromEnvironment()
-
-    val supabaseConfig = SupabaseConfig.forSupabase(
-        projectUrl = "https://tzieatliufhksqtxbyoz.supabase.co",
-        accessKeyId = "00dbbb297978d7097ab1865e46f765aa",
-        secretAccessKey = "8f329a537c49a89d11f5010f03bbf412577f3a2d61437576fc60040e28b1d392",
-        bucket = "sms"
-    )
-
-//    val fileService = FileService(supabaseConfig)
-
-    val fileService = LocalFileService("/var/www/uploads")
-
-    // Initialize S3-based FileService with Backblaze B2
-    // NOTE: Bucket must exist in Backblaze B2 before use
+    // File storage service - S3-based with Backblaze B2
     val s3StorageConfig = S3StorageConfig.forBackblazeB2(
         accessKeyId = "005627b76e5aa4b0000000001",
         secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
-        region = "us-east-005", // ✅ MATCH BUCKET
-        bucketName = "schoolmate"  // Match the keyName you provided
+        region = "us-east-005",
+        bucketName = "schoolmate"
     )
     val fileStorage = S3CompatibleStorage(s3StorageConfig)
     val fileRepository = FileRepository()
@@ -249,7 +229,6 @@ fun Application.configureRouting() {
         attendanceRoutes(attendanceService)
         dashboardRoutes(dashboardService)
         staffClassSubjectRoutes(staffClassAssignmentService, staffSubjectAssignmentService)
-        fileRoutes(fileService)
         s3FileRoutes(s3FileService)
         feesStructureRoutes(feesStructureService)
         fcmRoutes(fcmService)

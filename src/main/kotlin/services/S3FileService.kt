@@ -48,12 +48,7 @@ class S3FileService(
         validateAsImage: Boolean = false
     ): FileUploadResponse {
         return try {
-            println("=== UPLOAD DEBUG ===")
-            println("Tenant: $tenantId, Module: $module, Type: $type")
-            println("Original filename: $originalFileName")
-
             val fileBytes = inputStream.readBytes()
-            println("Read ${fileBytes.size} bytes from input stream")
 
             // Validate file size
             if (fileBytes.size > MAX_FILE_SIZE) {
@@ -67,37 +62,31 @@ class S3FileService(
             if (validateAsImage) {
                 val validation = validateImageFile(fileBytes, originalFileName)
                 if (!validation.first) {
-                    println("Validation failed: ${validation.second}")
                     return FileUploadResponse(
                         success = false,
                         message = validation.second
                     )
                 }
-                println("Image validation passed")
             }
 
             // Generate unique filename and object key with enforced structure
             val fileExtension = getFileExtension(originalFileName)
             val uniqueFileName = "${module}_${uploadedBy}_${System.currentTimeMillis()}.$fileExtension"
             val objectKey = buildObjectKey(tenantId, module, type, uniqueFileName)
-            println("Generated object key: $objectKey")
 
             // Detect MIME type
             val mimeType = tika.detect(fileBytes, originalFileName)
-            println("Detected MIME type: $mimeType")
 
             // Upload to storage
-            println("Starting file upload to storage...")
             fileStorage.uploadFile(
                 objectKey = objectKey,
                 inputStream = fileBytes.inputStream(),
                 contentType = mimeType,
                 contentLength = fileBytes.size.toLong()
             )
-            println("File upload completed successfully")
 
             // Save metadata to database
-            val fileId = fileRepository.create(
+            fileRepository.create(
                 tenantId = tenantId,
                 module = module,
                 type = type,
@@ -107,7 +96,6 @@ class S3FileService(
                 mimeType = mimeType,
                 uploadedBy = uploadedBy
             )
-            println("File metadata saved to database with ID: $fileId")
 
             // Generate signed URL for immediate access
             val signedUrl = fileStorage.generateSignedUrl(objectKey, expirationMinutes = 60)
@@ -121,15 +109,11 @@ class S3FileService(
             )
 
         } catch (e: FileStorageException) {
-            println("ERROR in uploadFile: ${e.message}")
-            e.printStackTrace()
             FileUploadResponse(
                 success = false,
                 message = "Upload failed: ${e.message ?: "Unknown error"}"
             )
         } catch (e: Exception) {
-            println("ERROR in uploadFile: ${e.message}")
-            e.printStackTrace()
             FileUploadResponse(
                 success = false,
                 message = "Upload failed: ${e.message ?: "Unknown error"}"
@@ -139,6 +123,7 @@ class S3FileService(
 
     /**
      * Upload profile picture (convenience method)
+     * Ensures one user has only one profile picture by deleting the old one
      */
     suspend fun uploadProfilePicture(
         tenantId: String,
@@ -146,6 +131,28 @@ class S3FileService(
         originalFileName: String,
         userId: String
     ): FileUploadResponse {
+        // Delete existing profile picture for this user
+        val userUuid = try {
+            UUID.fromString(userId)
+        } catch (e: Exception) {
+            return FileUploadResponse(
+                success = false,
+                message = "Invalid user ID format"
+            )
+        }
+
+        val existingProfilePics = fileRepository.findByTenantModuleType(tenantId, "profile", "image")
+            .filter { it.uploadedBy == userUuid }
+
+        existingProfilePics.forEach { existingFile ->
+            try {
+                fileStorage.deleteFile(existingFile.objectKey)
+                fileRepository.softDeleteByObjectKey(existingFile.objectKey)
+            } catch (e: Exception) {
+                // Silently continue if deletion fails
+            }
+        }
+
         return uploadFile(
             tenantId = tenantId,
             module = "profile",
@@ -367,10 +374,6 @@ class S3FileService(
      * Validate image file
      */
     private fun validateImageFile(fileBytes: ByteArray, fileName: String): Pair<Boolean, String> {
-        println("=== FILE VALIDATION DEBUG ===")
-        println("File name: $fileName")
-        println("File size: ${fileBytes.size} bytes")
-
         // Check file size
         if (fileBytes.size > MAX_FILE_SIZE) {
             return false to "File size exceeds maximum limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB"
@@ -378,8 +381,6 @@ class S3FileService(
 
         // Check file extension
         val extension = getFileExtension(fileName).lowercase()
-        println("File extension: '$extension'")
-
         val allowedExtensions = setOf("jpg", "jpeg", "png", "gif", "webp")
         if (extension !in allowedExtensions) {
             return false to "Invalid file extension '$extension'. Only JPG, PNG, GIF, and WebP files are allowed"
@@ -393,9 +394,6 @@ class S3FileService(
             "error detecting with filename"
         }
 
-        println("MIME type (content only): '$mimeType'")
-        println("MIME type (with filename): '$mimeTypeWithFilename'")
-
         val isValidMimeType = mimeType in ALLOWED_IMAGE_TYPES ||
                 mimeTypeWithFilename in ALLOWED_IMAGE_TYPES
 
@@ -403,7 +401,6 @@ class S3FileService(
             return false to "Invalid file type. Content MIME: '$mimeType', Filename MIME: '$mimeTypeWithFilename'. Only image files are allowed"
         }
 
-        println("==============================")
         return true to "Valid image file"
     }
 
@@ -419,8 +416,6 @@ class S3FileService(
      */
     suspend fun testStorageConnection(): String {
         return try {
-            println("=== TESTING STORAGE CONNECTION ===")
-
             // Upload a small test file
             val testContent = "Test file content - ${System.currentTimeMillis()}"
             val testObjectKey = "test/connection/test.txt"
@@ -431,25 +426,18 @@ class S3FileService(
                 contentType = "text/plain",
                 contentLength = testContent.length.toLong()
             )
-            println("Test file uploaded successfully")
 
             // Check if file exists
             val exists = fileStorage.fileExists(testObjectKey)
-            println("File exists check: $exists")
 
             // Generate signed URL
-            val signedUrl = fileStorage.generateSignedUrl(testObjectKey, expirationMinutes = 5)
-            println("Signed URL generated: ${signedUrl.take(50)}...")
+            fileStorage.generateSignedUrl(testObjectKey, expirationMinutes = 5)
 
             // Clean up test file
             fileStorage.deleteFile(testObjectKey)
-            println("Test file deleted")
 
-            println("===================================")
-            "Connection successful"
+            "Connection successful - File upload, exists check, URL generation, and deletion all working"
         } catch (e: Exception) {
-            println("ERROR testing storage connection: ${e.message}")
-            e.printStackTrace()
             "Connection failed: ${e.message}"
         }
     }
