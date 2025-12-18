@@ -3,8 +3,10 @@ package com.example.services
 import com.example.repositories.FCMTokenRepository
 import com.example.models.*
 import com.example.config.FCMConfig
+import com.example.tenant.TenantContextHolder
 import com.google.firebase.messaging.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asContextElement
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -15,7 +17,10 @@ class FCMService(
     private val messaging = FCMConfig.getMessaging()
 
     suspend fun saveToken(userId: UUID, tokenRequest: FCMTokenRequest): Boolean {
-        return withContext(Dispatchers.IO) {
+        val currentTenant = TenantContextHolder.getTenant()
+            ?: error("No tenant context found in FCMService.saveToken")
+
+        return withContext(Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)) {
             fcmTokenRepository.saveToken(
                 userId = userId,
                 token = tokenRequest.token,
@@ -26,7 +31,10 @@ class FCMService(
     }
 
     suspend fun sendPersonalNotification(request: PersonalNotificationRequest): NotificationResponse {
-        return withContext(Dispatchers.IO) {
+        val currentTenant = TenantContextHolder.getTenant()
+            ?: error("No tenant context found in FCMService.sendPersonalNotification")
+
+        return withContext(Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)) {
             try {
                 val tokens = fcmTokenRepository.getTokensByUserId(UUID.fromString(request.userId))
 
@@ -106,7 +114,10 @@ class FCMService(
         println("  - Data: ${request.data}")
         println("  - Timestamp: ${System.currentTimeMillis()}")
 
-        return withContext(Dispatchers.IO) {
+        val currentTenant = TenantContextHolder.getTenant()
+            ?: error("No tenant context found in FCMService.sendBroadcastNotification")
+
+        return withContext(Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)) {
             try {
                 println("Starting token retrieval...")
                 val tokens = if (request.targetRole != null) {
@@ -315,7 +326,10 @@ class FCMService(
     }
 
     suspend fun subscribeToTopic(userId: UUID, topic: String): Boolean {
-        return withContext(Dispatchers.IO) {
+        val currentTenant = TenantContextHolder.getTenant()
+            ?: error("No tenant context found in FCMService.subscribeToTopic")
+
+        return withContext(Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)) {
             try {
                 val tokens = fcmTokenRepository.getTokensByUserId(userId)
                 if (tokens.isNotEmpty()) {
@@ -331,7 +345,10 @@ class FCMService(
     }
 
     suspend fun unsubscribeFromTopic(userId: UUID, topic: String): Boolean {
-        return withContext(Dispatchers.IO) {
+        val currentTenant = TenantContextHolder.getTenant()
+            ?: error("No tenant context found in FCMService.unsubscribeFromTopic")
+
+        return withContext(Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)) {
             try {
                 val tokens = fcmTokenRepository.getTokensByUserId(userId)
                 if (tokens.isNotEmpty()) {
