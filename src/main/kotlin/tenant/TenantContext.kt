@@ -12,17 +12,15 @@ data class TenantContext(
 )
 
 object TenantContextHolder {
-    private val tenantContext = ThreadLocal<TenantContext>()
+    val threadLocal = ThreadLocal<TenantContext>()
 
-    fun setTenant(context: TenantContext) {
-        tenantContext.set(context)
+    fun setTenant(tenant: TenantContext) {
+        threadLocal.set(tenant)
     }
 
-    fun getTenant(): TenantContext? {
-        return tenantContext.get()
-    }
+    fun getTenant(): TenantContext? = threadLocal.get()
 
     fun clear() {
-        tenantContext.remove()
+        threadLocal.remove()
     }
 }
