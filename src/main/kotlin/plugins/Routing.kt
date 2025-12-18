@@ -14,6 +14,7 @@ import com.example.repositories.ExamScheduleRepository
 import com.example.repositories.FCMTokenRepository
 import com.example.repositories.FeePaymentRepository
 import com.example.repositories.FeesStructureRepository
+import com.example.repositories.FileRepository
 import com.example.repositories.HolidayRepository
 import com.example.repositories.OtpRepository
 import com.example.repositories.PostRepository
@@ -41,6 +42,7 @@ import com.example.routes.api.fcmRoutes
 import com.example.routes.api.feePaymentRoutes
 import com.example.routes.api.feesStructureRoutes
 import com.example.routes.api.fileRoutes
+import routes.api.s3FileRoutes
 import com.example.routes.api.holidayRoutes
 import com.example.routes.api.postRoutes
 import com.example.routes.api.rulesAndRegulationsRoutes
@@ -87,6 +89,9 @@ import com.example.services.TenantService
 import com.example.services.TransportRouteService
 import com.example.services.TransportStopService
 import com.example.services.UserService
+import config.S3StorageConfig
+import services.S3FileService
+import services.storage.S3CompatibleStorage
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -198,6 +203,17 @@ fun Application.configureRouting() {
 
     val fileService = LocalFileService("/var/www/uploads")
 
+    // Initialize S3-based FileService with Backblaze B2
+    // NOTE: Bucket must exist in Backblaze B2 before use
+    val s3StorageConfig = S3StorageConfig.forBackblazeB2(
+        accessKeyId = "005627b76e5aa4b0000000001",
+        secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
+        region = "us-east-005", // ✅ MATCH BUCKET
+        bucketName = "schoolmate"  // Match the keyName you provided
+    )
+    val fileStorage = S3CompatibleStorage(s3StorageConfig)
+    val fileRepository = FileRepository()
+    val s3FileService = S3FileService(fileStorage, fileRepository)
 
     // API routes
 
@@ -234,6 +250,7 @@ fun Application.configureRouting() {
         dashboardRoutes(dashboardService)
         staffClassSubjectRoutes(staffClassAssignmentService, staffSubjectAssignmentService)
         fileRoutes(fileService)
+        s3FileRoutes(s3FileService)
         feesStructureRoutes(feesStructureService)
         fcmRoutes(fcmService)
         studentFeeRoutes(studentFeeService)

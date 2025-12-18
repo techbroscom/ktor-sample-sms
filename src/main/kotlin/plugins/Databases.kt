@@ -24,7 +24,7 @@ fun Application.configureDatabases() {
     // Run migration for existing tenants on startup
     val migrationService = MigrationService()
     runBlocking {
-        migrationService.migrateTenantExamTables()
+        migrationService.migrateTenantFilesTable()
     }
 }
 
@@ -53,7 +53,8 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             FeesStructures,
             FCMTokens,
             StudentFees,
-            FeePayments
+            FeePayments,
+            Files
         )
     }
 }

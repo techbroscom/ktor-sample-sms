@@ -2,6 +2,7 @@ package com.example.services
 
 import com.example.config.TenantDatabaseConfig
 import com.example.database.tables.Exams
+import com.example.database.tables.Files
 import com.example.database.tables.Tenants
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -87,6 +88,76 @@ class MigrationService {
 
         println("✓ Tenant exam migrations completed safely")
     }
+
+    fun migrateTenantFilesTable() {
+        println("🔧 Running tenant files table migration (safe mode)...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (files table)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+
+                // 🔑 CRITICAL: ensure all operations hit tenant schema
+                exec("SET search_path TO $schema")
+
+                // 1️⃣ Check if files table already exists
+                val filesTableExists = exec(
+                    """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = '$schema'
+                      AND table_name = 'files'
+                )
+                """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (filesTableExists) {
+                    println("✓ files table already exists in $schema")
+                    return@transaction
+                }
+
+                // 2️⃣ Create files table in tenant schema
+                println("➕ Creating files table in $schema")
+                SchemaUtils.create(Files)
+
+                // 3️⃣ Optional indexes (HIGHLY recommended)
+                exec("""
+                CREATE INDEX IF NOT EXISTS idx_files_tenant_id
+                ON files (tenant_id)
+            """)
+
+                exec("""
+                CREATE INDEX IF NOT EXISTS idx_files_uploaded_by
+                ON files (uploaded_by)
+            """)
+
+                exec("""
+                CREATE INDEX IF NOT EXISTS idx_files_module_type
+                ON files (module, type)
+            """)
+
+                println("✓ files table created successfully in $schema")
+            }
+        }
+
+        println("✓ Tenant files table migration completed")
+    }
+
 
 
 }
