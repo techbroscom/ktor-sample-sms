@@ -16,8 +16,6 @@ class PostRepository {
             it[title] = request.title
             it[content] = request.content
             it[author] = request.author
-            it[imageUrl] = request.imageUrl
-            it[imageS3Key] = request.imageS3Key
             it[createdAt] = LocalDateTime.now()
         }[Posts.id]
     }
@@ -47,8 +45,6 @@ class PostRepository {
             it[title] = request.title
             it[content] = request.content
             it[author] = request.author
-            it[imageUrl] = request.imageUrl
-            it[imageS3Key] = request.imageS3Key
         } > 0
     }
 
@@ -76,8 +72,7 @@ class PostRepository {
             title = row[Posts.title],
             content = row[Posts.content],
             author = row[Posts.author],
-            imageUrl = row[Posts.imageUrl],
-            imageS3Key = row[Posts.imageS3Key],
+            images = emptyList(), // Images will be loaded separately
             createdAt = row[Posts.createdAt].toString()
         )
     }

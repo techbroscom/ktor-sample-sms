@@ -8,8 +8,7 @@ data class PostDto(
     val title: String,
     val content: String,
     val author: String? = null,
-    val imageUrl: String? = null,
-    val imageS3Key: String? = null,
+    val images: List<PostImageDto> = emptyList(),
     val createdAt: String // Format: ISO DateTime string
 )
 
@@ -17,16 +16,12 @@ data class PostDto(
 data class CreatePostRequest(
     val title: String,
     val content: String,
-    val author: String? = null,
-    val imageUrl: String? = null,
-    val imageS3Key: String? = null
+    val author: String? = null
 )
 
 @Serializable
 data class UpdatePostRequest(
     val title: String,
     val content: String,
-    val author: String? = null,
-    val imageUrl: String? = null,
-    val imageS3Key: String? = null
+    val author: String? = null
 )

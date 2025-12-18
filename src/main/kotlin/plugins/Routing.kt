@@ -16,6 +16,7 @@ import com.example.repositories.FileRepository
 import com.example.repositories.HolidayRepository
 import com.example.repositories.OtpRepository
 import com.example.repositories.PostRepository
+import com.example.repositories.PostImageRepository
 import com.example.repositories.RulesAndRegulationsRepository
 import com.example.repositories.SchoolConfigRepository
 import com.example.repositories.StaffClassAssignmentRepository
@@ -119,7 +120,8 @@ fun Application.configureRouting() {
     val s3FileService = S3FileService(fileStorage, fileRepository)
 
     val postRepository = PostRepository()
-    val postService = PostService(postRepository, notificationService, s3FileService)
+    val postImageRepository = PostImageRepository()
+    val postService = PostService(postRepository, postImageRepository, notificationService, s3FileService)
 
     val complaintRepository = ComplaintRepository()
     val complaintService = ComplaintService(complaintRepository)

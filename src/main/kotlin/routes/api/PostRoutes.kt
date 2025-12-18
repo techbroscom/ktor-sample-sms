@@ -68,7 +68,7 @@ fun Route.postRoutes(postService: PostService) {
             ))
         }
 
-        // Create post
+        // Create post (JSON - no images)
         post {
             val request = call.receive<CreatePostRequest>()
             val post = postService.createPost(request)
@@ -79,7 +79,7 @@ fun Route.postRoutes(postService: PostService) {
             ))
         }
 
-        // Update post
+        // Update post (JSON - no images)
         put("/{id}") {
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: throw ApiException("Invalid post ID", HttpStatusCode.BadRequest)
@@ -105,8 +105,8 @@ fun Route.postRoutes(postService: PostService) {
             ))
         }
 
-        // Create post with image (multipart)
-        post("/with-image") {
+        // Create post with multiple images (multipart)
+        post("/with-images") {
             try {
                 val tenantId = call.request.headers["X-Tenant"] ?: "default"
                 val multipartData = call.receiveMultipart()
@@ -115,8 +115,7 @@ fun Route.postRoutes(postService: PostService) {
                 var content: String? = null
                 var author: String? = null
                 var userId: String? = null
-                var imageBytes: ByteArray? = null
-                var imageFileName: String? = null
+                val imagesList = mutableListOf<Pair<ByteArray, String>>() // (bytes, fileName)
 
                 multipartData.forEachPart { part ->
                     when (part) {
@@ -130,9 +129,9 @@ fun Route.postRoutes(postService: PostService) {
                             part.dispose()
                         }
                         is PartData.FileItem -> {
-                            if (part.name == "image") {
-                                imageFileName = part.originalFileName
-                                imageBytes = withContext(Dispatchers.IO) {
+                            if (part.name == "images" || part.name == "images[]") {
+                                val fileName = part.originalFileName ?: "unknown"
+                                val imageBytes = withContext(Dispatchers.IO) {
                                     try {
                                         val stream = part.streamProvider()
                                         val buffer = ByteArrayOutputStream()
@@ -144,6 +143,9 @@ fun Route.postRoutes(postService: PostService) {
                                         println("Error reading image stream: ${e.message}")
                                         ByteArray(0)
                                     }
+                                }
+                                if (imageBytes.isNotEmpty()) {
+                                    imagesList.add(imageBytes to fileName)
                                 }
                             }
                             part.dispose()
@@ -162,24 +164,28 @@ fun Route.postRoutes(postService: PostService) {
                     return@post
                 }
 
-                val post = postService.createPostWithImage(
+                // Convert ByteArray list to InputStream list
+                val images = imagesList.map { (bytes, fileName) ->
+                    bytes.inputStream() to fileName
+                }
+
+                val post = postService.createPostWithImages(
                     tenantId = tenantId,
                     title = title!!,
                     content = content!!,
                     author = author,
-                    imageInputStream = imageBytes?.inputStream(),
-                    imageFileName = imageFileName,
+                    images = images,
                     userId = userId!!
                 )
 
                 call.respond(HttpStatusCode.Created, ApiResponse(
                     success = true,
                     data = post,
-                    message = "Post created successfully"
+                    message = "Post created successfully with ${images.size} image(s)"
                 ))
 
             } catch (e: Exception) {
-                println("ERROR creating post with image: ${e.message}")
+                println("ERROR creating post with images: ${e.message}")
                 e.printStackTrace()
                 call.respond(
                     HttpStatusCode.InternalServerError,
@@ -191,8 +197,8 @@ fun Route.postRoutes(postService: PostService) {
             }
         }
 
-        // Update post with image (multipart)
-        put("/{id}/with-image") {
+        // Update post with multiple images (multipart)
+        put("/{id}/with-images") {
             try {
                 val tenantId = call.request.headers["X-Tenant"] ?: "default"
                 val id = call.parameters["id"]?.toIntOrNull()
@@ -204,9 +210,8 @@ fun Route.postRoutes(postService: PostService) {
                 var content: String? = null
                 var author: String? = null
                 var userId: String? = null
-                var imageBytes: ByteArray? = null
-                var imageFileName: String? = null
-                var keepExistingImage: Boolean = true
+                var replaceExistingImages: Boolean = false
+                val imagesList = mutableListOf<Pair<ByteArray, String>>()
 
                 multipartData.forEachPart { part ->
                     when (part) {
@@ -216,14 +221,14 @@ fun Route.postRoutes(postService: PostService) {
                                 "content" -> content = part.value
                                 "author" -> author = part.value
                                 "userId" -> userId = part.value
-                                "keepExistingImage" -> keepExistingImage = part.value.toBoolean()
+                                "replaceExistingImages" -> replaceExistingImages = part.value.toBoolean()
                             }
                             part.dispose()
                         }
                         is PartData.FileItem -> {
-                            if (part.name == "image") {
-                                imageFileName = part.originalFileName
-                                imageBytes = withContext(Dispatchers.IO) {
+                            if (part.name == "images" || part.name == "images[]") {
+                                val fileName = part.originalFileName ?: "unknown"
+                                val imageBytes = withContext(Dispatchers.IO) {
                                     try {
                                         val stream = part.streamProvider()
                                         val buffer = ByteArrayOutputStream()
@@ -235,6 +240,9 @@ fun Route.postRoutes(postService: PostService) {
                                         println("Error reading image stream: ${e.message}")
                                         ByteArray(0)
                                     }
+                                }
+                                if (imageBytes.isNotEmpty()) {
+                                    imagesList.add(imageBytes to fileName)
                                 }
                             }
                             part.dispose()
@@ -253,32 +261,63 @@ fun Route.postRoutes(postService: PostService) {
                     return@put
                 }
 
-                val post = postService.updatePostWithImage(
+                // Convert ByteArray list to InputStream list
+                val newImages = imagesList.map { (bytes, fileName) ->
+                    bytes.inputStream() to fileName
+                }
+
+                val post = postService.updatePostWithImages(
                     tenantId = tenantId,
                     id = id,
                     title = title!!,
                     content = content!!,
                     author = author,
-                    imageInputStream = imageBytes?.inputStream(),
-                    imageFileName = imageFileName,
+                    newImages = newImages,
                     userId = userId!!,
-                    keepExistingImage = keepExistingImage
+                    replaceExistingImages = replaceExistingImages
                 )
 
                 call.respond(ApiResponse(
                     success = true,
                     data = post,
-                    message = "Post updated successfully"
+                    message = "Post updated successfully${if (newImages.isNotEmpty()) " with ${newImages.size} new image(s)" else ""}"
                 ))
 
             } catch (e: Exception) {
-                println("ERROR updating post with image: ${e.message}")
+                println("ERROR updating post with images: ${e.message}")
                 e.printStackTrace()
                 call.respond(
                     HttpStatusCode.InternalServerError,
                     ApiResponse<Unit>(
                         success = false,
                         message = "Failed to update post: ${e.message}"
+                    )
+                )
+            }
+        }
+
+        // Delete a specific image from a post
+        delete("/{postId}/images/{imageId}") {
+            try {
+                val postId = call.parameters["postId"]?.toIntOrNull()
+                    ?: throw ApiException("Invalid post ID", HttpStatusCode.BadRequest)
+                val imageId = call.parameters["imageId"]?.toIntOrNull()
+                    ?: throw ApiException("Invalid image ID", HttpStatusCode.BadRequest)
+
+                postService.deletePostImage(postId, imageId)
+                call.respond(ApiResponse<Unit>(
+                    success = true,
+                    message = "Image deleted successfully"
+                ))
+
+            } catch (e: Exception) {
+                println("ERROR deleting post image: ${e.message}")
+                e.printStackTrace()
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ApiResponse<Unit>(
+                        success = false,
+                        message = "Failed to delete image: ${e.message}"
                     )
                 )
             }

@@ -4,6 +4,7 @@ import com.example.exceptions.ApiException
 import com.example.models.dto.CreatePostRequest
 import com.example.models.dto.PostDto
 import com.example.models.dto.UpdatePostRequest
+import com.example.repositories.PostImageRepository
 import com.example.repositories.PostRepository
 import io.ktor.http.*
 import services.S3FileService
@@ -11,6 +12,7 @@ import java.io.InputStream
 
 class PostService(
     private val postRepository: PostRepository,
+    private val postImageRepository: PostImageRepository,
     private val notificationService: NotificationService?,
     private val s3FileService: S3FileService?
 ) {
@@ -23,34 +25,43 @@ class PostService(
         return getPostById(postId)
     }
 
-    suspend fun createPostWithImage(
+    suspend fun createPostWithImages(
         tenantId: String,
         title: String,
         content: String,
         author: String?,
-        imageInputStream: InputStream?,
-        imageFileName: String?,
+        images: List<Pair<InputStream, String>>, // List of (inputStream, fileName)
         userId: String
     ): PostDto {
         validatePostRequest(title, content)
 
-        var imageUrl: String? = null
-        var imageS3Key: String? = null
+        // Create the post first
+        val request = CreatePostRequest(
+            title = title,
+            content = content,
+            author = author
+        )
+        val postId = postRepository.create(request)
 
-        // Upload image if provided
-        if (imageInputStream != null && imageFileName != null) {
+        // Upload and attach images
+        images.forEachIndexed { index, (imageInputStream, imageFileName) ->
             val uploadResponse = s3FileService?.uploadPostImage(
                 tenantId = tenantId,
                 inputStream = imageInputStream,
                 originalFileName = imageFileName,
-                postId = "temp_${System.currentTimeMillis()}",
+                postId = postId.toString(),
                 userId = userId
             )
 
             if (uploadResponse?.success == true) {
-                imageUrl = uploadResponse.fileUrl
-                imageS3Key = uploadResponse.objectKey
+                postImageRepository.create(
+                    postId = postId,
+                    imageUrl = uploadResponse.fileUrl ?: "",
+                    imageS3Key = uploadResponse.objectKey ?: "",
+                    displayOrder = index
+                )
             } else {
+                // If any image fails, we might want to rollback or continue
                 throw ApiException(
                     "Image upload failed: ${uploadResponse?.message ?: "Unknown error"}",
                     HttpStatusCode.InternalServerError
@@ -58,33 +69,36 @@ class PostService(
             }
         }
 
-        val request = CreatePostRequest(
-            title = title,
-            content = content,
-            author = author,
-            imageUrl = imageUrl,
-            imageS3Key = imageS3Key
-        )
-
-        val postId = postRepository.create(request)
         notificationService?.sendSchoolAnnouncement(1, title, content)
         return getPostById(postId)
     }
 
     suspend fun getPostById(id: Int): PostDto {
-        return postRepository.findById(id)
+        val post = postRepository.findById(id)
             ?: throw ApiException("Post not found", HttpStatusCode.NotFound)
+
+        // Load images for the post
+        val images = postImageRepository.findByPostId(id)
+        return post.copy(images = images)
     }
 
     suspend fun getAllPosts(): List<PostDto> {
-        return postRepository.getAll()
+        val posts = postRepository.getAll()
+        return posts.map { post ->
+            val images = postImageRepository.findByPostId(post.id ?: 0)
+            post.copy(images = images)
+        }
     }
 
     suspend fun getAllPosts(limit: Int): List<PostDto> {
         if (limit <= 0) {
             throw ApiException("Limit must be greater than 0", HttpStatusCode.BadRequest)
         }
-        return postRepository.getAllWithLimit(limit)
+        val posts = postRepository.getAllWithLimit(limit)
+        return posts.map { post ->
+            val images = postImageRepository.findByPostId(post.id ?: 0)
+            post.copy(images = images)
+        }
     }
 
     suspend fun updatePost(id: Int, request: UpdatePostRequest): PostDto {
@@ -98,32 +112,42 @@ class PostService(
         return getPostById(id)
     }
 
-    suspend fun updatePostWithImage(
+    suspend fun updatePostWithImages(
         tenantId: String,
         id: Int,
         title: String,
         content: String,
         author: String?,
-        imageInputStream: InputStream?,
-        imageFileName: String?,
+        newImages: List<Pair<InputStream, String>>, // New images to add
         userId: String,
-        keepExistingImage: Boolean = false
+        replaceExistingImages: Boolean = false
     ): PostDto {
         validatePostRequest(title, content)
 
-        // Get existing post to check for old image
-        val existingPost = getPostById(id)
+        // Update post basic info
+        val request = UpdatePostRequest(
+            title = title,
+            content = content,
+            author = author
+        )
+        val updated = postRepository.update(id, request)
+        if (!updated) {
+            throw ApiException("Post not found", HttpStatusCode.NotFound)
+        }
 
-        var imageUrl: String? = if (keepExistingImage) existingPost.imageUrl else null
-        var imageS3Key: String? = if (keepExistingImage) existingPost.imageS3Key else null
-
-        // Upload new image if provided
-        if (imageInputStream != null && imageFileName != null) {
-            // Delete old image if exists
-            if (!existingPost.imageS3Key.isNullOrBlank()) {
-                s3FileService?.deleteFile(existingPost.imageS3Key)
+        // Handle images
+        if (replaceExistingImages) {
+            // Delete old images from S3 and database
+            val existingImages = postImageRepository.findByPostId(id)
+            existingImages.forEach { image ->
+                s3FileService?.deleteFile(image.imageS3Key)
             }
+            postImageRepository.deleteByPostId(id)
+        }
 
+        // Upload and attach new images
+        val currentImageCount = if (replaceExistingImages) 0 else postImageRepository.findByPostId(id).size
+        newImages.forEachIndexed { index, (imageInputStream, imageFileName) ->
             val uploadResponse = s3FileService?.uploadPostImage(
                 tenantId = tenantId,
                 inputStream = imageInputStream,
@@ -133,8 +157,12 @@ class PostService(
             )
 
             if (uploadResponse?.success == true) {
-                imageUrl = uploadResponse.fileUrl
-                imageS3Key = uploadResponse.objectKey
+                postImageRepository.create(
+                    postId = id,
+                    imageUrl = uploadResponse.fileUrl ?: "",
+                    imageS3Key = uploadResponse.objectKey ?: "",
+                    displayOrder = currentImageCount + index
+                )
             } else {
                 throw ApiException(
                     "Image upload failed: ${uploadResponse?.message ?: "Unknown error"}",
@@ -143,31 +171,37 @@ class PostService(
             }
         }
 
-        val request = UpdatePostRequest(
-            title = title,
-            content = content,
-            author = author,
-            imageUrl = imageUrl,
-            imageS3Key = imageS3Key
-        )
-
-        val updated = postRepository.update(id, request)
-        if (!updated) {
-            throw ApiException("Post not found", HttpStatusCode.NotFound)
-        }
-
         return getPostById(id)
     }
 
-    suspend fun deletePost(id: Int) {
-        // Get post to delete associated image
-        val post = getPostById(id)
+    suspend fun deletePostImage(postId: Int, imageId: Int) {
+        val image = postImageRepository.findById(imageId)
+            ?: throw ApiException("Image not found", HttpStatusCode.NotFound)
 
-        // Delete image from S3 if exists
-        if (!post.imageS3Key.isNullOrBlank()) {
-            s3FileService?.deleteFile(post.imageS3Key)
+        if (image.postId != postId) {
+            throw ApiException("Image does not belong to this post", HttpStatusCode.BadRequest)
         }
 
+        // Delete from S3
+        s3FileService?.deleteFile(image.imageS3Key)
+
+        // Delete from database
+        postImageRepository.deleteById(imageId)
+    }
+
+    suspend fun deletePost(id: Int) {
+        // Get post images to delete from S3
+        val images = postImageRepository.findByPostId(id)
+
+        // Delete all images from S3
+        images.forEach { image ->
+            s3FileService?.deleteFile(image.imageS3Key)
+        }
+
+        // Delete images from database
+        postImageRepository.deleteByPostId(id)
+
+        // Delete post
         val deleted = postRepository.delete(id)
         if (!deleted) {
             throw ApiException("Post not found", HttpStatusCode.NotFound)
@@ -178,14 +212,22 @@ class PostService(
         if (author.isBlank()) {
             throw ApiException("Author name cannot be empty", HttpStatusCode.BadRequest)
         }
-        return postRepository.findByAuthor(author)
+        val posts = postRepository.findByAuthor(author)
+        return posts.map { post ->
+            val images = postImageRepository.findByPostId(post.id ?: 0)
+            post.copy(images = images)
+        }
     }
 
     suspend fun searchPostsByTitle(searchTerm: String): List<PostDto> {
         if (searchTerm.isBlank()) {
             throw ApiException("Search term cannot be empty", HttpStatusCode.BadRequest)
         }
-        return postRepository.searchByTitle(searchTerm)
+        val posts = postRepository.searchByTitle(searchTerm)
+        return posts.map { post ->
+            val images = postImageRepository.findByPostId(post.id ?: 0)
+            post.copy(images = images)
+        }
     }
 
     private fun validatePostRequest(title: String, content: String) {
