@@ -12,7 +12,7 @@ class TenantDatabaseConfig {
         private val tenantDatabases = mutableMapOf<String, Database>()
 
         // 🔵 Production DB (inside VPS)
-        private const val DB_URL = "jdbc:postgresql://localhost:5433/saas_db"
+        private const val DB_URL = "jdbc:postgresql://localhost:5432/saas_db"
         private const val DB_USER = "postgres"
         private const val DB_PASS = "smstechdb"
 
