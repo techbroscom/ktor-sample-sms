@@ -29,6 +29,7 @@ data class CreateTenantConfigRequest(
     val tenantId: String,
     val schemaName: String,
     val tenantName: String,
+    val subDomain: String? = null, // Optional - for compatibility with client
     val subscriptionStatus: String = "TRIAL",
     val isPaid: Boolean = false,
     val planType: String? = null,
