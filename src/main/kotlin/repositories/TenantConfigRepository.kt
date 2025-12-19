@@ -40,9 +40,16 @@ class TenantConfigRepository {
         } get TenantConfig.id
 
         println("Inserted with ID: $insertedId")
-        val result = findById(insertedId)!!
+
+        // Query in the same transaction instead of calling findById which creates a new transaction
+        println("Retrieving created tenant in same transaction...")
+        val result = TenantConfig.selectAll()
+            .where { TenantConfig.id eq insertedId }
+            .map { mapRowToDto(it) }
+            .singleOrNull()
+
         println("Retrieved created tenant: $result")
-        result
+        result ?: throw Exception("Failed to retrieve created tenant with ID: $insertedId")
     }
 
     suspend fun findById(id: Int): TenantConfigDto? = systemDbQuery {
