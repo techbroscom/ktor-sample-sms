@@ -25,6 +25,8 @@ import com.example.repositories.StudentAssignmentRepository
 import com.example.repositories.StudentFeeRepository
 import com.example.repositories.StudentTransportAssignmentRepository
 import com.example.repositories.SubjectRepository
+import com.example.repositories.TenantConfigRepository
+import com.example.repositories.TenantFeaturesRepository
 import com.example.repositories.TransportRouteRepository
 import com.example.repositories.TransportStopRepository
 import com.example.repositories.UserRepository
@@ -52,6 +54,7 @@ import com.example.routes.api.studentAssignmentRoutes
 import com.example.routes.api.studentFeeRoutes
 import com.example.routes.api.studentTransportAssignmentRoutes
 import com.example.routes.api.subjectRoutes
+import com.example.routes.api.tenantConfigRoutes
 import com.example.routes.api.tenantRoutes
 import com.example.routes.api.transportRouteRoutes
 import com.example.routes.api.transportStopRoutes
@@ -81,6 +84,7 @@ import com.example.services.StudentAssignmentService
 import com.example.services.StudentFeeService
 import com.example.services.StudentTransportAssignmentService
 import com.example.services.SubjectService
+import com.example.services.TenantConfigService
 import com.example.services.TenantService
 import com.example.services.TransportRouteService
 import com.example.services.TransportStopService
@@ -178,6 +182,10 @@ fun Application.configureRouting() {
     val feePaymentRepository = FeePaymentRepository()
     val studentFeeRepository = StudentFeeRepository()
 
+    val tenantConfigRepository = TenantConfigRepository()
+    val tenantFeaturesRepository = TenantFeaturesRepository()
+    val tenantConfigService = TenantConfigService(tenantConfigRepository, tenantFeaturesRepository)
+
     val feePaymentService = FeePaymentService(feePaymentRepository, studentFeeRepository)
 
     val studentFeeService = StudentFeeService(studentFeeRepository, feePaymentRepository ,userService, feesStructureService)
@@ -239,5 +247,6 @@ fun Application.configureRouting() {
         transportRouteRoutes(transportRouteService)
         transportStopRoutes(transportStopService)
         studentTransportAssignmentRoutes(studentTransportAssignmentService)
+        tenantConfigRoutes(tenantConfigService)
     }
 }

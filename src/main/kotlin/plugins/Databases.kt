@@ -12,10 +12,12 @@ fun Application.configureDatabases() {
     // Initialize system database
     val systemDatabase = TenantDatabaseConfig.getSystemDb()
 
-    // Create system tables (only Tenants table in public schema)
+    // Create system tables (tenant management tables in public schema)
     transaction(systemDatabase) {
         SchemaUtils.create(
-            Tenants // Only tenant management table in system database
+            Tenants,        // Basic tenant information
+            TenantConfig,   // Extended tenant configuration (subscription, storage, limits)
+            TenantFeatures  // Tenant feature flags
         )
     }
 
