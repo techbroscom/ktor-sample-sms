@@ -5,6 +5,7 @@ import com.example.models.dto.PostImageDto
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import java.time.LocalDateTime
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 class PostImageRepository {
 

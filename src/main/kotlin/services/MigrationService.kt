@@ -3,6 +3,7 @@ package com.example.services
 import com.example.config.TenantDatabaseConfig
 import com.example.database.tables.Exams
 import com.example.database.tables.Files
+import com.example.database.tables.PostImages
 import com.example.database.tables.Tenants
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -158,6 +159,89 @@ class MigrationService {
         println("✓ Tenant files table migration completed")
     }
 
+    fun migrateTenantPostImagesTable() {
+        println("🔧 Running tenant post_images table migration (safe mode)...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (post_images table)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+
+                // 🔑 Ensure tenant schema
+                exec("SET search_path TO $schema")
+
+                // 1️⃣ Check if posts table exists (dependency check)
+                val postsTableExists = exec(
+                    """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = '$schema'
+                      AND table_name = 'posts'
+                )
+                """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!postsTableExists) {
+                    println("⚠ Skipping $schema (posts table not found)")
+                    return@transaction
+                }
+
+                // 2️⃣ Check if post_images table already exists
+                val postImagesTableExists = exec(
+                    """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = '$schema'
+                      AND table_name = 'post_images'
+                )
+                """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (postImagesTableExists) {
+                    println("✓ post_images table already exists in $schema")
+                    return@transaction
+                }
+
+                // 3️⃣ Create post_images table
+                println("➕ Creating post_images table in $schema")
+                SchemaUtils.create(PostImages)
+
+                // 4️⃣ Indexes (important for performance)
+                exec("""
+                CREATE INDEX IF NOT EXISTS idx_post_images_post_id
+                ON post_images (post_id)
+            """)
+
+                exec("""
+                CREATE INDEX IF NOT EXISTS idx_post_images_display_order
+                ON post_images (display_order)
+            """)
+
+                println("✓ post_images table created successfully in $schema")
+            }
+        }
+
+        println("✓ Tenant post_images table migration completed")
+    }
 
 
 }
