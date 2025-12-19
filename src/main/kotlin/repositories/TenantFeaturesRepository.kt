@@ -4,7 +4,7 @@ import com.example.database.tables.TenantFeatures
 import com.example.models.dto.CreateTenantFeatureRequest
 import com.example.models.dto.TenantFeatureDto
 import com.example.models.dto.UpdateTenantFeatureRequest
-import com.example.utils.dbQuery
+import com.example.utils.systemDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDateTime
@@ -14,7 +14,7 @@ class TenantFeaturesRepository {
 
     private val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
 
-    suspend fun create(tenantId: String, request: CreateTenantFeatureRequest): TenantFeatureDto = dbQuery {
+    suspend fun create(tenantId: String, request: CreateTenantFeatureRequest): TenantFeatureDto = systemDbQuery {
         val now = LocalDateTime.now()
         val insertedId = TenantFeatures.insert {
             it[TenantFeatures.tenantId] = tenantId
@@ -27,21 +27,21 @@ class TenantFeaturesRepository {
         findById(insertedId)!!
     }
 
-    suspend fun findById(id: Int): TenantFeatureDto? = dbQuery {
+    suspend fun findById(id: Int): TenantFeatureDto? = systemDbQuery {
         TenantFeatures.selectAll()
             .where { TenantFeatures.id eq id }
             .map { mapRowToDto(it) }
             .singleOrNull()
     }
 
-    suspend fun findByTenantId(tenantId: String): List<TenantFeatureDto> = dbQuery {
+    suspend fun findByTenantId(tenantId: String): List<TenantFeatureDto> = systemDbQuery {
         TenantFeatures.selectAll()
             .where { TenantFeatures.tenantId eq tenantId }
             .orderBy(TenantFeatures.featureName to SortOrder.ASC)
             .map { mapRowToDto(it) }
     }
 
-    suspend fun findByTenantIdAndFeatureName(tenantId: String, featureName: String): TenantFeatureDto? = dbQuery {
+    suspend fun findByTenantIdAndFeatureName(tenantId: String, featureName: String): TenantFeatureDto? = systemDbQuery {
         TenantFeatures.selectAll()
             .where {
                 (TenantFeatures.tenantId eq tenantId) and
@@ -51,7 +51,7 @@ class TenantFeaturesRepository {
             .singleOrNull()
     }
 
-    suspend fun update(tenantId: String, featureName: String, request: UpdateTenantFeatureRequest): Boolean = dbQuery {
+    suspend fun update(tenantId: String, featureName: String, request: UpdateTenantFeatureRequest): Boolean = systemDbQuery {
         TenantFeatures.update({
             (TenantFeatures.tenantId eq tenantId) and
                     (TenantFeatures.featureName eq featureName)
@@ -61,14 +61,14 @@ class TenantFeaturesRepository {
         } > 0
     }
 
-    suspend fun delete(tenantId: String, featureName: String): Boolean = dbQuery {
+    suspend fun delete(tenantId: String, featureName: String): Boolean = systemDbQuery {
         TenantFeatures.deleteWhere {
             (TenantFeatures.tenantId eq tenantId) and
                     (TenantFeatures.featureName eq featureName)
         } > 0
     }
 
-    suspend fun exists(tenantId: String, featureName: String): Boolean = dbQuery {
+    suspend fun exists(tenantId: String, featureName: String): Boolean = systemDbQuery {
         TenantFeatures.selectAll()
             .where {
                 (TenantFeatures.tenantId eq tenantId) and

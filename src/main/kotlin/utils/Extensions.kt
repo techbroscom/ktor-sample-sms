@@ -10,6 +10,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 suspend fun <T> dbQuery(block: suspend () -> T): T =
     newSuspendedTransaction(Dispatchers.IO) { block() }
 
+// Query for system database (public schema - for tenant management tables)
+suspend fun <T> systemDbQuery(block: suspend () -> T): T =
+    newSuspendedTransaction(Dispatchers.IO, TenantDatabaseConfig.getSystemDb()) { block() }
+
 
 suspend fun <T> tenantDbQuery(block: suspend () -> T): T {
     // 1. Grab the tenant from the CURRENT thread (where it exists)

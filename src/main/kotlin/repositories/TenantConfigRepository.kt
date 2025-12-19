@@ -4,7 +4,7 @@ import com.example.database.tables.TenantConfig
 import com.example.models.dto.CreateTenantConfigRequest
 import com.example.models.dto.TenantConfigDto
 import com.example.models.dto.UpdateTenantConfigRequest
-import com.example.utils.dbQuery
+import com.example.utils.systemDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDateTime
@@ -14,7 +14,7 @@ class TenantConfigRepository {
 
     private val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
 
-    suspend fun create(request: CreateTenantConfigRequest): TenantConfigDto = dbQuery {
+    suspend fun create(request: CreateTenantConfigRequest): TenantConfigDto = systemDbQuery {
         val now = LocalDateTime.now()
         val insertedId = TenantConfig.insert {
             it[tenantId] = request.tenantId
@@ -38,21 +38,21 @@ class TenantConfigRepository {
         findById(insertedId)!!
     }
 
-    suspend fun findById(id: Int): TenantConfigDto? = dbQuery {
+    suspend fun findById(id: Int): TenantConfigDto? = systemDbQuery {
         TenantConfig.selectAll()
             .where { TenantConfig.id eq id }
             .map { mapRowToDto(it) }
             .singleOrNull()
     }
 
-    suspend fun findByTenantId(tenantId: String): TenantConfigDto? = dbQuery {
+    suspend fun findByTenantId(tenantId: String): TenantConfigDto? = systemDbQuery {
         TenantConfig.selectAll()
             .where { TenantConfig.tenantId eq tenantId }
             .map { mapRowToDto(it) }
             .singleOrNull()
     }
 
-    suspend fun findAll(activeOnly: Boolean = false): List<TenantConfigDto> = dbQuery {
+    suspend fun findAll(activeOnly: Boolean = false): List<TenantConfigDto> = systemDbQuery {
         val query = if (activeOnly) {
             TenantConfig.selectAll().where { TenantConfig.isActive eq true }
         } else {
@@ -62,7 +62,7 @@ class TenantConfigRepository {
             .map { mapRowToDto(it) }
     }
 
-    suspend fun update(tenantId: String, request: UpdateTenantConfigRequest): Boolean = dbQuery {
+    suspend fun update(tenantId: String, request: UpdateTenantConfigRequest): Boolean = systemDbQuery {
         val now = LocalDateTime.now()
         TenantConfig.update({ TenantConfig.tenantId eq tenantId }) {
             request.tenantName?.let { name -> it[tenantName] = name }
@@ -82,7 +82,7 @@ class TenantConfigRepository {
         } > 0
     }
 
-    suspend fun delete(tenantId: String): Boolean = dbQuery {
+    suspend fun delete(tenantId: String): Boolean = systemDbQuery {
         // Soft delete - mark as inactive
         TenantConfig.update({ TenantConfig.tenantId eq tenantId }) {
             it[isActive] = false
@@ -90,7 +90,7 @@ class TenantConfigRepository {
         } > 0
     }
 
-    suspend fun exists(tenantId: String): Boolean = dbQuery {
+    suspend fun exists(tenantId: String): Boolean = systemDbQuery {
         TenantConfig.selectAll()
             .where { TenantConfig.tenantId eq tenantId }
             .any()
