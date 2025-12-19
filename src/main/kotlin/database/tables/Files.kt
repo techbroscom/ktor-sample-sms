@@ -6,10 +6,10 @@ import java.time.LocalDateTime
 
 object Files : Table("files") {
     val id = uuid("id")
-    val tenantId = varchar("tenant_id", 100) // For multi-tenancy support
-    val module = varchar("module", 50) // e.g., "profile", "documents", "assignments"
+    // tenantId removed - schema-level multi-tenancy provides isolation
+    val module = varchar("module", 50) // e.g., "profile", "documents", "assignments", "posts"
     val type = varchar("type", 50) // e.g., "image", "pdf", "video"
-    val objectKey = varchar("object_key", 500) // S3 object key: tenantId/module/type/filename
+    val objectKey = varchar("object_key", 500) // S3 object key: tenantId/module/type/filename (tenantId in S3 path for organization)
     val originalFileName = varchar("original_file_name", 255)
     val fileSize = long("file_size") // in bytes
     val mimeType = varchar("mime_type", 100)

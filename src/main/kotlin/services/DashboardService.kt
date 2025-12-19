@@ -13,13 +13,14 @@ class DashboardService(
 ) {
 
     /**
-     * Get storage statistics for current tenant
+     * Get storage statistics for current tenant (schema-isolated)
+     * tenantId parameter used only for response DTO, schema context handles isolation
      */
     suspend fun getStorageStatistics(tenantId: String): StorageStatisticsDto? {
         return try {
             if (s3FileService == null) return null
 
-            val totalBytes = s3FileService.getTotalStorageByTenant(tenantId)
+            val totalBytes = s3FileService.getTotalStorageByTenant() // No param - uses tenant schema
             val totalMB = totalBytes / (1024.0 * 1024.0)
             val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
 
@@ -27,7 +28,7 @@ class DashboardService(
                 totalBytes = totalBytes,
                 totalMB = String.format("%.2f", totalMB),
                 totalGB = String.format("%.3f", totalGB),
-                tenantId = tenantId
+                tenantId = tenantId // For response DTO only
             )
 
             StorageStatisticsDto(
