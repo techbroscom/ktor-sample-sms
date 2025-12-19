@@ -12,24 +12,46 @@ class TenantConfigService(
 ) {
 
     suspend fun createTenant(request: CreateTenantConfigRequest): TenantConfigDto {
+        println("=== TenantConfigService.createTenant ===")
+        println("Request: $request")
+
         // Validate tenant doesn't already exist
-        if (tenantConfigRepository.exists(request.tenantId)) {
+        println("Checking if tenant exists: ${request.tenantId}")
+        val exists = tenantConfigRepository.exists(request.tenantId)
+        println("Tenant exists: $exists")
+
+        if (exists) {
             throw ApiException("Tenant with ID '${request.tenantId}' already exists", HttpStatusCode.Conflict)
         }
 
         // Validate subscription status
+        println("Validating subscription status: ${request.subscriptionStatus}")
         validateSubscriptionStatus(request.subscriptionStatus)
 
         // Create tenant config
-        return tenantConfigRepository.create(request)
+        println("Creating tenant config in repository...")
+        val result = tenantConfigRepository.create(request)
+        println("Tenant config created: $result")
+        return result
     }
 
     suspend fun getTenantById(tenantId: String, includeFeatures: Boolean = true): TenantConfigDto {
+        println("=== TenantConfigService.getTenantById ===")
+        println("TenantId: $tenantId, includeFeatures: $includeFeatures")
+
+        println("Querying repository for tenant...")
         val tenant = tenantConfigRepository.findByTenantId(tenantId)
-            ?: throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+        println("Repository result: $tenant")
+
+        if (tenant == null) {
+            println("Tenant not found, throwing ApiException")
+            throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+        }
 
         return if (includeFeatures) {
+            println("Including features for tenant...")
             val features = tenantFeaturesRepository.findByTenantId(tenantId)
+            println("Features found: ${features.size}")
             tenant.copy(features = features)
         } else {
             tenant

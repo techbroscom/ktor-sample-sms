@@ -18,8 +18,11 @@ fun Route.tenantConfigRoutes(tenantConfigService: TenantConfigService) {
 
         // Create new tenant config
         post {
+            println("=== TenantConfigRoutes: POST /api/v1/tenantsConfig received ===")
             val request = call.receive<CreateTenantConfigRequest>()
+            println("Request received: $request")
             val tenant = tenantConfigService.createTenant(request)
+            println("Tenant created successfully: $tenant")
             call.respond(HttpStatusCode.Created, ApiResponse(
                 success = true,
                 data = tenant,
@@ -44,9 +47,12 @@ fun Route.tenantConfigRoutes(tenantConfigService: TenantConfigService) {
             val tenantId = call.parameters["tenantId"]
                 ?: throw ApiException("Tenant ID is required", HttpStatusCode.BadRequest)
 
+            println("=== TenantConfigRoutes: GET /api/v1/tenantsConfig/$tenantId ===")
             val includeFeatures = call.request.queryParameters["includeFeatures"]?.toBoolean() ?: true
+            println("Query params - includeFeatures: $includeFeatures")
 
             val tenant = tenantConfigService.getTenantById(tenantId, includeFeatures)
+            println("Tenant retrieved: $tenant")
             call.respond(ApiResponse(
                 success = true,
                 data = tenant

@@ -15,7 +15,11 @@ class TenantConfigRepository {
     private val dateFormatter = DateTimeFormatter.ISO_DATE_TIME
 
     suspend fun create(request: CreateTenantConfigRequest): TenantConfigDto = systemDbQuery {
+        println("=== TenantConfigRepository.create ===")
+        println("Request: tenantId=${request.tenantId}, schemaName=${request.schemaName}, tenantName=${request.tenantName}")
+
         val now = LocalDateTime.now()
+        println("Inserting into TenantConfig table...")
         val insertedId = TenantConfig.insert {
             it[tenantId] = request.tenantId
             it[tenantSchemaName] = request.schemaName
@@ -35,7 +39,10 @@ class TenantConfigRepository {
             it[notes] = request.notes
         } get TenantConfig.id
 
-        findById(insertedId)!!
+        println("Inserted with ID: $insertedId")
+        val result = findById(insertedId)!!
+        println("Retrieved created tenant: $result")
+        result
     }
 
     suspend fun findById(id: Int): TenantConfigDto? = systemDbQuery {
@@ -46,10 +53,14 @@ class TenantConfigRepository {
     }
 
     suspend fun findByTenantId(tenantId: String): TenantConfigDto? = systemDbQuery {
-        TenantConfig.selectAll()
+        println("=== TenantConfigRepository.findByTenantId ===")
+        println("Searching for tenantId: $tenantId")
+        val result = TenantConfig.selectAll()
             .where { TenantConfig.tenantId eq tenantId }
             .map { mapRowToDto(it) }
             .singleOrNull()
+        println("Query result: $result")
+        result
     }
 
     suspend fun findAll(activeOnly: Boolean = false): List<TenantConfigDto> = systemDbQuery {
@@ -91,9 +102,13 @@ class TenantConfigRepository {
     }
 
     suspend fun exists(tenantId: String): Boolean = systemDbQuery {
-        TenantConfig.selectAll()
+        println("=== TenantConfigRepository.exists ===")
+        println("Checking if tenantId exists: $tenantId")
+        val exists = TenantConfig.selectAll()
             .where { TenantConfig.tenantId eq tenantId }
             .any()
+        println("Exists result: $exists")
+        exists
     }
 
     private fun mapRowToDto(row: ResultRow): TenantConfigDto {
