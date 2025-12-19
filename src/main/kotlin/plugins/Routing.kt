@@ -124,7 +124,8 @@ fun Application.configureRouting() {
     val userPermissionService = UserPermissionService(
         userPermissionsRepository,
         tenantFeaturesRepository,
-        featureRepository
+        featureRepository,
+        userRepository
     )
 
     // Update UserService to include feature repositories

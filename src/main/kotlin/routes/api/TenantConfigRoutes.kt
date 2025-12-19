@@ -7,6 +7,7 @@ import com.example.models.dto.UpdateTenantConfigRequest
 import com.example.models.dto.UpdateTenantFeatureRequest
 import com.example.models.responses.ApiResponse
 import com.example.services.TenantConfigService
+import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -154,6 +155,20 @@ fun Route.tenantConfigRoutes(tenantConfigService: TenantConfigService) {
             call.respond(ApiResponse<Unit>(
                 success = true,
                 message = "Feature removed successfully"
+            ))
+        }
+    }
+
+    // Get available features for the current tenant (from tenant context)
+    route("/api/v1/tenant/features/available") {
+        get {
+            val tenantContext = TenantContextHolder.getTenant()
+                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
+
+            val features = tenantConfigService.getTenantEnabledFeatures(tenantContext.id)
+            call.respond(ApiResponse(
+                success = true,
+                data = features
             ))
         }
     }

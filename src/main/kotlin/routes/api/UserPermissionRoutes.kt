@@ -13,6 +13,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
+
+    // Get all staff users with their permissions
+    route("/api/v1/staff/permissions") {
+        get {
+            val staffWithPermissions = userPermissionService.getAllStaffWithPermissions()
+            call.respond(ApiResponse(
+                success = true,
+                data = staffWithPermissions
+            ))
+        }
+    }
+
     route("/api/v1/users/{userId}/permissions") {
 
         // Assign permissions to a user (staff)

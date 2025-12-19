@@ -279,6 +279,10 @@ class TenantConfigService(
         return tenantFeaturesRepository.getEnabledFeatureKeys(tenantId)
     }
 
+    suspend fun getTenantEnabledFeatures(tenantId: String): List<TenantFeatureDto> {
+        return tenantFeaturesRepository.getEnabledFeatures(tenantId)
+    }
+
     private fun validateSubscriptionStatus(status: String) {
         val validStatuses = listOf("TRIAL", "ACTIVE", "SUSPENDED", "EXPIRED")
         if (status !in validStatuses) {

@@ -1,12 +1,15 @@
 package com.example.services
 
+import com.example.database.tables.UserRole
 import com.example.exceptions.ApiException
 import com.example.models.dto.AssignUserPermissionsRequest
+import com.example.models.dto.StaffPermissionDto
 import com.example.models.dto.UpdateUserPermissionRequest
 import com.example.models.dto.UserPermissionDto
 import com.example.repositories.FeatureRepository
 import com.example.repositories.TenantFeaturesRepository
 import com.example.repositories.UserPermissionsRepository
+import com.example.repositories.UserRepository
 import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
 import java.util.*
@@ -14,7 +17,8 @@ import java.util.*
 class UserPermissionService(
     private val userPermissionsRepository: UserPermissionsRepository,
     private val tenantFeaturesRepository: TenantFeaturesRepository,
-    private val featureRepository: FeatureRepository
+    private val featureRepository: FeatureRepository,
+    private val userRepository: UserRepository
 ) {
 
     suspend fun assignPermissionsToUser(
@@ -115,5 +119,20 @@ class UserPermissionService(
         }
 
         return userPermissionsRepository.deleteAllForUser(userUUID)
+    }
+
+    suspend fun getAllStaffWithPermissions(): List<StaffPermissionDto> {
+        // Get all staff users
+        val staffUsers = userRepository.findByRole(UserRole.STAFF)
+
+        // For each staff user, get their permissions
+        return staffUsers.map { user ->
+            val userUUID = UUID.fromString(user.id)
+            val permissions = userPermissionsRepository.findByUser(userUUID, includeFeature = true)
+            StaffPermissionDto(
+                user = user,
+                permissions = permissions
+            )
+        }
     }
 }

@@ -142,6 +142,26 @@ class TenantFeaturesRepository(
             .map { it[Features.featureKey] }
     }
 
+    // Get enabled features with full details for a tenant
+    suspend fun getEnabledFeatures(tenantId: String): List<TenantFeatureDto> = systemDbQuery {
+        val results = TenantFeatures.selectAll()
+            .where {
+                (TenantFeatures.tenantId eq tenantId) and
+                        (TenantFeatures.isEnabled eq true)
+            }
+            .orderBy(TenantFeatures.createdAt to SortOrder.ASC)
+            .map { mapRowToDto(it) }
+
+        results.map { result ->
+            if (result.featureId != null) {
+                val feature = featureRepository.findById(result.featureId)
+                result.copy(feature = feature)
+            } else {
+                result
+            }
+        }
+    }
+
     private fun mapRowToDto(row: ResultRow): TenantFeatureDto {
         return TenantFeatureDto(
             id = row[TenantFeatures.id],
