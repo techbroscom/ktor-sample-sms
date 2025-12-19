@@ -171,7 +171,7 @@ class UserService(
                 "STAFF" -> {
                     // STAFF gets only their assigned features
                     val userId = UUID.fromString(userDto.id)
-                    userPermissionsRepository?.getEnabledFeatureKeys(userId, tenantId) ?: emptyList()
+                    userPermissionsRepository?.getEnabledFeatureKeys(userId) ?: emptyList()
                 }
                 else -> {
                     // STUDENT or other roles don't get features in login response

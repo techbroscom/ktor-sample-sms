@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 data class UserPermissionDto(
     val id: Int,
     val userId: String,
-    val tenantId: String,
     val featureId: Int,
     val isEnabled: Boolean,
     val grantedAt: String,

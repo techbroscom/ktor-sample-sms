@@ -18,8 +18,7 @@ fun Application.configureDatabases() {
             Tenants,           // Basic tenant information
             TenantConfig,      // Extended tenant configuration (subscription, storage, limits)
             Features,          // Master features catalog
-            TenantFeatures,    // Tenant feature assignments
-            UserPermissions    // User-level feature permissions (for staff)
+            TenantFeatures     // Tenant feature assignments
         )
     }
 
@@ -31,6 +30,7 @@ fun Application.configureDatabases() {
         migrationService.migrateTenantPostImagesTable()
         migrationService.removeFilesTenantIdColumn() // Remove tenant_id column (schema-level isolation)
         migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
+        migrationService.migrateUserPermissionsTable() // Create UserPermissions table in tenant schemas
     }
 }
 
@@ -60,7 +60,8 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             FCMTokens,
             StudentFees,
             FeePayments,
-            Files
+            Files,
+            UserPermissions  // User-level feature permissions (per tenant)
         )
     }
 }

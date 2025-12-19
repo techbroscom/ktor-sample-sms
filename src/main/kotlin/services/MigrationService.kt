@@ -367,4 +367,71 @@ class MigrationService {
         }
     }
 
+    /**
+     * Create UserPermissions table in existing tenant schemas
+     */
+    fun migrateUserPermissionsTable() {
+        println("🔧 Creating user_permissions table in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (user_permissions table)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if user_permissions table already exists
+                val tableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'user_permissions'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (tableExists) {
+                    println("✓ user_permissions table already exists in $schema")
+                    return@transaction
+                }
+
+                // Create user_permissions table
+                println("➕ Creating user_permissions table in $schema")
+                SchemaUtils.create(UserPermissions)
+
+                // Create indexes
+                exec("""
+                    CREATE INDEX IF NOT EXISTS idx_user_permissions_user_id
+                    ON user_permissions (user_id)
+                """)
+
+                exec("""
+                    CREATE INDEX IF NOT EXISTS idx_user_permissions_feature_id
+                    ON user_permissions (feature_id)
+                """)
+
+                println("✓ user_permissions table created successfully in $schema")
+            }
+        }
+
+        println("✓ UserPermissions table migration completed")
+    }
+
 }
+

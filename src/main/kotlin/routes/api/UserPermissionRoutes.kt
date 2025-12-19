@@ -29,7 +29,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val grantedBy = null // Replace with actual authenticated admin user ID
 
             val permissions = userPermissionService.assignPermissionsToUser(
-                tenantId = tenantContext.id,
                 userId = userId,
                 request = request,
                 grantedBy = grantedBy
@@ -50,7 +49,7 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val tenantContext = TenantContextHolder.get()
                 ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
-            val permissions = userPermissionService.getUserPermissions(tenantContext.id, userId)
+            val permissions = userPermissionService.getUserPermissions(userId)
             call.respond(ApiResponse(
                 success = true,
                 data = permissions
@@ -65,7 +64,7 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val tenantContext = TenantContextHolder.get()
                 ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
-            val featureKeys = userPermissionService.getEnabledFeatureKeys(tenantContext.id, userId)
+            val featureKeys = userPermissionService.getEnabledFeatureKeys(userId)
             call.respond(ApiResponse(
                 success = true,
                 data = featureKeys
@@ -84,7 +83,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
 
             val request = call.receive<UpdateUserPermissionRequest>()
             val permission = userPermissionService.updatePermission(
-                tenantId = tenantContext.id,
                 userId = userId,
                 featureId = featureId,
                 request = request
@@ -107,7 +105,7 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val tenantContext = TenantContextHolder.get()
                 ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
-            userPermissionService.removePermission(tenantContext.id, userId, featureId)
+            userPermissionService.removePermission(userId, featureId)
             call.respond(ApiResponse<Unit>(
                 success = true,
                 message = "Permission removed successfully"
@@ -122,7 +120,7 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val tenantContext = TenantContextHolder.get()
                 ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
-            userPermissionService.removeAllPermissionsForUser(tenantContext.id, userId)
+            userPermissionService.removeAllPermissionsForUser(userId)
             call.respond(ApiResponse<Unit>(
                 success = true,
                 message = "All permissions removed successfully"
