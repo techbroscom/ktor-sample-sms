@@ -59,5 +59,6 @@ data class UserLoginFCMRequest(
 @Serializable
 data class UserLoginResponse(
     val user: List<UserDto>,
-    val token: String? = null // For future JWT implementation
+    val token: String? = null, // For future JWT implementation
+    val enabledFeatures: List<String>? = null // Feature keys for ADMIN or assigned features for STAFF
 )

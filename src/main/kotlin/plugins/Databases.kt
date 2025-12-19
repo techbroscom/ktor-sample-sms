@@ -15,9 +15,11 @@ fun Application.configureDatabases() {
     // Create system tables (tenant management tables in public schema)
     transaction(systemDatabase) {
         SchemaUtils.create(
-            Tenants,        // Basic tenant information
-            TenantConfig,   // Extended tenant configuration (subscription, storage, limits)
-            TenantFeatures  // Tenant feature flags
+            Tenants,           // Basic tenant information
+            TenantConfig,      // Extended tenant configuration (subscription, storage, limits)
+            Features,          // Master features catalog
+            TenantFeatures,    // Tenant feature assignments
+            UserPermissions    // User-level feature permissions (for staff)
         )
     }
 
@@ -28,6 +30,7 @@ fun Application.configureDatabases() {
     runBlocking {
         migrationService.migrateTenantPostImagesTable()
         migrationService.removeFilesTenantIdColumn() // Remove tenant_id column (schema-level isolation)
+        migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
     }
 }
 

@@ -25,10 +25,12 @@ import com.example.repositories.StudentAssignmentRepository
 import com.example.repositories.StudentFeeRepository
 import com.example.repositories.StudentTransportAssignmentRepository
 import com.example.repositories.SubjectRepository
+import com.example.repositories.FeatureRepository
 import com.example.repositories.TenantConfigRepository
 import com.example.repositories.TenantFeaturesRepository
 import com.example.repositories.TransportRouteRepository
 import com.example.repositories.TransportStopRepository
+import com.example.repositories.UserPermissionsRepository
 import com.example.repositories.UserRepository
 import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.attendanceRoutes
@@ -41,6 +43,7 @@ import com.example.routes.api.examRoutes
 import com.example.routes.api.examScheduleRoutes
 import com.example.routes.api.fcmRoutes
 import com.example.routes.api.feePaymentRoutes
+import com.example.routes.api.featureRoutes
 import com.example.routes.api.feesStructureRoutes
 import routes.api.s3FileRoutes
 import com.example.routes.api.holidayRoutes
@@ -58,6 +61,7 @@ import com.example.routes.api.tenantConfigRoutes
 import com.example.routes.api.tenantRoutes
 import com.example.routes.api.transportRouteRoutes
 import com.example.routes.api.transportStopRoutes
+import com.example.routes.api.userPermissionRoutes
 import com.example.routes.api.userRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
@@ -70,6 +74,7 @@ import com.example.services.ExamResultService
 import com.example.services.ExamScheduleService
 import com.example.services.ExamService
 import com.example.services.FCMService
+import com.example.services.FeatureService
 import com.example.services.FeePaymentService
 import com.example.services.FeesStructureService
 import com.example.services.HolidayService
@@ -88,6 +93,7 @@ import com.example.services.TenantConfigService
 import com.example.services.TenantService
 import com.example.services.TransportRouteService
 import com.example.services.TransportStopService
+import com.example.services.UserPermissionService
 import com.example.services.UserService
 import config.S3StorageConfig
 import services.S3FileService
@@ -103,9 +109,31 @@ fun Application.configureRouting() {
 
 
     val userRepository = UserRepository()
-    val userService = UserService(userRepository, fcmService)
 
     val tenantService = TenantService()
+
+    // Feature management repositories and services
+    val featureRepository = FeatureRepository()
+    val featureService = FeatureService(featureRepository)
+
+    val tenantConfigRepository = TenantConfigRepository()
+    val tenantFeaturesRepository = TenantFeaturesRepository(featureRepository)
+    val tenantConfigService = TenantConfigService(tenantConfigRepository, tenantFeaturesRepository)
+
+    val userPermissionsRepository = UserPermissionsRepository(featureRepository)
+    val userPermissionService = UserPermissionService(
+        userPermissionsRepository,
+        tenantFeaturesRepository,
+        featureRepository
+    )
+
+    // Update UserService to include feature repositories
+    val userService = UserService(
+        userRepository,
+        fcmService,
+        tenantFeaturesRepository,
+        userPermissionsRepository
+    )
 
     val notificationService = NotificationService(fcmService, userRepository)
 
@@ -182,10 +210,6 @@ fun Application.configureRouting() {
     val feePaymentRepository = FeePaymentRepository()
     val studentFeeRepository = StudentFeeRepository()
 
-    val tenantConfigRepository = TenantConfigRepository()
-    val tenantFeaturesRepository = TenantFeaturesRepository()
-    val tenantConfigService = TenantConfigService(tenantConfigRepository, tenantFeaturesRepository)
-
     val feePaymentService = FeePaymentService(feePaymentRepository, studentFeeRepository)
 
     val studentFeeService = StudentFeeService(studentFeeRepository, feePaymentRepository ,userService, feesStructureService)
@@ -248,5 +272,7 @@ fun Application.configureRouting() {
         transportStopRoutes(transportStopService)
         studentTransportAssignmentRoutes(studentTransportAssignmentService)
         tenantConfigRoutes(tenantConfigService)
+        featureRoutes(featureService, tenantConfigService)
+        userPermissionRoutes(userPermissionService)
     }
 }

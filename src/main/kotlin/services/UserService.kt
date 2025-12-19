@@ -10,7 +10,12 @@ import io.ktor.http.*
 import org.mindrot.jbcrypt.BCrypt
 import java.util.*
 
-class UserService(private val userRepository: UserRepository, private val fcmService: FCMService?) {
+class UserService(
+    private val userRepository: UserRepository,
+    private val fcmService: FCMService?,
+    private val tenantFeaturesRepository: TenantFeaturesRepository? = null,
+    private val userPermissionsRepository: UserPermissionsRepository? = null
+) {
 
     suspend fun createUser(request: CreateUserRequest): UserDto {
         validateCreateUserRequest(request)
@@ -143,10 +148,40 @@ class UserService(private val userRepository: UserRepository, private val fcmSer
             throw ApiException("Invalid email or password", HttpStatusCode.Unauthorized)
         }
 
+        // Get enabled features based on user role
+        val enabledFeatures = getEnabledFeaturesForUser(user[0])
+
         return UserLoginResponse(
             user = user,
-            token = null // Implement JWT token generation here if needed
+            token = null, // Implement JWT token generation here if needed
+            enabledFeatures = enabledFeatures
         )
+    }
+
+    private suspend fun getEnabledFeaturesForUser(userDto: UserDto): List<String>? {
+        try {
+            val tenantContext = TenantContextHolder.get()
+            val tenantId = tenantContext?.id ?: return null
+
+            return when (userDto.role.uppercase()) {
+                "ADMIN" -> {
+                    // ADMIN gets all tenant's enabled features
+                    tenantFeaturesRepository?.getEnabledFeatureKeys(tenantId) ?: emptyList()
+                }
+                "STAFF" -> {
+                    // STAFF gets only their assigned features
+                    val userId = UUID.fromString(userDto.id)
+                    userPermissionsRepository?.getEnabledFeatureKeys(userId, tenantId) ?: emptyList()
+                }
+                else -> {
+                    // STUDENT or other roles don't get features in login response
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            println("Warning: Failed to fetch enabled features for user ${userDto.id}: ${e.message}")
+            return null
+        }
     }
 
     suspend fun authenticateUserWithFCM(

@@ -4,24 +4,20 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
-object TenantFeatures : Table("tenant_features") {
+object UserPermissions : Table("user_permissions") {
     val id = integer("id").autoIncrement()
+    val userId = uuid("user_id") // From tenant's Users table
     val tenantId = varchar("tenant_id", 50).references(TenantConfig.tenantId)
-    val featureId = integer("feature_id").references(Features.id).nullable() // Nullable for migration
-    val featureName = varchar("feature_name", 100).nullable() // Deprecated, kept for migration
+    val featureId = integer("feature_id").references(Features.id)
     val isEnabled = bool("is_enabled").default(true)
-
-    // Allow per-tenant limit override
-    val customLimitValue = integer("custom_limit_value").nullable()
-
-    val enabledAt = datetime("enabled_at").nullable()
-    val disabledAt = datetime("disabled_at").nullable()
+    val grantedAt = datetime("granted_at").default(LocalDateTime.now())
+    val grantedBy = uuid("granted_by").nullable() // Admin who granted permission
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").nullable()
 
     override val primaryKey = PrimaryKey(id)
 
     init {
-        uniqueIndex(tenantId, featureId)
+        uniqueIndex(userId, tenantId, featureId)
     }
 }

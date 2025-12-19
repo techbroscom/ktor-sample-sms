@@ -202,6 +202,75 @@ class TenantConfigService(
         return feature?.isEnabled == true
     }
 
+    // New Feature Management Methods (using feature IDs)
+
+    suspend fun assignFeatureToTenant(tenantId: String, request: CreateTenantFeatureRequest): TenantFeatureDto {
+        // Validate tenant exists
+        if (!tenantConfigRepository.exists(tenantId)) {
+            throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+        }
+
+        // Check if feature already exists for this tenant
+        if (tenantFeaturesRepository.exists(tenantId, request.featureId)) {
+            throw ApiException("Feature is already assigned to this tenant", HttpStatusCode.Conflict)
+        }
+
+        return tenantFeaturesRepository.create(tenantId, request)
+    }
+
+    suspend fun assignMultipleFeaturesToTenant(tenantId: String, featureIds: List<Int>): List<TenantFeatureDto> {
+        // Validate tenant exists
+        if (!tenantConfigRepository.exists(tenantId)) {
+            throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+        }
+
+        val results = mutableListOf<TenantFeatureDto>()
+        featureIds.forEach { featureId ->
+            // Only create if it doesn't already exist
+            if (!tenantFeaturesRepository.exists(tenantId, featureId)) {
+                val request = CreateTenantFeatureRequest(
+                    featureId = featureId,
+                    isEnabled = true
+                )
+                results.add(tenantFeaturesRepository.create(tenantId, request))
+            }
+        }
+        return results
+    }
+
+    suspend fun updateTenantFeature(tenantId: String, featureId: Int, request: UpdateTenantFeatureRequest): TenantFeatureDto {
+        // Validate tenant exists
+        if (!tenantConfigRepository.exists(tenantId)) {
+            throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+        }
+
+        val updated = tenantFeaturesRepository.update(tenantId, featureId, request)
+        if (!updated) {
+            throw ApiException("Feature assignment not found", HttpStatusCode.NotFound)
+        }
+
+        return tenantFeaturesRepository.findByTenantIdAndFeatureId(tenantId, featureId)
+            ?: throw ApiException("Feature assignment not found after update", HttpStatusCode.InternalServerError)
+    }
+
+    suspend fun removeTenantFeature(tenantId: String, featureId: Int): Boolean {
+        // Validate tenant exists
+        if (!tenantConfigRepository.exists(tenantId)) {
+            throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+        }
+
+        val deleted = tenantFeaturesRepository.delete(tenantId, featureId)
+        if (!deleted) {
+            throw ApiException("Feature assignment not found", HttpStatusCode.NotFound)
+        }
+
+        return true
+    }
+
+    suspend fun getTenantEnabledFeatureKeys(tenantId: String): List<String> {
+        return tenantFeaturesRepository.getEnabledFeatureKeys(tenantId)
+    }
+
     private fun validateSubscriptionStatus(status: String) {
         val validStatuses = listOf("TRIAL", "ACTIVE", "SUSPENDED", "EXPIRED")
         if (status !in validStatuses) {

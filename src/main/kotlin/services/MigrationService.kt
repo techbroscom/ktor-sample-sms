@@ -323,5 +323,48 @@ class MigrationService {
         println("✓ Files table tenant_id column removal completed")
     }
 
+    /**
+     * Migrate TenantFeatures table to use feature_id foreign key instead of feature_name
+     * Adds new columns: feature_id, custom_limit_value, enabled_at, disabled_at
+     * Makes feature_name nullable (deprecated)
+     */
+    fun migrateTenantFeaturesToNewSchema() {
+        println("🔧 Migrating tenant_features table to new schema...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        transaction(systemDb) {
+            // Add new columns if they don't exist
+            exec("""
+                ALTER TABLE tenant_features
+                ADD COLUMN IF NOT EXISTS feature_id INTEGER
+            """)
+
+            exec("""
+                ALTER TABLE tenant_features
+                ADD COLUMN IF NOT EXISTS custom_limit_value INTEGER
+            """)
+
+            exec("""
+                ALTER TABLE tenant_features
+                ADD COLUMN IF NOT EXISTS enabled_at TIMESTAMP
+            """)
+
+            exec("""
+                ALTER TABLE tenant_features
+                ADD COLUMN IF NOT EXISTS disabled_at TIMESTAMP
+            """)
+
+            // Make feature_name nullable (it's being deprecated)
+            exec("""
+                ALTER TABLE tenant_features
+                ALTER COLUMN feature_name DROP NOT NULL
+            """)
+
+            println("✓ TenantFeatures table schema migration completed")
+            println("⚠ NOTE: You need to manually populate the Features table and update existing")
+            println("  tenant_features records to use feature_id instead of feature_name")
+        }
+    }
 
 }
