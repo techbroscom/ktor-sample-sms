@@ -1,7 +1,7 @@
 package com.example.repositories
 
 import com.example.database.tables.Files
-import com.example.utils.dbQuery
+import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.LocalDateTime
@@ -11,9 +11,9 @@ class FileRepository {
 
     /**
      * Create a new file record within the tenant context
+     * No tenantId needed - schema isolation handles multi-tenancy
      */
     suspend fun create(
-        tenantId: String,
         module: String,
         type: String,
         objectKey: String,
@@ -21,12 +21,11 @@ class FileRepository {
         fileSize: Long,
         mimeType: String,
         uploadedBy: String
-    ): UUID = dbQuery {
+    ): UUID = tenantDbQuery {
         val fileId = UUID.randomUUID()
 
         Files.insert {
             it[id] = fileId
-            it[Files.tenantId] = tenantId
             it[Files.module] = module
             it[Files.type] = type
             it[Files.objectKey] = objectKey
@@ -43,7 +42,7 @@ class FileRepository {
     /**
      * Find a file by ID
      */
-    suspend fun findById(fileId: UUID): FileRecord? = dbQuery {
+    suspend fun findById(fileId: UUID): FileRecord? = tenantDbQuery {
         Files.selectAll()
             .where { (Files.id eq fileId) and (Files.deletedAt.isNull()) }
             .map { it.toFileRecord() }
@@ -53,7 +52,7 @@ class FileRepository {
     /**
      * Find a file by object key
      */
-    suspend fun findByObjectKey(objectKey: String): FileRecord? = dbQuery {
+    suspend fun findByObjectKey(objectKey: String): FileRecord? = tenantDbQuery {
         Files.selectAll()
             .where { (Files.objectKey eq objectKey) and (Files.deletedAt.isNull()) }
             .map { it.toFileRecord() }
@@ -63,20 +62,20 @@ class FileRepository {
     /**
      * Find all files uploaded by a user
      */
-    suspend fun findByUploadedBy(userId: UUID): List<FileRecord> = dbQuery {
+    suspend fun findByUploadedBy(userId: UUID): List<FileRecord> = tenantDbQuery {
         Files.selectAll()
             .where { (Files.uploadedBy eq userId) and (Files.deletedAt.isNull()) }
             .map { it.toFileRecord() }
     }
 
     /**
-     * Find files by tenant, module, and type
+     * Find files by module and type within current tenant schema
+     * No tenantId needed - schema isolation provides multi-tenancy
      */
-    suspend fun findByTenantModuleType(tenantId: String, module: String, type: String): List<FileRecord> = dbQuery {
+    suspend fun findByModuleType(module: String, type: String): List<FileRecord> = tenantDbQuery {
         Files.selectAll()
             .where {
-                (Files.tenantId eq tenantId) and
-                        (Files.module eq module) and
+                (Files.module eq module) and
                         (Files.type eq type) and
                         (Files.deletedAt.isNull())
             }
@@ -86,7 +85,7 @@ class FileRepository {
     /**
      * Soft delete a file by ID
      */
-    suspend fun softDelete(fileId: UUID): Boolean = dbQuery {
+    suspend fun softDelete(fileId: UUID): Boolean = tenantDbQuery {
         Files.update({ Files.id eq fileId }) {
             it[deletedAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()
@@ -96,7 +95,7 @@ class FileRepository {
     /**
      * Soft delete a file by object key
      */
-    suspend fun softDeleteByObjectKey(objectKey: String): Boolean = dbQuery {
+    suspend fun softDeleteByObjectKey(objectKey: String): Boolean = tenantDbQuery {
         Files.update({ Files.objectKey eq objectKey }) {
             it[deletedAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()
@@ -106,14 +105,14 @@ class FileRepository {
     /**
      * Hard delete a file by ID
      */
-    suspend fun hardDelete(fileId: UUID): Boolean = dbQuery {
+    suspend fun hardDelete(fileId: UUID): Boolean = tenantDbQuery {
         Files.deleteWhere { id eq fileId } > 0
     }
 
     /**
      * Update file metadata
      */
-    suspend fun update(fileId: UUID, updates: Map<String, Any>): Boolean = dbQuery {
+    suspend fun update(fileId: UUID, updates: Map<String, Any>): Boolean = tenantDbQuery {
         Files.update({ Files.id eq fileId }) { statement ->
             updates.forEach { (key, value) ->
                 when (key) {
@@ -127,20 +126,20 @@ class FileRepository {
     }
 
     /**
-     * Get total storage used by tenant
+     * Get total storage used by current tenant
+     * No tenantId parameter needed - uses current tenant's schema
      */
-    suspend fun getTotalStorageByTenant(tenantId: String): Long = dbQuery {
-        // In newer Exposed, use select() with the columns/aggregations you need directly
+    suspend fun getTotalStorageByTenant(): Long = tenantDbQuery {
         Files.select(Files.fileSize.sum())
-            .where { (Files.tenantId eq tenantId) and (Files.deletedAt.isNull()) }
+            .where { Files.deletedAt.isNull() }
             .map { it[Files.fileSize.sum()] ?: 0L }
             .firstOrNull() ?: 0L
     }
 
     /**
-     * Get total storage used by user
+     * Get total storage used by user within current tenant schema
      */
-    suspend fun getTotalStorageByUser(userId: UUID): Long = dbQuery {
+    suspend fun getTotalStorageByUser(userId: UUID): Long = tenantDbQuery {
         Files.select(Files.fileSize.sum())
             .where { (Files.uploadedBy eq userId) and (Files.deletedAt.isNull()) }
             .map { it[Files.fileSize.sum()] ?: 0L }
@@ -149,7 +148,6 @@ class FileRepository {
 
     private fun ResultRow.toFileRecord() = FileRecord(
         id = this[Files.id],
-        tenantId = this[Files.tenantId],
         module = this[Files.module],
         type = this[Files.type],
         objectKey = this[Files.objectKey],
@@ -165,10 +163,10 @@ class FileRepository {
 
 /**
  * Data class representing a file record from the database
+ * No tenantId field - schema isolation provides multi-tenancy
  */
 data class FileRecord(
     val id: UUID,
-    val tenantId: String,
     val module: String,
     val type: String,
     val objectKey: String,

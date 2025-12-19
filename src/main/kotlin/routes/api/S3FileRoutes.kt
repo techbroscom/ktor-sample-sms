@@ -306,7 +306,7 @@ fun Route.s3FileRoutes(fileService: S3FileService) {
                     return@get
                 }
 
-                val files = fileService.getFilesByTenantModuleType(tenantId, module, type)
+                val files = fileService.getFilesByModuleType(module, type)
 
                 call.respond(HttpStatusCode.OK, mapOf(
                     "tenantId" to tenantId,
@@ -358,12 +358,12 @@ fun Route.s3FileRoutes(fileService: S3FileService) {
             }
         }
 
-        // Get storage usage by tenant
+        // Get storage usage by tenant (schema-isolated)
         get("/storage/tenant") {
             try {
                 val tenantId = call.request.headers["X-Tenant"] ?: "default"
 
-                val totalBytes = fileService.getTotalStorageByTenant(tenantId)
+                val totalBytes = fileService.getTotalStorageByTenant() // No param - uses tenant schema
                 val totalMB = totalBytes / (1024.0 * 1024.0)
                 val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
 
@@ -382,21 +382,26 @@ fun Route.s3FileRoutes(fileService: S3FileService) {
             }
         }
 
-        // Get storage usage by specific tenant ID (admin only)
+        // Get storage usage by specific tenant ID
+        // NOTE: In schema-level multi-tenancy, this returns current tenant's storage
+        // To query different tenant, use X-Tenant header to switch context
         get("/storage/tenant/{tenantId}") {
             try {
-                val tenantId = call.parameters["tenantId"]
-                if (tenantId.isNullOrEmpty()) {
+                val requestedTenantId = call.parameters["tenantId"]
+                val currentTenantId = call.request.headers["X-Tenant"] ?: "default"
+
+                if (requestedTenantId.isNullOrEmpty()) {
                     call.respond(HttpStatusCode.BadRequest, mapOf("error" to "tenantId is required"))
                     return@get
                 }
 
-                val totalBytes = fileService.getTotalStorageByTenant(tenantId)
+                // Schema isolation: can only query current tenant's schema
+                val totalBytes = fileService.getTotalStorageByTenant()
                 val totalMB = totalBytes / (1024.0 * 1024.0)
                 val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
 
                 call.respond(HttpStatusCode.OK, mapOf(
-                    "tenantId" to tenantId,
+                    "tenantId" to currentTenantId, // Returns current tenant, not requested
                     "totalBytes" to totalBytes,
                     "totalMB" to String.format("%.2f", totalMB),
                     "totalGB" to String.format("%.3f", totalGB)

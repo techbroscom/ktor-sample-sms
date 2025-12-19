@@ -85,9 +85,8 @@ class S3FileService(
                 contentLength = fileBytes.size.toLong()
             )
 
-            // Save metadata to database
+            // Save metadata to database (no tenantId - schema isolation)
             fileRepository.create(
-                tenantId = tenantId,
                 module = module,
                 type = type,
                 objectKey = objectKey,
@@ -142,7 +141,7 @@ class S3FileService(
             )
         }
 
-        val existingProfilePics = fileRepository.findByTenantModuleType(tenantId, "profile", "image")
+        val existingProfilePics = fileRepository.findByModuleType("profile", "image")
             .filter { it.uploadedBy == userUuid }
 
         existingProfilePics.forEach { existingFile ->
@@ -371,17 +370,17 @@ class S3FileService(
     }
 
     /**
-     * Get files by tenant, module, and type
+     * Get files by module and type for current tenant schema
      */
-    suspend fun getFilesByTenantModuleType(tenantId: String, module: String, type: String): List<FileRecord> {
-        return fileRepository.findByTenantModuleType(tenantId, module, type)
+    suspend fun getFilesByModuleType(module: String, type: String): List<FileRecord> {
+        return fileRepository.findByModuleType(module, type)
     }
 
     /**
-     * Get total storage used by tenant
+     * Get total storage used by current tenant (schema-isolated)
      */
-    suspend fun getTotalStorageByTenant(tenantId: String): Long {
-        return fileRepository.getTotalStorageByTenant(tenantId)
+    suspend fun getTotalStorageByTenant(): Long {
+        return fileRepository.getTotalStorageByTenant()
     }
 
     /**
