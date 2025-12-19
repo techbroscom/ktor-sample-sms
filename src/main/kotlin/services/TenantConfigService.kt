@@ -40,12 +40,22 @@ class TenantConfigService(
         println("TenantId: $tenantId, includeFeatures: $includeFeatures")
 
         println("Querying repository for tenant...")
-        val tenant = tenantConfigRepository.findByTenantId(tenantId)
+        var tenant = tenantConfigRepository.findByTenantId(tenantId)
         println("Repository result: $tenant")
 
+        // Auto-create tenant config if it doesn't exist
         if (tenant == null) {
-            println("Tenant not found, throwing ApiException")
-            throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+            println("Tenant not found, auto-creating with default values...")
+            val createRequest = CreateTenantConfigRequest(
+                tenantId = tenantId,
+                schemaName = tenantId, // Use tenantId as schemaName
+                tenantName = "Tenant $tenantId",
+                subscriptionStatus = "TRIAL",
+                isPaid = false,
+                storageAllocatedMB = 5120 // Default 5GB
+            )
+            tenant = tenantConfigRepository.create(createRequest)
+            println("Auto-created tenant config: $tenant")
         }
 
         return if (includeFeatures) {
