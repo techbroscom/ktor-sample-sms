@@ -15,7 +15,8 @@ data class DashboardOverviewDto(
     val pendingComplaints: Int,
     val todayAttendanceRate: Double,
     val totalHolidays: Int,
-    val upcomingHolidays: Int
+    val upcomingHolidays: Int,
+    val storageUsed: StorageUsageDto? = null
 )
 
 @Serializable
@@ -391,4 +392,26 @@ data class StudentBasicDataDto(
     // Upcoming information
     val upcomingExams: List<StudentUpcomingExamDto>,
     val classTeachers: List<StudentClassTeacherDto>
+)
+
+@Serializable
+data class StorageUsageDto(
+    val totalBytes: Long,
+    val totalMB: String,
+    val totalGB: String,
+    val tenantId: String
+)
+
+@Serializable
+data class StorageStatisticsDto(
+    val totalStorage: StorageUsageDto,
+    val storageByModule: List<ModuleStorageDto>? = null
+)
+
+@Serializable
+data class ModuleStorageDto(
+    val module: String,
+    val fileCount: Int,
+    val totalBytes: Long,
+    val totalMB: String
 )

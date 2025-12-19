@@ -157,14 +157,63 @@ Response:
 }
 ```
 
-### Get Storage Usage
+### Get Storage Usage by User
 ```
 GET /api/v1/s3-files/storage/user/{userId}
 
 Response:
 {
   "totalBytes": 5242880,
-  "totalMB": "5.00"
+  "totalMB": "5.00",
+  "totalGB": "0.005"
+}
+```
+
+### Get Storage Usage by Tenant (Current)
+```
+GET /api/v1/s3-files/storage/tenant
+Headers:
+  X-Tenant: school-123 (required)
+
+Response:
+{
+  "tenantId": "school-123",
+  "totalBytes": 52428800,
+  "totalMB": "50.00",
+  "totalGB": "0.050"
+}
+```
+
+### Get Storage Usage by Tenant ID (Admin)
+```
+GET /api/v1/s3-files/storage/tenant/{tenantId}
+
+Response:
+{
+  "tenantId": "school-123",
+  "totalBytes": 52428800,
+  "totalMB": "50.00",
+  "totalGB": "0.050"
+}
+```
+
+### Get Files by Tenant, Module, and Type
+```
+GET /api/v1/s3-files/tenant/files?module=documents&type=pdf
+Headers:
+  X-Tenant: school-123 (required)
+
+Parameters:
+- module (required): Module name (e.g., "documents", "profile", "posts")
+- type (required): File type category (e.g., "pdf", "image", "video")
+
+Response:
+{
+  "tenantId": "school-123",
+  "module": "documents",
+  "type": "pdf",
+  "files": [...],
+  "count": 10
 }
 ```
 
@@ -303,12 +352,26 @@ curl -X POST http://localhost:8080/api/v1/s3-files/upload/profile \
   -F "file=@photo.jpg"
 ```
 
+## Post Images and Automatic Cleanup
+
+Post images are stored using the same S3 storage system. When a post is deleted, all associated images are automatically removed from both the database and S3 storage to prevent orphaned files and reduce storage costs.
+
+**Post Image Storage Path**: `{tenantId}/posts/image/{filename}`
+
+### Post-Related Endpoints
+
+See `PostRoutes.kt` for post-related endpoints:
+- `POST /api/v1/posts/with-images` - Create post with multiple images
+- `PUT /api/v1/posts/{id}/with-images` - Update post with new images
+- `DELETE /api/v1/posts/{postId}/images/{imageId}` - Delete specific image
+- `DELETE /api/v1/posts/{id}` - Delete post (automatically removes all images from S3)
+
 ## Future Enhancements
 
 1. **File Versioning**: Keep multiple versions of files
 2. **Batch Operations**: Upload/delete multiple files at once
 3. **Image Processing**: Automatic thumbnails and resizing
-4. **Storage Quotas**: Per-tenant and per-user storage limits
+4. **Storage Quotas**: Enforce per-tenant and per-user storage limits (tracking already implemented)
 5. **CDN Integration**: CloudFront or Cloudflare CDN for faster delivery
 6. **Encryption**: Client-side or server-side encryption
 7. **Virus Scanning**: Integrate antivirus scanning on upload

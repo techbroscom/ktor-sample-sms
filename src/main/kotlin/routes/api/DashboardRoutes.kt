@@ -13,7 +13,8 @@ fun Route.dashboardRoutes(dashboardService: DashboardService) {
 
         // Get overall dashboard overview
         get("/overview") {
-            val overview = dashboardService.getDashboardOverview()
+            val tenantId = call.request.headers["X-Tenant"]
+            val overview = dashboardService.getDashboardOverview(tenantId)
             call.respond(ApiResponse(
                 success = true,
                 data = overview,
@@ -117,9 +118,30 @@ fun Route.dashboardRoutes(dashboardService: DashboardService) {
             ))
         }
 
+        // Get storage statistics
+        get("/storage") {
+            val tenantId = call.request.headers["X-Tenant"] ?: "default"
+            val storageStats = dashboardService.getStorageStatistics(tenantId)
+
+            if (storageStats != null) {
+                call.respond(ApiResponse(
+                    success = true,
+                    data = storageStats,
+                    message = "Storage statistics retrieved successfully"
+                ))
+            } else {
+                call.respond(ApiResponse(
+                    success = false,
+                    data = null,
+                    message = "Storage service not available"
+                ))
+            }
+        }
+
         // Get complete dashboard data
         get("/complete") {
-            val completeDashboard = dashboardService.getCompleteDashboard()
+            val tenantId = call.request.headers["X-Tenant"]
+            val completeDashboard = dashboardService.getCompleteDashboard(tenantId)
             call.respond(ApiResponse(
                 success = true,
                 data = completeDashboard,
