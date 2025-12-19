@@ -5,15 +5,55 @@ import com.example.repositories.DashboardRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.supervisorScope
+import services.S3FileService
 
-class DashboardService(private val dashboardRepository: DashboardRepository) {
+class DashboardService(
+    private val dashboardRepository: DashboardRepository,
+    private val s3FileService: S3FileService?
+) {
+
+    /**
+     * Get storage statistics for current tenant
+     */
+    suspend fun getStorageStatistics(tenantId: String): StorageStatisticsDto? {
+        return try {
+            if (s3FileService == null) return null
+
+            val totalBytes = s3FileService.getTotalStorageByTenant(tenantId)
+            val totalMB = totalBytes / (1024.0 * 1024.0)
+            val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
+
+            val storageUsage = StorageUsageDto(
+                totalBytes = totalBytes,
+                totalMB = String.format("%.2f", totalMB),
+                totalGB = String.format("%.3f", totalGB),
+                tenantId = tenantId
+            )
+
+            StorageStatisticsDto(
+                totalStorage = storageUsage,
+                storageByModule = null // Can be implemented later if needed
+            )
+        } catch (e: Exception) {
+            println("Error getting storage statistics: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
 
     /**
      * Get overall dashboard overview with key metrics
      */
-    suspend fun getDashboardOverview(): DashboardOverviewDto {
+    suspend fun getDashboardOverview(tenantId: String? = null): DashboardOverviewDto {
         return try {
-            dashboardRepository.getDashboardOverview()
+            val overview = dashboardRepository.getDashboardOverview()
+
+            // Add storage stats if tenantId is provided
+            val storageUsage = if (tenantId != null) {
+                getStorageStatistics(tenantId)?.totalStorage
+            } else null
+
+            overview.copy(storageUsed = storageUsage)
         } catch (e: Exception) {
             println("Error getting dashboard overview: ${e.message}")
             e.printStackTrace()
@@ -145,9 +185,9 @@ class DashboardService(private val dashboardRepository: DashboardRepository) {
      * Get complete dashboard data in a single call with parallel execution
      * Uses supervisorScope to ensure one failure doesn't cancel all operations
      */
-    suspend fun getCompleteDashboard(): CompleteDashboardDto = supervisorScope {
+    suspend fun getCompleteDashboard(tenantId: String? = null): CompleteDashboardDto = supervisorScope {
         try {
-            val overviewDeferred = async { getDashboardOverview() }
+            val overviewDeferred = async { getDashboardOverview(tenantId) }
             val studentStatsDeferred = async { getStudentStatistics() }
             val staffStatsDeferred = async { getStaffStatistics() }
             val examStatsDeferred = async { getExamStatistics() }
@@ -155,6 +195,9 @@ class DashboardService(private val dashboardRepository: DashboardRepository) {
             val complaintStatsDeferred = async { getComplaintStatistics() }
             val academicStatsDeferred = async { getAcademicStatistics() }
             val holidayStatsDeferred = async { getHolidayStatistics() }
+            val storageStatsDeferred = async {
+                if (tenantId != null) getStorageStatistics(tenantId) else null
+            }
 
             CompleteDashboardDto(
                 overview = overviewDeferred.await(),
@@ -164,7 +207,8 @@ class DashboardService(private val dashboardRepository: DashboardRepository) {
                 attendanceStatistics = attendanceStatsDeferred.await(),
                 complaintStatistics = complaintStatsDeferred.await(),
                 academicStatistics = academicStatsDeferred.await(),
-                holidayStatistics = holidayStatsDeferred.await()
+                holidayStatistics = holidayStatsDeferred.await(),
+                storageStatistics = storageStatsDeferred.await()
             )
         } catch (e: Exception) {
             println("Error getting complete dashboard: ${e.message}")
@@ -248,7 +292,8 @@ data class CompleteDashboardDto(
     val attendanceStatistics: AttendanceStatisticsDto,
     val complaintStatistics: ComplaintStatisticsDto,
     val academicStatistics: AcademicStatisticsDto,
-    val holidayStatistics: HolidayStatisticsDto
+    val holidayStatistics: HolidayStatisticsDto,
+    val storageStatistics: StorageStatisticsDto? = null
 )
 
 @kotlinx.serialization.Serializable

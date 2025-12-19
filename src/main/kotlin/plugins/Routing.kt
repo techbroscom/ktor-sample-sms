@@ -170,7 +170,7 @@ fun Application.configureRouting() {
     val attendanceService = AttendanceService(attendanceRepository, userService, classService, studentAssignmentService)
 
     val dashboardRepository = DashboardRepository()
-    val dashboardService = DashboardService(dashboardRepository)
+    val dashboardService = DashboardService(dashboardRepository, s3FileService)
 
     val feesStructureRepository = FeesStructureRepository()
     val feesStructureService = FeesStructureService(feesStructureRepository, classService, academicYearService)
