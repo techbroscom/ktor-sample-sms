@@ -56,7 +56,7 @@ class PostService(
             if (uploadResponse?.success == true) {
                 postImageRepository.create(
                     postId = postId,
-                    imageUrl = uploadResponse.fileUrl ?: "",
+                    imageUrl = "", // Don't store full URL - will be generated dynamically from S3 key
                     imageS3Key = uploadResponse.objectKey ?: "",
                     displayOrder = index
                 )
@@ -159,7 +159,7 @@ class PostService(
             if (uploadResponse?.success == true) {
                 postImageRepository.create(
                     postId = id,
-                    imageUrl = uploadResponse.fileUrl ?: "",
+                    imageUrl = "", // Don't store full URL - will be generated dynamically from S3 key
                     imageS3Key = uploadResponse.objectKey ?: "",
                     displayOrder = currentImageCount + index
                 )

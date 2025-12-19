@@ -6,8 +6,11 @@ import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import java.time.LocalDateTime
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import services.S3FileService
 
-class PostImageRepository {
+class PostImageRepository(
+    private val s3FileService: S3FileService?
+) {
 
     suspend fun create(
         postId: Int,
@@ -56,12 +59,16 @@ class PostImageRepository {
         } > 0
     }
 
-    private fun mapRowToDto(row: ResultRow): PostImageDto {
+    private suspend fun mapRowToDto(row: ResultRow): PostImageDto {
+        val imageS3Key = row[PostImages.imageS3Key]
+        // Generate URL dynamically from S3 key instead of using stored URL
+        val imageUrl = s3FileService?.generateSignedUrlByKey(imageS3Key, expirationMinutes = 60) ?: ""
+
         return PostImageDto(
             id = row[PostImages.id],
             postId = row[PostImages.postId],
-            imageUrl = row[PostImages.imageUrl],
-            imageS3Key = row[PostImages.imageS3Key],
+            imageUrl = imageUrl,
+            imageS3Key = imageS3Key,
             displayOrder = row[PostImages.displayOrder],
             createdAt = row[PostImages.createdAt].toString()
         )
