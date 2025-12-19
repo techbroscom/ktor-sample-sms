@@ -4,7 +4,11 @@ import com.example.exceptions.ApiException
 import com.example.models.dto.*
 import com.example.repositories.TenantConfigRepository
 import com.example.repositories.TenantFeaturesRepository
+import com.example.database.tables.Tenants
+import com.example.utils.systemDbQuery
 import io.ktor.http.*
+import org.jetbrains.exposed.sql.selectAll
+import java.util.UUID
 
 class TenantConfigService(
     private val tenantConfigRepository: TenantConfigRepository,
@@ -45,17 +49,41 @@ class TenantConfigService(
 
         // Auto-create tenant config if it doesn't exist
         if (tenant == null) {
-            println("Tenant not found, auto-creating with default values...")
-            val createRequest = CreateTenantConfigRequest(
-                tenantId = tenantId,
-                schemaName = tenantId, // Use tenantId as schemaName
-                tenantName = "Tenant $tenantId",
-                subscriptionStatus = "TRIAL",
-                isPaid = false,
-                storageAllocatedMB = 5120 // Default 5GB
-            )
-            tenant = tenantConfigRepository.create(createRequest)
-            println("Auto-created tenant config: $tenant")
+            println("Tenant not found, fetching from Tenants table...")
+
+            // Fetch tenant info from Tenants table
+            val tenantInfo = systemDbQuery {
+                Tenants.selectAll()
+                    .where { Tenants.id eq UUID.fromString(tenantId) }
+                    .singleOrNull()
+            }
+
+            if (tenantInfo != null) {
+                println("Found tenant in Tenants table: name=${tenantInfo[Tenants.name]}, schema=${tenantInfo[Tenants.schema_name]}")
+                val createRequest = CreateTenantConfigRequest(
+                    tenantId = tenantId,
+                    schemaName = tenantInfo[Tenants.schema_name],
+                    tenantName = tenantInfo[Tenants.name],
+                    subDomain = tenantInfo[Tenants.subDomain],
+                    subscriptionStatus = "TRIAL",
+                    isPaid = false,
+                    storageAllocatedMB = 5120 // Default 5GB
+                )
+                tenant = tenantConfigRepository.create(createRequest)
+                println("Auto-created tenant config: $tenant")
+            } else {
+                println("Tenant not found in Tenants table either, using fallback values")
+                val createRequest = CreateTenantConfigRequest(
+                    tenantId = tenantId,
+                    schemaName = tenantId,
+                    tenantName = "Tenant $tenantId",
+                    subscriptionStatus = "TRIAL",
+                    isPaid = false,
+                    storageAllocatedMB = 5120
+                )
+                tenant = tenantConfigRepository.create(createRequest)
+                println("Auto-created tenant config with fallback values: $tenant")
+            }
         }
 
         return if (includeFeatures) {
