@@ -14,9 +14,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Route.tenantConfigRoutes(tenantConfigService: TenantConfigService) {
-    route("/api/v1/tenants") {
+    route("/api/v1/tenantsConfig") {
 
-        // Create new tenant
+        // Create new tenant config
         post {
             val request = call.receive<CreateTenantConfigRequest>()
             val tenant = tenantConfigService.createTenant(request)
