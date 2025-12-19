@@ -18,7 +18,7 @@ class TenantConfigRepository {
         val now = LocalDateTime.now()
         val insertedId = TenantConfig.insert {
             it[tenantId] = request.tenantId
-            it[schemaName] = request.schemaName
+            it[tenantSchemaName] = request.schemaName
             it[tenantName] = request.tenantName
             it[subscriptionStatus] = request.subscriptionStatus
             it[isPaid] = request.isPaid
@@ -100,7 +100,7 @@ class TenantConfigRepository {
         return TenantConfigDto(
             id = row[TenantConfig.id],
             tenantId = row[TenantConfig.tenantId],
-            schemaName = row[TenantConfig.schemaName],
+            schemaName = row[TenantConfig.tenantSchemaName],
             tenantName = row[TenantConfig.tenantName],
             subscriptionStatus = row[TenantConfig.subscriptionStatus],
             isPaid = row[TenantConfig.isPaid],

@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.javatime.datetime
 object TenantConfig : Table("tenant_config") {
     val id = integer("id").autoIncrement()
     val tenantId = varchar("tenant_id", 50).uniqueIndex()
-    val schemaName = varchar("schema_name", 50).uniqueIndex()
+    val tenantSchemaName = varchar("schema_name", 50).uniqueIndex()
     val tenantName = varchar("tenant_name", 255)
 
     // Subscription/Billing
