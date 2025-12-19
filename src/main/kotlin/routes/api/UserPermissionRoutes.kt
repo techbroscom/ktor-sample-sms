@@ -20,9 +20,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val userId = call.parameters["userId"]
                 ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
 
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
-
             val request = call.receive<AssignUserPermissionsRequest>()
 
             // TODO: Get grantedBy from authenticated user session
@@ -46,9 +43,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val userId = call.parameters["userId"]
                 ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
 
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
-
             val permissions = userPermissionService.getUserPermissions(userId)
             call.respond(ApiResponse(
                 success = true,
@@ -60,9 +54,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
         get("/enabled") {
             val userId = call.parameters["userId"]
                 ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
-
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
             val featureKeys = userPermissionService.getEnabledFeatureKeys(userId)
             call.respond(ApiResponse(
@@ -77,9 +68,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
                 ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
             val featureId = call.parameters["featureId"]?.toIntOrNull()
                 ?: throw ApiException("Invalid feature ID", HttpStatusCode.BadRequest)
-
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
             val request = call.receive<UpdateUserPermissionRequest>()
             val permission = userPermissionService.updatePermission(
@@ -102,9 +90,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val featureId = call.parameters["featureId"]?.toIntOrNull()
                 ?: throw ApiException("Invalid feature ID", HttpStatusCode.BadRequest)
 
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
-
             userPermissionService.removePermission(userId, featureId)
             call.respond(ApiResponse<Unit>(
                 success = true,
@@ -117,9 +102,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
             val userId = call.parameters["userId"]
                 ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
 
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
-
             userPermissionService.removeAllPermissionsForUser(userId)
             call.respond(ApiResponse<Unit>(
                 success = true,
@@ -131,9 +113,6 @@ fun Route.userPermissionRoutes(userPermissionService: UserPermissionService) {
     // Route to get available features for assigning to staff
     route("/api/v1/features/available") {
         get {
-            val tenantContext = TenantContextHolder.getTenant()
-                ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
-
             // This endpoint is handled by tenantConfigService
             // Returns features enabled for the current tenant
             call.respond(ApiResponse(
