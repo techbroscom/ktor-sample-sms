@@ -120,7 +120,7 @@ fun Application.configureRouting() {
     val s3FileService = S3FileService(fileStorage, fileRepository)
 
     val postRepository = PostRepository()
-    val postImageRepository = PostImageRepository()
+    val postImageRepository = PostImageRepository(s3FileService)
     val postService = PostService(postRepository, postImageRepository, notificationService, s3FileService)
 
     val complaintRepository = ComplaintRepository()
