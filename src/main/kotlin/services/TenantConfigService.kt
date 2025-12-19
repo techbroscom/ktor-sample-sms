@@ -143,8 +143,8 @@ class TenantConfigService(
         }
 
         // Check if feature already exists
-        if (tenantFeaturesRepository.exists(tenantId, request.featureName)) {
-            throw ApiException("Feature '${request.featureName}' already exists for this tenant", HttpStatusCode.Conflict)
+        if (tenantFeaturesRepository.exists(tenantId, request.featureId)) {
+            throw ApiException("Feature with ID ${request.featureId} already exists for this tenant", HttpStatusCode.Conflict)
         }
 
         return tenantFeaturesRepository.create(tenantId, request)
@@ -175,7 +175,11 @@ class TenantConfigService(
             throw ApiException("Tenant not found", HttpStatusCode.NotFound)
         }
 
-        val updated = tenantFeaturesRepository.update(tenantId, featureName, request)
+        // This is a legacy method - find the feature by featureName first
+        val existingFeature = tenantFeaturesRepository.findByTenantIdAndFeatureName(tenantId, featureName)
+            ?: throw ApiException("Feature not found", HttpStatusCode.NotFound)
+
+        val updated = tenantFeaturesRepository.update(tenantId, existingFeature.featureId!!, request)
         if (!updated) {
             throw ApiException("Feature not found", HttpStatusCode.NotFound)
         }
@@ -189,7 +193,11 @@ class TenantConfigService(
             throw ApiException("Tenant not found", HttpStatusCode.NotFound)
         }
 
-        val deleted = tenantFeaturesRepository.delete(tenantId, featureName)
+        // This is a legacy method - find the feature by featureName first
+        val existingFeature = tenantFeaturesRepository.findByTenantIdAndFeatureName(tenantId, featureName)
+            ?: throw ApiException("Feature not found", HttpStatusCode.NotFound)
+
+        val deleted = tenantFeaturesRepository.delete(tenantId, existingFeature.featureId!!)
         if (!deleted) {
             throw ApiException("Feature not found", HttpStatusCode.NotFound)
         }

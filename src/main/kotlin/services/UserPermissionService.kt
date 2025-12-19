@@ -35,7 +35,7 @@ class UserPermissionService(
         }
 
         // Get tenantId from context
-        val tenantContext = TenantContextHolder.get()
+        val tenantContext = TenantContextHolder.getTenant()
             ?: throw ApiException("Tenant context not found", HttpStatusCode.BadRequest)
 
         // Validate all features exist and are enabled for the tenant

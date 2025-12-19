@@ -160,7 +160,7 @@ class UserService(
 
     private suspend fun getEnabledFeaturesForUser(userDto: UserDto): List<String>? {
         try {
-            val tenantContext = TenantContextHolder.get()
+            val tenantContext = TenantContextHolder.getTenant()
             val tenantId = tenantContext?.id ?: return null
 
             return when (userDto.role.uppercase()) {
