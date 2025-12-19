@@ -79,7 +79,7 @@ fun Route.tenantConfigRoutes(tenantConfigService: TenantConfigService) {
                 ?: throw ApiException("Tenant ID is required", HttpStatusCode.BadRequest)
 
             tenantConfigService.deactivateTenant(tenantId)
-            call.respond(ApiResponse(
+            call.respond(ApiResponse<Unit>(
                 success = true,
                 message = "Tenant deactivated successfully"
             ))
@@ -151,7 +151,7 @@ fun Route.tenantConfigRoutes(tenantConfigService: TenantConfigService) {
                 ?: throw ApiException("Feature name is required", HttpStatusCode.BadRequest)
 
             tenantConfigService.removeFeature(tenantId, featureName)
-            call.respond(ApiResponse(
+            call.respond(ApiResponse<Unit>(
                 success = true,
                 message = "Feature removed successfully"
             ))
