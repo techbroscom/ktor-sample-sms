@@ -25,6 +25,7 @@ fun Application.configureDatabases() {
     val migrationService = MigrationService()
     runBlocking {
         migrationService.migrateTenantPostImagesTable()
+        migrationService.removeFilesTenantIdColumn() // Remove tenant_id column (schema-level isolation)
     }
 }
 

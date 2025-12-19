@@ -137,11 +137,7 @@ class MigrationService {
                 SchemaUtils.create(Files)
 
                 // 3️⃣ Optional indexes (HIGHLY recommended)
-                exec("""
-                CREATE INDEX IF NOT EXISTS idx_files_tenant_id
-                ON files (tenant_id)
-            """)
-
+                // NOTE: tenant_id index removed - schema-level isolation, no tenant_id column
                 exec("""
                 CREATE INDEX IF NOT EXISTS idx_files_uploaded_by
                 ON files (uploaded_by)
@@ -241,6 +237,90 @@ class MigrationService {
         }
 
         println("✓ Tenant post_images table migration completed")
+    }
+
+    /**
+     * Remove tenant_id column from files table
+     * Schema-level multi-tenancy provides isolation, tenant_id column is redundant
+     */
+    fun removeFilesTenantIdColumn() {
+        println("🔧 Removing tenant_id column from files table (schema-level isolation)...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (removing files.tenant_id)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if files table exists
+                val filesTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'files'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!filesTableExists) {
+                    println("⚠ Skipping $schema (files table not found)")
+                    return@transaction
+                }
+
+                // Check if tenant_id column exists
+                val tenantIdColumnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'files'
+                          AND column_name = 'tenant_id'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!tenantIdColumnExists) {
+                    println("✓ tenant_id column already removed from $schema.files")
+                    return@transaction
+                }
+
+                // Drop index on tenant_id if it exists
+                exec("""
+                    DROP INDEX IF EXISTS idx_files_tenant_id
+                """)
+
+                // Drop the tenant_id column
+                exec("""
+                    ALTER TABLE files
+                    DROP COLUMN tenant_id
+                """)
+
+                println("✓ Removed tenant_id column from $schema.files")
+            }
+        }
+
+        println("✓ Files table tenant_id column removal completed")
     }
 
 
