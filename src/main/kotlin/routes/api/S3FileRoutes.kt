@@ -292,6 +292,38 @@ fun Route.s3FileRoutes(fileService: S3FileService) {
             }
         }
 
+        // Get files by tenant, module, and type
+        get("/tenant/files") {
+            try {
+                val tenantId = call.request.headers["X-Tenant"] ?: "default"
+                val module = call.request.queryParameters["module"] ?: ""
+                val type = call.request.queryParameters["type"] ?: ""
+
+                if (module.isEmpty() || type.isEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf(
+                        "error" to "module and type query parameters are required"
+                    ))
+                    return@get
+                }
+
+                val files = fileService.getFilesByTenantModuleType(tenantId, module, type)
+
+                call.respond(HttpStatusCode.OK, mapOf(
+                    "tenantId" to tenantId,
+                    "module" to module,
+                    "type" to type,
+                    "files" to files,
+                    "count" to files.size
+                ))
+
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf("error" to "Failed to get files: ${e.message}")
+                )
+            }
+        }
+
         // Get storage usage by user
         get("/storage/user/{userId}") {
             try {
@@ -310,16 +342,70 @@ fun Route.s3FileRoutes(fileService: S3FileService) {
 
                 val totalBytes = fileService.getTotalStorageByUser(userUuid)
                 val totalMB = totalBytes / (1024.0 * 1024.0)
+                val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
 
                 call.respond(HttpStatusCode.OK, mapOf(
                     "totalBytes" to totalBytes,
-                    "totalMB" to String.format("%.2f", totalMB)
+                    "totalMB" to String.format("%.2f", totalMB),
+                    "totalGB" to String.format("%.3f", totalGB)
                 ))
 
             } catch (e: Exception) {
                 call.respond(
                     HttpStatusCode.InternalServerError,
                     mapOf("error" to "Failed to get storage usage: ${e.message}")
+                )
+            }
+        }
+
+        // Get storage usage by tenant
+        get("/storage/tenant") {
+            try {
+                val tenantId = call.request.headers["X-Tenant"] ?: "default"
+
+                val totalBytes = fileService.getTotalStorageByTenant(tenantId)
+                val totalMB = totalBytes / (1024.0 * 1024.0)
+                val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
+
+                call.respond(HttpStatusCode.OK, mapOf(
+                    "tenantId" to tenantId,
+                    "totalBytes" to totalBytes,
+                    "totalMB" to String.format("%.2f", totalMB),
+                    "totalGB" to String.format("%.3f", totalGB)
+                ))
+
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf("error" to "Failed to get tenant storage usage: ${e.message}")
+                )
+            }
+        }
+
+        // Get storage usage by specific tenant ID (admin only)
+        get("/storage/tenant/{tenantId}") {
+            try {
+                val tenantId = call.parameters["tenantId"]
+                if (tenantId.isNullOrEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "tenantId is required"))
+                    return@get
+                }
+
+                val totalBytes = fileService.getTotalStorageByTenant(tenantId)
+                val totalMB = totalBytes / (1024.0 * 1024.0)
+                val totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0)
+
+                call.respond(HttpStatusCode.OK, mapOf(
+                    "tenantId" to tenantId,
+                    "totalBytes" to totalBytes,
+                    "totalMB" to String.format("%.2f", totalMB),
+                    "totalGB" to String.format("%.3f", totalGB)
+                ))
+
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    mapOf("error" to "Failed to get tenant storage usage: ${e.message}")
                 )
             }
         }
