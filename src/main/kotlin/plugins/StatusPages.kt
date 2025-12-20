@@ -23,6 +23,8 @@ fun Application.configureStatusPages() {
         }
 
         exception<Throwable> { call, cause ->
+            // Log the actual error for debugging
+            call.application.environment.log.error("Unhandled exception", cause)
             call.respond(
                 HttpStatusCode.InternalServerError,
                 ErrorResponse(

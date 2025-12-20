@@ -50,13 +50,15 @@ class UserPermissionsRepository(
         results
     }
 
-    suspend fun findById(id: Int, includeFeature: Boolean = true): UserPermissionDto? = tenantDbQuery {
-        val result = UserPermissions.selectAll()
-            .where { UserPermissions.id eq id }
-            .map { mapRowToDto(it) }
-            .singleOrNull()
+    suspend fun findById(id: Int, includeFeature: Boolean = true): UserPermissionDto? {
+        val result = tenantDbQuery {
+            UserPermissions.selectAll()
+                .where { UserPermissions.id eq id }
+                .map { mapRowToDto(it) }
+                .singleOrNull()
+        }
 
-        if (result != null && includeFeature) {
+        return if (result != null && includeFeature) {
             val feature = featureRepository.findById(result.featureId)
             result.copy(feature = feature)
         } else {
@@ -64,13 +66,15 @@ class UserPermissionsRepository(
         }
     }
 
-    suspend fun findByUser(userId: UUID, includeFeature: Boolean = true): List<UserPermissionDto> = tenantDbQuery {
-        val results = UserPermissions.selectAll()
-            .where { UserPermissions.userId eq userId }
-            .orderBy(UserPermissions.createdAt to SortOrder.ASC)
-            .map { mapRowToDto(it) }
+    suspend fun findByUser(userId: UUID, includeFeature: Boolean = true): List<UserPermissionDto> {
+        val results = tenantDbQuery {
+            UserPermissions.selectAll()
+                .where { UserPermissions.userId eq userId }
+                .orderBy(UserPermissions.createdAt to SortOrder.ASC)
+                .map { mapRowToDto(it) }
+        }
 
-        if (includeFeature) {
+        return if (includeFeature) {
             results.map { result ->
                 val feature = featureRepository.findById(result.featureId)
                 result.copy(feature = feature)
