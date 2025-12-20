@@ -8,6 +8,11 @@ import com.example.database.tables.Tenants
 import com.example.database.tables.UserPermissions
 import com.example.database.tables.Visitors
 import com.example.database.tables.VisitorPasses
+import com.example.database.tables.Books
+import com.example.database.tables.BookBorrowings
+import com.example.database.tables.BookReservations
+import com.example.database.tables.LibraryFines
+import com.example.database.tables.LibrarySettings
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.selectAll
@@ -540,6 +545,68 @@ class MigrationService {
         }
 
         println("✓ Visitor management tables migration completed")
+    }
+
+    /**
+     * Create library management tables in existing tenant schemas
+     */
+    fun migrateLibraryManagementTables() {
+        println("🔧 Creating library management tables in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (library management tables)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Create all library tables
+                val tablesToCreate = listOf(
+                    Triple(Books, "books", "Books catalog"),
+                    Triple(BookBorrowings, "book_borrowings", "Book borrowings"),
+                    Triple(BookReservations, "book_reservations", "Book reservations"),
+                    Triple(LibraryFines, "library_fines", "Library fines"),
+                    Triple(LibrarySettings, "library_settings", "Library settings")
+                )
+
+                tablesToCreate.forEach { (table, tableName, description) ->
+                    val tableExists = exec(
+                        """
+                        SELECT EXISTS (
+                            SELECT 1
+                            FROM information_schema.tables
+                            WHERE table_schema = '$schema'
+                              AND table_name = '$tableName'
+                        )
+                        """
+                    ) { rs ->
+                        rs.next()
+                        rs.getBoolean(1)
+                    } ?: false
+
+                    if (!tableExists) {
+                        println("➕ Creating $tableName table in $schema")
+                        SchemaUtils.create(table)
+                        println("✓ $description table created successfully in $schema")
+                    } else {
+                        println("✓ $tableName table already exists in $schema")
+                    }
+                }
+            }
+        }
+
+        println("✓ Library management tables migration completed")
     }
 
 }

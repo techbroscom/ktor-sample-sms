@@ -32,6 +32,7 @@ fun Application.configureDatabases() {
         migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
         migrationService.migrateUserPermissionsTable() // Create UserPermissions table in tenant schemas
         migrationService.migrateVisitorManagementTables() // Create Visitors and VisitorPasses tables in tenant schemas
+        migrationService.migrateLibraryManagementTables() // Create library tables in tenant schemas
     }
 }
 
@@ -64,7 +65,12 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             Files,
             UserPermissions,  // User-level feature permissions (per tenant)
             Visitors,         // Visitor management
-            VisitorPasses     // Visitor passes (optional)
+            VisitorPasses,    // Visitor passes (optional)
+            Books,            // Library management
+            BookBorrowings,
+            BookReservations,
+            LibraryFines,
+            LibrarySettings
         )
     }
 }
