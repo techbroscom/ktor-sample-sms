@@ -61,6 +61,21 @@ fun Route.visitorRoutes(visitorService: VisitorService) {
             ))
         }
 
+        // Get currently checked-in visitors (for reception dashboard, security, emergency evacuation)
+        get("/checked-in") {
+            val visitDate = call.request.queryParameters["visitDate"]
+
+            val visitors = visitorService.getCurrentlyCheckedInVisitors(visitDate)
+            call.respond(ApiResponse(
+                success = true,
+                data = visitors,
+                message = if (visitDate != null)
+                    "Currently checked-in visitors for $visitDate"
+                else
+                    "All currently checked-in visitors"
+            ))
+        }
+
         // Get visitors hosted by current user
         get("/my-hosted") {
             // TODO: Extract userId from JWT token when authentication is implemented

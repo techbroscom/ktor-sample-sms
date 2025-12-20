@@ -341,6 +341,20 @@ class VisitorService(
         return visitorRepository.findByHostUserId(hostId, status)
     }
 
+    suspend fun getCurrentlyCheckedInVisitors(visitDate: String?): List<VisitorDto> {
+        val date = if (visitDate != null) {
+            try {
+                LocalDate.parse(visitDate)
+            } catch (e: Exception) {
+                throw ApiException("Invalid visit date format. Use YYYY-MM-DD", HttpStatusCode.BadRequest)
+            }
+        } else {
+            null // Return all checked-in visitors regardless of date
+        }
+
+        return visitorRepository.findCurrentlyCheckedIn(date)
+    }
+
     private fun validateCreateVisitorRequest(request: CreateVisitorRequest) {
         if (request.firstName.isBlank()) {
             throw ApiException("First name is required", HttpStatusCode.BadRequest)

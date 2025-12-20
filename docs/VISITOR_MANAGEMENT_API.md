@@ -310,7 +310,69 @@ Get visitor statistics for a date range.
 
 ---
 
-### 10. Get My Hosted Visitors
+### 10. Get Currently Checked-In Visitors
+**GET** `/api/v1/visitors/checked-in`
+
+Get all visitors who are currently checked in (on premises). Useful for:
+- **Reception Dashboard**: Real-time view of who's on premises
+- **Emergency Evacuation**: Know exactly who to account for
+- **Security Monitoring**: Quick overview of active visitors
+- **Capacity Management**: Track current building occupancy
+
+**Query Parameters:**
+- `visitDate`: Filter by specific visit date (YYYY-MM-DD). If omitted, returns all checked-in visitors regardless of date.
+
+**Example:**
+```
+GET /api/v1/visitors/checked-in
+GET /api/v1/visitors/checked-in?visitDate=2025-12-25
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "visitor-uuid-1",
+      "firstName": "John",
+      "lastName": "Doe",
+      "fullName": "John Doe",
+      "mobileNumber": "+1234567890",
+      "status": "CHECKED_IN",
+      "actualCheckInTime": "2025-12-25T10:15:00",
+      "visitDate": "2025-12-25",
+      "purposeOfVisit": "Business meeting",
+      "hostUser": {
+        "id": "host-uuid",
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "email": "jane.smith@example.com",
+        "role": "STAFF"
+      },
+      ...
+    },
+    {
+      "id": "visitor-uuid-2",
+      "firstName": "Alice",
+      "lastName": "Johnson",
+      "status": "CHECKED_IN",
+      "actualCheckInTime": "2025-12-25T09:30:00",
+      ...
+    }
+  ],
+  "message": "All currently checked-in visitors"
+}
+```
+
+**Notes:**
+- Results are ordered by check-in time (most recent first)
+- Only returns visitors with status `CHECKED_IN`
+- Omit `visitDate` to see all checked-in visitors across all dates (e.g., overnight visitors)
+
+---
+
+### 11. Get My Hosted Visitors
 **GET** `/api/v1/visitors/my-hosted`
 
 Get visitors hosted by the current user.

@@ -204,6 +204,26 @@ class VisitorRepository {
             .map { mapRowToDto(it, hostUserAlias, createdByAlias) }
     }
 
+    suspend fun findCurrentlyCheckedIn(visitDate: LocalDate?): List<VisitorDto> = tenantDbQuery {
+        val hostUserAlias = Users.alias("host_user")
+        val createdByAlias = Users.alias("created_by_user")
+
+        var query = Visitors
+            .join(hostUserAlias, JoinType.INNER, Visitors.hostUserId, hostUserAlias[Users.id])
+            .join(createdByAlias, JoinType.INNER, Visitors.createdBy, createdByAlias[Users.id])
+            .selectAll()
+            .where { Visitors.status eq VisitorStatus.CHECKED_IN }
+
+        // Optionally filter by visit date (defaults to all checked-in visitors)
+        visitDate?.let {
+            query = query.andWhere { Visitors.visitDate eq it }
+        }
+
+        query
+            .orderBy(Visitors.actualCheckInTime to SortOrder.DESC)
+            .map { mapRowToDto(it, hostUserAlias, createdByAlias) }
+    }
+
     private suspend fun getUserSummary(userId: UUID): UserSummaryDto = tenantDbQuery {
         Users.selectAll()
             .where { Users.id eq userId }
