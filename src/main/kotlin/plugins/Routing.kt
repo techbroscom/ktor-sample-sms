@@ -33,6 +33,11 @@ import com.example.repositories.TransportStopRepository
 import com.example.repositories.UserPermissionsRepository
 import com.example.repositories.UserRepository
 import com.example.repositories.VisitorRepository
+import com.example.repositories.BookRepository
+import com.example.repositories.BookBorrowingRepository
+import com.example.repositories.BookReservationRepository
+import com.example.repositories.LibraryFineRepository
+import com.example.repositories.LibrarySettingsRepository
 import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.attendanceRoutes
 import com.example.routes.api.classRoutes
@@ -65,6 +70,7 @@ import com.example.routes.api.transportStopRoutes
 import com.example.routes.api.userPermissionRoutes
 import com.example.routes.api.userRoutes
 import com.example.routes.api.visitorRoutes
+import com.example.routes.api.libraryRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
 import com.example.services.ClassService
@@ -98,6 +104,7 @@ import com.example.services.TransportStopService
 import com.example.services.UserPermissionService
 import com.example.services.UserService
 import com.example.services.VisitorService
+import com.example.services.LibraryService
 import config.S3StorageConfig
 import services.S3FileService
 import services.storage.S3CompatibleStorage
@@ -236,6 +243,20 @@ fun Application.configureRouting() {
     val visitorRepository = VisitorRepository()
     val visitorService = VisitorService(visitorRepository, userRepository)
 
+    val bookRepository = BookRepository()
+    val bookBorrowingRepository = BookBorrowingRepository()
+    val bookReservationRepository = BookReservationRepository()
+    val libraryFineRepository = LibraryFineRepository()
+    val librarySettingsRepository = LibrarySettingsRepository()
+    val libraryService = LibraryService(
+        bookRepository,
+        bookBorrowingRepository,
+        bookReservationRepository,
+        libraryFineRepository,
+        librarySettingsRepository,
+        userRepository
+    )
+
     // API routes
 
     routing {
@@ -282,5 +303,6 @@ fun Application.configureRouting() {
         featureRoutes(featureService, tenantConfigService)
         userPermissionRoutes(userPermissionService)
         visitorRoutes(visitorService)
+        libraryRoutes(libraryService)
     }
 }
