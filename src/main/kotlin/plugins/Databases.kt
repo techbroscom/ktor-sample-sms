@@ -31,6 +31,7 @@ fun Application.configureDatabases() {
         migrationService.removeFilesTenantIdColumn() // Remove tenant_id column (schema-level isolation)
         migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
         migrationService.migrateUserPermissionsTable() // Create UserPermissions table in tenant schemas
+        migrationService.migrateVisitorManagementTables() // Create Visitors and VisitorPasses tables in tenant schemas
     }
 }
 
@@ -61,7 +62,9 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             StudentFees,
             FeePayments,
             Files,
-            UserPermissions  // User-level feature permissions (per tenant)
+            UserPermissions,  // User-level feature permissions (per tenant)
+            Visitors,         // Visitor management
+            VisitorPasses     // Visitor passes (optional)
         )
     }
 }

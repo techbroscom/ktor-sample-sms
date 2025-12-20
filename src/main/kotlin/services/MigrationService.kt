@@ -6,6 +6,8 @@ import com.example.database.tables.Files
 import com.example.database.tables.PostImages
 import com.example.database.tables.Tenants
 import com.example.database.tables.UserPermissions
+import com.example.database.tables.Visitors
+import com.example.database.tables.VisitorPasses
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.selectAll
@@ -432,6 +434,112 @@ class MigrationService {
         }
 
         println("✓ UserPermissions table migration completed")
+    }
+
+    /**
+     * Create Visitors and VisitorPasses tables in existing tenant schemas
+     */
+    fun migrateVisitorManagementTables() {
+        println("🔧 Creating visitor management tables in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (visitor management tables)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if visitors table already exists
+                val visitorsTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'visitors'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!visitorsTableExists) {
+                    // Create visitors table
+                    println("➕ Creating visitors table in $schema")
+                    SchemaUtils.create(Visitors)
+
+                    // Create indexes
+                    exec("""
+                        CREATE INDEX IF NOT EXISTS idx_visitors_host_user_id
+                        ON visitors (host_user_id)
+                    """)
+
+                    exec("""
+                        CREATE INDEX IF NOT EXISTS idx_visitors_visit_date
+                        ON visitors (visit_date)
+                    """)
+
+                    exec("""
+                        CREATE INDEX IF NOT EXISTS idx_visitors_status
+                        ON visitors (status)
+                    """)
+
+                    exec("""
+                        CREATE INDEX IF NOT EXISTS idx_visitors_visit_date_status
+                        ON visitors (visit_date, status)
+                    """)
+
+                    println("✓ visitors table created successfully in $schema")
+                } else {
+                    println("✓ visitors table already exists in $schema")
+                }
+
+                // Check if visitor_passes table already exists
+                val visitorPassesTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'visitor_passes'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!visitorPassesTableExists) {
+                    // Create visitor_passes table
+                    println("➕ Creating visitor_passes table in $schema")
+                    SchemaUtils.create(VisitorPasses)
+
+                    // Create indexes
+                    exec("""
+                        CREATE INDEX IF NOT EXISTS idx_visitor_passes_visitor_id
+                        ON visitor_passes (visitor_id)
+                    """)
+
+                    println("✓ visitor_passes table created successfully in $schema")
+                } else {
+                    println("✓ visitor_passes table already exists in $schema")
+                }
+            }
+        }
+
+        println("✓ Visitor management tables migration completed")
     }
 
 }
