@@ -17,7 +17,7 @@ fun Route.featureRoutes(
     featureService: FeatureService,
     tenantConfigService: TenantConfigService
 ) {
-    route("/api/v1/admin/features") {
+    route("/api/v1/console/features") {
 
         // Create new feature in catalog
         post {

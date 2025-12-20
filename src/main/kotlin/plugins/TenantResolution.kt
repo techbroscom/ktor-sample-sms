@@ -17,7 +17,7 @@ fun Application.configureTenantResolution() {
     intercept(ApplicationCallPipeline.Call) {
         // Skip tenant resolution for tenant management endpoints
         val path = call.request.path()
-        if (path.startsWith("/api/v1/tenants")) {
+        if (path.startsWith("/api/v1/tenants") || path.startsWith("/api/v1/console")) {
             proceed()
             return@intercept
         }

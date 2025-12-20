@@ -4,6 +4,8 @@ import com.example.database.tables.UserRole
 import com.example.exceptions.ApiException
 import com.example.models.FCMTokenRequest
 import com.example.models.dto.*
+import com.example.repositories.TenantFeaturesRepository
+import com.example.repositories.UserPermissionsRepository
 import com.example.repositories.UserRepository
 import com.example.tenant.TenantContextHolder
 import io.ktor.http.*

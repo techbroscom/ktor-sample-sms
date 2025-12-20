@@ -5,6 +5,7 @@ import com.example.database.tables.Exams
 import com.example.database.tables.Files
 import com.example.database.tables.PostImages
 import com.example.database.tables.Tenants
+import com.example.database.tables.UserPermissions
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.selectAll
