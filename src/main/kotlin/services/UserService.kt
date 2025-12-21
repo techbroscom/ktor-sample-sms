@@ -166,7 +166,7 @@ class UserService(
             val tenantId = tenantContext?.id ?: return null
 
             return when (userDto.role.uppercase()) {
-                "ADMIN" -> {
+                "ADMIN", "STUDENT" -> {
                     // ADMIN gets all tenant's enabled features
                     tenantFeaturesRepository?.getEnabledFeatureKeys(tenantId) ?: emptyList()
                 }
