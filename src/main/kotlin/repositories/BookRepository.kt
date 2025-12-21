@@ -82,7 +82,7 @@ class BookRepository {
         val offset = ((request.page - 1) * request.pageSize).toLong()
 
         val books = query
-            .limit(request.pageSize, offset)
+            .limit(request.pageSize).offset(offset)
             .orderBy(Books.title to SortOrder.ASC)
             .map { mapRowToDto(it, addedByAlias) }
 

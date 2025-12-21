@@ -436,7 +436,7 @@ class LibraryService(
         daysOverdue: Int,
         settings: LibrarySettingsDto
     ) {
-        val finePerDay = BigDecimal(settings.overdueFinePer Day)
+        val finePerDay = BigDecimal(settings.overdueFinePerDay)
         val totalFine = finePerDay.multiply(BigDecimal(daysOverdue))
 
         fineRepository.create(

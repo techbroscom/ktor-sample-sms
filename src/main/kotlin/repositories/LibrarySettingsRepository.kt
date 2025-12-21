@@ -34,7 +34,7 @@ class LibrarySettingsRepository {
             request.maxBooksPerStaff?.let { v -> it[maxBooksPerStaff] = v }
             request.borrowingPeriodDays?.let { v -> it[borrowingPeriodDays] = v }
             request.maxRenewals?.let { v -> it[maxRenewals] = v }
-            request.overdueFinePer Day?.let { v -> it[overdueFinePer Day] = BigDecimal(v) }
+            request.overdueFinePerDay?.let { v -> it[overdueFinePerDay] = BigDecimal(v) }
             request.lostBookFineMultiplier?.let { v -> it[lostBookFineMultiplier] = BigDecimal(v) }
             request.reservationExpiryDays?.let { v -> it[reservationExpiryDays] = v }
             request.enableReservations?.let { v -> it[enableReservations] = v }
@@ -62,7 +62,7 @@ class LibrarySettingsRepository {
             maxBooksPerStaff = row[LibrarySettings.maxBooksPerStaff],
             borrowingPeriodDays = row[LibrarySettings.borrowingPeriodDays],
             maxRenewals = row[LibrarySettings.maxRenewals],
-            overdueFinePer Day = row[LibrarySettings.overdueFinePer Day].toString(),
+            overdueFinePerDay = row[LibrarySettings.overdueFinePerDay].toString(),
             lostBookFineMultiplier = row[LibrarySettings.lostBookFineMultiplier].toString(),
             reservationExpiryDays = row[LibrarySettings.reservationExpiryDays],
             enableReservations = row[LibrarySettings.enableReservations],

@@ -125,7 +125,7 @@ data class BookSummaryDto(
 )
 
 @Serializable
-data class IssueBorrow Request(
+data class IssueBorrowRequest(
     val bookId: String,
     val userId: String,
     val dueDate: String? = null  // Optional, calculated from settings if not provided
@@ -229,7 +229,7 @@ data class LibrarySettingsDto(
     val maxBooksPerStaff: Int,
     val borrowingPeriodDays: Int,
     val maxRenewals: Int,
-    val overdueFinePer Day: String,
+    val overdueFinePerDay: String,
     val lostBookFineMultiplier: String,
     val reservationExpiryDays: Int,
     val enableReservations: Boolean,
@@ -244,7 +244,7 @@ data class UpdateLibrarySettingsRequest(
     val maxBooksPerStaff: Int? = null,
     val borrowingPeriodDays: Int? = null,
     val maxRenewals: Int? = null,
-    val overdueFinePer Day: String? = null,
+    val overdueFinePerDay: String? = null,
     val lostBookFineMultiplier: String? = null,
     val reservationExpiryDays: Int? = null,
     val enableReservations: Boolean? = null,

@@ -93,7 +93,7 @@ class VisitorRepository {
         val offset = ((request.page - 1) * request.pageSize).toLong()
 
         val visitors = query
-            .limit(request.pageSize, offset)
+            .limit(request.pageSize).offset(offset)
             .orderBy(Visitors.visitDate to SortOrder.DESC, Visitors.expectedCheckInTime to SortOrder.DESC)
             .map { mapRowToDto(it, hostUserAlias, createdByAlias) }
 

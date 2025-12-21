@@ -132,7 +132,7 @@ class LibraryFineRepository {
         val offset = ((page - 1) * pageSize).toLong()
 
         val fines = query
-            .limit(pageSize, offset)
+            .limit(pageSize).offset(offset)
             .orderBy(LibraryFines.createdAt to SortOrder.DESC)
             .map { mapRowToDto(it, userAlias, borrowingAlias, bookAlias) }
 

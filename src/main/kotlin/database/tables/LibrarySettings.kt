@@ -11,7 +11,7 @@ object LibrarySettings : Table("library_settings") {
     val maxBooksPerStaff = integer("max_books_per_staff").default(5)
     val borrowingPeriodDays = integer("borrowing_period_days").default(14)
     val maxRenewals = integer("max_renewals").default(2)
-    val overdueFinePer Day = decimal("overdue_fine_per_day", 10, 2).default(BigDecimal("5.00"))
+    val overdueFinePerDay = decimal("overdue_fine_per_day", 10, 2).default(BigDecimal("5.00"))
     val lostBookFineMultiplier = decimal("lost_book_fine_multiplier", 5, 2).default(BigDecimal("2.00"))
     val reservationExpiryDays = integer("reservation_expiry_days").default(3)
     val enableReservations = bool("enable_reservations").default(true)

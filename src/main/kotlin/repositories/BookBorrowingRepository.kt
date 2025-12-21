@@ -162,7 +162,7 @@ class BookBorrowingRepository {
         val offset = ((page - 1) * pageSize).toLong()
 
         val borrowings = query
-            .limit(pageSize, offset)
+            .limit(pageSize).offset(offset)
             .orderBy(BookBorrowings.borrowedDate to SortOrder.DESC)
             .map { mapRowToDto(it, bookAlias, userAlias, issuedByAlias, null) }
 
