@@ -6,6 +6,7 @@ import com.example.database.tables.Files
 import com.example.database.tables.PostImages
 import com.example.database.tables.Tenants
 import com.example.database.tables.UserPermissions
+import com.example.database.tables.UserDetails
 import com.example.database.tables.Visitors
 import com.example.database.tables.VisitorPasses
 import com.example.database.tables.Books
@@ -609,5 +610,173 @@ class MigrationService {
         println("✓ Library management tables migration completed")
     }
 
-}
+    /**
+     * Add photo_url column to users table in existing tenant schemas
+     */
+    fun migrateUsersPhotoUrl() {
+        println("🔧 Adding photo_url column to users table in tenant schemas...")
 
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (users.photo_url)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if users table exists
+                val usersTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!usersTableExists) {
+                    println("⚠ Skipping $schema (users table not found)")
+                    return@transaction
+                }
+
+                // Check if photo_url column already exists
+                val photoUrlColumnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                          AND column_name = 'photo_url'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (photoUrlColumnExists) {
+                    println("✓ photo_url column already exists in $schema.users")
+                    return@transaction
+                }
+
+                // Add photo_url column
+                exec("""
+                    ALTER TABLE users
+                    ADD COLUMN photo_url VARCHAR(500)
+                """)
+
+                println("✓ Added photo_url column to $schema.users")
+            }
+        }
+
+        println("✓ Users photo_url column migration completed")
+    }
+
+    /**
+     * Create user_details table in existing tenant schemas
+     */
+    fun migrateUserDetailsTable() {
+        println("🔧 Creating user_details table in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (user_details table)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if users table exists (dependency check)
+                val usersTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!usersTableExists) {
+                    println("⚠ Skipping $schema (users table not found)")
+                    return@transaction
+                }
+
+                // Check if user_details table already exists
+                val userDetailsTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'user_details'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (userDetailsTableExists) {
+                    println("✓ user_details table already exists in $schema")
+                    return@transaction
+                }
+
+                // Create user_details table
+                println("➕ Creating user_details table in $schema")
+                SchemaUtils.create(UserDetails)
+
+                // Create indexes for better query performance
+                exec("""
+                    CREATE INDEX IF NOT EXISTS idx_user_details_user_id
+                    ON user_details (user_id)
+                """)
+
+                exec("""
+                    CREATE INDEX IF NOT EXISTS idx_user_details_date_of_birth
+                    ON user_details (date_of_birth)
+                """)
+
+                exec("""
+                    CREATE INDEX IF NOT EXISTS idx_user_details_gender
+                    ON user_details (gender)
+                """)
+
+                println("✓ user_details table created successfully in $schema")
+            }
+        }
+
+        println("✓ UserDetails table migration completed")
+    }
+
+}

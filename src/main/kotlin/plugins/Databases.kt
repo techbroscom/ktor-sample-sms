@@ -32,7 +32,9 @@ fun Application.configureDatabases() {
 //        migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
 //        migrationService.migrateUserPermissionsTable() // Create UserPermissions table in tenant schemas
 //        migrationService.migrateVisitorManagementTables() // Create Visitors and VisitorPasses tables in tenant schemas
-        migrationService.migrateLibraryManagementTables() // Create library tables in tenant schemas
+//        migrationService.migrateLibraryManagementTables() // Create library tables in tenant schemas
+//        migrationService.migrateUsersPhotoUrl() // Add photo_url column to users table
+//        migrationService.migrateUserDetailsTable() // Create user_details table in tenant schemas
     }
 }
 
@@ -64,6 +66,7 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             FeePayments,
             Files,
             UserPermissions,  // User-level feature permissions (per tenant)
+            UserDetails,      // Additional user details (DOB, parent info, etc.)
             Visitors,         // Visitor management
             VisitorPasses,    // Visitor passes (optional)
             Books,            // Library management
