@@ -14,6 +14,8 @@ data class PaginatedResponse<T>(
         val page: Int,
         val pageSize: Int,
         val totalItems: Long,
-        val totalPages: Long
+        val totalPages: Long,
+        val hasNext: Boolean,
+        val hasPrevious: Boolean
     )
 }

@@ -120,11 +120,62 @@ class UserRepository {
             .count() > 0
     }
 
-    suspend fun findUsersWithFilters(
+    suspend fun countUsersWithFilters(
         role: String? = null,
         classId: String? = null,
         search: String? = null
+    ): Long = tenantDbQuery {
+        val query = Users
+            .leftJoin(StudentAssignments, { Users.id }, { StudentAssignments.studentId })
+            .leftJoin(Classes, { StudentAssignments.classId }, { Classes.id })
+            .select(Users.id)
+            .withDistinct()
+
+        // Apply role filter
+        role?.let {
+            try {
+                val userRole = UserRole.valueOf(it.uppercase())
+                query.andWhere { Users.role eq userRole }
+            } catch (e: IllegalArgumentException) {
+                return@tenantDbQuery 0
+            }
+        }
+
+        // Apply class filter
+        classId?.let {
+            try {
+                val classUuid = UUID.fromString(it)
+                query.andWhere { Classes.id eq classUuid }
+            } catch (e: IllegalArgumentException) {
+                return@tenantDbQuery 0
+            }
+        }
+
+        // Apply search filter
+        search?.let { searchTerm ->
+            if (searchTerm.isNotBlank()) {
+                val searchPattern = "%${searchTerm.lowercase()}%"
+                query.andWhere {
+                    (Users.firstName.lowerCase() like searchPattern) or
+                    (Users.lastName.lowerCase() like searchPattern) or
+                    (Users.email.lowerCase() like searchPattern) or
+                    (Users.mobileNumber like searchPattern)
+                }
+            }
+        }
+
+        query.count()
+    }
+
+    suspend fun findUsersWithFilters(
+        role: String? = null,
+        classId: String? = null,
+        search: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20
     ): List<UserWithDetailsDto> = tenantDbQuery {
+        val offset = (page - 1) * pageSize
+
         val query = Users
             .leftJoin(UserDetails, { Users.id }, { UserDetails.userId })
             .leftJoin(StudentAssignments, { Users.id }, { StudentAssignments.studentId })
@@ -166,10 +217,13 @@ class UserRepository {
             }
         }
 
-        // Group results to handle multiple class assignments
+        // Group results to handle multiple class assignments and apply pagination
         query.orderBy(Users.createdAt to SortOrder.DESC)
             .groupBy { it[Users.id] }
-            .map { (_, rows) ->
+            .values
+            .drop(offset)
+            .take(pageSize)
+            .map { rows ->
                 val firstRow = rows.first()
                 val user = mapRowToDto(firstRow)
                 val details = if (firstRow.getOrNull(UserDetails.id) != null) {

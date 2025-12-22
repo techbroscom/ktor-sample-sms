@@ -96,18 +96,16 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
             ))
         }
 
-        // Get users with filters (role, class, search)
+        // Get users with filters (role, class, search) - with pagination
         get("/filter") {
             val role = call.request.queryParameters["role"]
             val classId = call.request.queryParameters["classId"]
             val search = call.request.queryParameters["search"]
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+            val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
 
-            val users = userService.getUsersWithFilters(role, classId, search)
-            call.respond(ApiResponse(
-                success = true,
-                data = users,
-                message = "Users retrieved successfully"
-            ))
+            val paginatedUsers = userService.getUsersWithFilters(role, classId, search, page, pageSize)
+            call.respond(paginatedUsers)
         }
 
         // Get all users

@@ -75,9 +75,40 @@ class UserService(
     suspend fun getUsersWithFilters(
         role: String? = null,
         classId: String? = null,
-        search: String? = null
-    ): List<com.example.models.dto.UserWithDetailsDto> {
-        return userRepository.findUsersWithFilters(role, classId, search)
+        search: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20
+    ): com.example.models.responses.PaginatedResponse<List<com.example.models.dto.UserWithDetailsDto>> {
+        // Validate pagination parameters
+        val validPage = if (page < 1) 1 else page
+        val validPageSize = when {
+            pageSize < 1 -> 20
+            pageSize > 100 -> 100  // Max 100 items per page
+            else -> pageSize
+        }
+
+        // Get total count
+        val totalItems = userRepository.countUsersWithFilters(role, classId, search)
+        val totalPages = if (totalItems == 0L) 0L else ((totalItems + validPageSize - 1) / validPageSize)
+
+        // Get paginated data
+        val users = userRepository.findUsersWithFilters(role, classId, search, validPage, validPageSize)
+
+        // Build pagination info
+        val paginationInfo = com.example.models.responses.PaginatedResponse.PaginationInfo(
+            page = validPage,
+            pageSize = validPageSize,
+            totalItems = totalItems,
+            totalPages = totalPages,
+            hasNext = validPage < totalPages,
+            hasPrevious = validPage > 1
+        )
+
+        return com.example.models.responses.PaginatedResponse(
+            success = true,
+            data = users,
+            pagination = paginationInfo
+        )
     }
 
     suspend fun updateUser(id: String, request: UpdateUserRequest): UserDto {
