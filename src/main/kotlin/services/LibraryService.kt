@@ -58,7 +58,9 @@ class LibraryService(
                 page = request.page,
                 pageSize = request.pageSize,
                 totalItems = total,
-                totalPages = totalPages
+                totalPages = totalPages,
+                hasNext = request.page < totalPages,
+                hasPrevious = request.page > 1
             )
         )
     }
@@ -277,7 +279,9 @@ class LibraryService(
                 page = page,
                 pageSize = pageSize,
                 totalItems = total,
-                totalPages = totalPages
+                totalPages = totalPages,
+                hasNext = page < totalPages,
+                hasPrevious = page > 1
             )
         )
     }

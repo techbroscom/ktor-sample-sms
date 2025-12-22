@@ -100,7 +100,9 @@ class VisitorService(
                 page = request.page,
                 pageSize = request.pageSize,
                 totalItems = total,
-                totalPages = totalPages
+                totalPages = totalPages,
+                hasNext = request.page < totalPages,
+                hasPrevious = request.page > 1
             )
         )
     }

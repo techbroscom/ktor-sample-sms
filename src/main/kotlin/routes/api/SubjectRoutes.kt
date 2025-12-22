@@ -30,6 +30,7 @@ fun Route.subjectRoutes(subjectService: SubjectService) {
             val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 10
 
             val (subjects, totalCount) = subjectService.getSubjectsPaginated(page, pageSize)
+            val totalPages = (totalCount + pageSize - 1) / pageSize
 
             call.respond(PaginatedResponse(
                 success = true,
@@ -38,7 +39,9 @@ fun Route.subjectRoutes(subjectService: SubjectService) {
                     page = page,
                     pageSize = pageSize,
                     totalItems = totalCount,
-                    totalPages = (totalCount + pageSize - 1) / pageSize
+                    totalPages = totalPages,
+                    hasNext = page < totalPages,
+                    hasPrevious = page > 1
                 )
             ))
         }
