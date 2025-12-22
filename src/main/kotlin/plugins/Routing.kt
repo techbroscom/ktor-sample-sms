@@ -32,6 +32,7 @@ import com.example.repositories.TransportRouteRepository
 import com.example.repositories.TransportStopRepository
 import com.example.repositories.UserPermissionsRepository
 import com.example.repositories.UserRepository
+import com.example.repositories.UserDetailsRepository
 import com.example.repositories.VisitorRepository
 import com.example.repositories.BookRepository
 import com.example.repositories.BookBorrowingRepository
@@ -69,6 +70,7 @@ import com.example.routes.api.transportRouteRoutes
 import com.example.routes.api.transportStopRoutes
 import com.example.routes.api.userPermissionRoutes
 import com.example.routes.api.userRoutes
+import com.example.routes.api.userDetailsRoutes
 import com.example.routes.api.visitorRoutes
 import com.example.routes.api.libraryRoutes
 import com.example.services.AcademicYearService
@@ -103,6 +105,7 @@ import com.example.services.TransportRouteService
 import com.example.services.TransportStopService
 import com.example.services.UserPermissionService
 import com.example.services.UserService
+import com.example.services.UserDetailsService
 import com.example.services.VisitorService
 import com.example.services.LibraryService
 import config.S3StorageConfig
@@ -119,6 +122,7 @@ fun Application.configureRouting() {
 
 
     val userRepository = UserRepository()
+    val userDetailsRepository = UserDetailsRepository()
 
     val tenantService = TenantService()
 
@@ -145,6 +149,8 @@ fun Application.configureRouting() {
         tenantFeaturesRepository,
         userPermissionsRepository
     )
+
+    val userDetailsService = UserDetailsService(userDetailsRepository, userRepository)
 
     val notificationService = NotificationService(fcmService, userRepository)
 
@@ -273,6 +279,7 @@ fun Application.configureRouting() {
         tenantRoutes(tenantService)
 
         userRoutes(userService, otpService)
+        userDetailsRoutes(userDetailsService)
         holidayRoutes(holidayService)
         postRoutes(postService)
         complaintRoutes(complaintService)

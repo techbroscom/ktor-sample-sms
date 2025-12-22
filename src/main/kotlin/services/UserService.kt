@@ -72,6 +72,14 @@ class UserService(
         return userRepository.findByRole(role)
     }
 
+    suspend fun getUsersWithFilters(
+        role: String? = null,
+        classId: String? = null,
+        search: String? = null
+    ): List<com.example.models.dto.UserWithDetailsDto> {
+        return userRepository.findUsersWithFilters(role, classId, search)
+    }
+
     suspend fun updateUser(id: String, request: UpdateUserRequest): UserDto {
         val uuid = try {
             UUID.fromString(id)

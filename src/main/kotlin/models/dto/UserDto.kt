@@ -12,6 +12,7 @@ data class UserDto(
     val role: String,
     val firstName: String,
     val lastName: String,
+    val photoUrl: String? = null,
     val createdAt: String,
     val updatedAt: String?
 )
@@ -23,7 +24,8 @@ data class CreateUserRequest(
     val password: String,
     val role: String, // ADMIN, STAFF, STUDENT
     val firstName: String,
-    val lastName: String
+    val lastName: String,
+    val photoUrl: String? = null
 )
 
 @Serializable
@@ -32,7 +34,8 @@ data class UpdateUserRequest(
     val mobileNumber: String,
     val role: String, // ADMIN, STAFF, STUDENT
     val firstName: String,
-    val lastName: String
+    val lastName: String,
+    val photoUrl: String? = null
 )
 
 @Serializable

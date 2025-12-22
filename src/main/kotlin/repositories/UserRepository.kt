@@ -1,10 +1,14 @@
 package com.example.repositories
 
+import com.example.database.tables.Classes
+import com.example.database.tables.StudentAssignments
+import com.example.database.tables.UserDetails
 import com.example.database.tables.UserRole
 import com.example.database.tables.Users
 import com.example.models.dto.CreateUserRequest
 import com.example.models.dto.UpdateUserRequest
 import com.example.models.dto.UserDto
+import com.example.models.dto.UserWithDetailsDto
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -23,6 +27,7 @@ class UserRepository {
             it[role] = UserRole.valueOf(request.role)
             it[firstName] = request.firstName
             it[lastName] = request.lastName
+            it[photoUrl] = request.photoUrl
             it[createdAt] = LocalDateTime.now()
         }
         userId
@@ -87,6 +92,7 @@ class UserRepository {
             it[role] = UserRole.valueOf(request.role)
             it[firstName] = request.firstName
             it[lastName] = request.lastName
+            it[photoUrl] = request.photoUrl
             it[updatedAt] = LocalDateTime.now()
         } > 0
     }
@@ -114,6 +120,74 @@ class UserRepository {
             .count() > 0
     }
 
+    suspend fun findUsersWithFilters(
+        role: String? = null,
+        classId: String? = null,
+        search: String? = null
+    ): List<UserWithDetailsDto> = tenantDbQuery {
+        val query = Users
+            .leftJoin(UserDetails, { Users.id }, { UserDetails.userId })
+            .leftJoin(StudentAssignments, { Users.id }, { StudentAssignments.studentId })
+            .leftJoin(Classes, { StudentAssignments.classId }, { Classes.id })
+            .selectAll()
+
+        // Apply role filter
+        role?.let {
+            try {
+                val userRole = UserRole.valueOf(it.uppercase())
+                query.andWhere { Users.role eq userRole }
+            } catch (e: IllegalArgumentException) {
+                // Invalid role, return empty list
+                return@tenantDbQuery emptyList()
+            }
+        }
+
+        // Apply class filter
+        classId?.let {
+            try {
+                val classUuid = UUID.fromString(it)
+                query.andWhere { Classes.id eq classUuid }
+            } catch (e: IllegalArgumentException) {
+                // Invalid UUID, return empty list
+                return@tenantDbQuery emptyList()
+            }
+        }
+
+        // Apply search filter (search in firstName, lastName, email, mobileNumber)
+        search?.let { searchTerm ->
+            if (searchTerm.isNotBlank()) {
+                val searchPattern = "%${searchTerm.lowercase()}%"
+                query.andWhere {
+                    (Users.firstName.lowerCase() like searchPattern) or
+                    (Users.lastName.lowerCase() like searchPattern) or
+                    (Users.email.lowerCase() like searchPattern) or
+                    (Users.mobileNumber like searchPattern)
+                }
+            }
+        }
+
+        // Group results to handle multiple class assignments
+        query.orderBy(Users.createdAt to SortOrder.DESC)
+            .groupBy { it[Users.id] }
+            .map { (_, rows) ->
+                val firstRow = rows.first()
+                val user = mapRowToDto(firstRow)
+                val details = if (firstRow.getOrNull(UserDetails.id) != null) {
+                    mapRowToUserDetailsDto(firstRow)
+                } else null
+
+                val className = firstRow.getOrNull(Classes.className)
+                val sectionName = firstRow.getOrNull(Classes.sectionName)
+
+                UserWithDetailsDto(
+                    user = user,
+                    details = details,
+                    className = className,
+                    sectionName = sectionName
+                )
+            }
+    }
+
     private fun mapRowToDto(row: ResultRow): UserDto {
         return UserDto(
             id = row[Users.id].toString(),
@@ -122,8 +196,51 @@ class UserRepository {
             role = row[Users.role].name,
             firstName = row[Users.firstName],
             lastName = row[Users.lastName],
+            photoUrl = row[Users.photoUrl],
             createdAt = row[Users.createdAt].toString(),
             updatedAt = row[Users.updatedAt]?.toString()
+        )
+    }
+
+    private fun mapRowToUserDetailsDto(row: ResultRow): com.example.models.dto.UserDetailsDto {
+        return com.example.models.dto.UserDetailsDto(
+            id = row[UserDetails.id].toString(),
+            userId = row[UserDetails.userId].toString(),
+            dateOfBirth = row[UserDetails.dateOfBirth]?.toString(),
+            gender = row[UserDetails.gender],
+            bloodGroup = row[UserDetails.bloodGroup],
+            nationality = row[UserDetails.nationality],
+            religion = row[UserDetails.religion],
+            addressLine1 = row[UserDetails.addressLine1],
+            addressLine2 = row[UserDetails.addressLine2],
+            city = row[UserDetails.city],
+            state = row[UserDetails.state],
+            postalCode = row[UserDetails.postalCode],
+            country = row[UserDetails.country],
+            emergencyContactName = row[UserDetails.emergencyContactName],
+            emergencyContactRelationship = row[UserDetails.emergencyContactRelationship],
+            emergencyContactMobile = row[UserDetails.emergencyContactMobile],
+            emergencyContactEmail = row[UserDetails.emergencyContactEmail],
+            fatherName = row[UserDetails.fatherName],
+            fatherMobile = row[UserDetails.fatherMobile],
+            fatherEmail = row[UserDetails.fatherEmail],
+            fatherOccupation = row[UserDetails.fatherOccupation],
+            motherName = row[UserDetails.motherName],
+            motherMobile = row[UserDetails.motherMobile],
+            motherEmail = row[UserDetails.motherEmail],
+            motherOccupation = row[UserDetails.motherOccupation],
+            guardianName = row[UserDetails.guardianName],
+            guardianMobile = row[UserDetails.guardianMobile],
+            guardianEmail = row[UserDetails.guardianEmail],
+            guardianRelationship = row[UserDetails.guardianRelationship],
+            guardianOccupation = row[UserDetails.guardianOccupation],
+            aadharNumber = row[UserDetails.aadharNumber],
+            medicalConditions = row[UserDetails.medicalConditions],
+            allergies = row[UserDetails.allergies],
+            specialNeeds = row[UserDetails.specialNeeds],
+            notes = row[UserDetails.notes],
+            createdAt = row[UserDetails.createdAt].toString(),
+            updatedAt = row[UserDetails.updatedAt]?.toString()
         )
     }
 }

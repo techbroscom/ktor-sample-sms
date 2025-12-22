@@ -16,6 +16,7 @@ object Users : Table("users") {
     val role = enumerationByName("role", 20, UserRole::class)
     val firstName = varchar("first_name", 50)
     val lastName = varchar("last_name", 50)
+    val photoUrl = varchar("photo_url", 500).nullable()
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").nullable()
 

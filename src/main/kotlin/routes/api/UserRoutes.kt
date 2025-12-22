@@ -96,6 +96,20 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
             ))
         }
 
+        // Get users with filters (role, class, search)
+        get("/filter") {
+            val role = call.request.queryParameters["role"]
+            val classId = call.request.queryParameters["classId"]
+            val search = call.request.queryParameters["search"]
+
+            val users = userService.getUsersWithFilters(role, classId, search)
+            call.respond(ApiResponse(
+                success = true,
+                data = users,
+                message = "Users retrieved successfully"
+            ))
+        }
+
         // Get all users
         get {
             val users = userService.getAllUsers()
