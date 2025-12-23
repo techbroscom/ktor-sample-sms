@@ -756,20 +756,10 @@ class MigrationService {
                 println("➕ Creating user_details table in $schema")
                 SchemaUtils.create(UserDetails)
 
-                // Create indexes for better query performance
+                // Create index for user_id (used in findByUserId queries)
                 exec("""
                     CREATE INDEX IF NOT EXISTS idx_user_details_user_id
                     ON user_details (user_id)
-                """)
-
-                exec("""
-                    CREATE INDEX IF NOT EXISTS idx_user_details_date_of_birth
-                    ON user_details (date_of_birth)
-                """)
-
-                exec("""
-                    CREATE INDEX IF NOT EXISTS idx_user_details_gender
-                    ON user_details (gender)
                 """)
 
                 println("✓ user_details table created successfully in $schema")

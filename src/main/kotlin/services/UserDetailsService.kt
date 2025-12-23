@@ -43,15 +43,81 @@ class UserDetailsService(
             ?: throw ApiException("User details not found", HttpStatusCode.NotFound)
     }
 
-    suspend fun getUserDetailsByUserId(userId: String): UserDetailsDto {
+    suspend fun getUserDetailsByUserId(userId: String): UserDetailsDto? {
         val uuid = try {
             UUID.fromString(userId)
         } catch (e: IllegalArgumentException) {
             throw ApiException("Invalid user ID format", HttpStatusCode.BadRequest)
         }
 
+        // Return null instead of throwing 404 - let the caller decide how to handle
         return userDetailsRepository.findByUserId(uuid)
-            ?: throw ApiException("User details not found for this user", HttpStatusCode.NotFound)
+    }
+
+    suspend fun createOrUpdateUserDetails(userId: String, request: UpdateUserDetailsRequest): UserDetailsDto {
+        val uuid = try {
+            UUID.fromString(userId)
+        } catch (e: IllegalArgumentException) {
+            throw ApiException("Invalid user ID format", HttpStatusCode.BadRequest)
+        }
+
+        // Validate user exists
+        val userExists = userRepository.findById(uuid) != null
+        if (!userExists) {
+            throw ApiException("User not found", HttpStatusCode.NotFound)
+        }
+
+        // Check if user details exist
+        val detailsExist = userDetailsRepository.existsForUser(uuid)
+
+        return if (detailsExist) {
+            // Update existing details
+            validateUpdateUserDetailsRequest(request)
+            userDetailsRepository.update(uuid, request)
+            userDetailsRepository.findByUserId(uuid)
+                ?: throw ApiException("Failed to retrieve user details after update", HttpStatusCode.InternalServerError)
+        } else {
+            // Create new details
+            val createRequest = CreateUserDetailsRequest(
+                userId = userId,
+                dateOfBirth = request.dateOfBirth,
+                gender = request.gender,
+                bloodGroup = request.bloodGroup,
+                nationality = request.nationality,
+                religion = request.religion,
+                addressLine1 = request.addressLine1,
+                addressLine2 = request.addressLine2,
+                city = request.city,
+                state = request.state,
+                postalCode = request.postalCode,
+                country = request.country,
+                emergencyContactName = request.emergencyContactName,
+                emergencyContactRelationship = request.emergencyContactRelationship,
+                emergencyContactMobile = request.emergencyContactMobile,
+                emergencyContactEmail = request.emergencyContactEmail,
+                fatherName = request.fatherName,
+                fatherMobile = request.fatherMobile,
+                fatherEmail = request.fatherEmail,
+                fatherOccupation = request.fatherOccupation,
+                motherName = request.motherName,
+                motherMobile = request.motherMobile,
+                motherEmail = request.motherEmail,
+                motherOccupation = request.motherOccupation,
+                guardianName = request.guardianName,
+                guardianMobile = request.guardianMobile,
+                guardianEmail = request.guardianEmail,
+                guardianRelationship = request.guardianRelationship,
+                guardianOccupation = request.guardianOccupation,
+                aadharNumber = request.aadharNumber,
+                medicalConditions = request.medicalConditions,
+                allergies = request.allergies,
+                specialNeeds = request.specialNeeds,
+                notes = request.notes
+            )
+            validateUserDetailsRequest(createRequest)
+            val detailsId = userDetailsRepository.create(createRequest)
+            getUserDetailsById(detailsId)
+        }
     }
 
     suspend fun updateUserDetails(userId: String, request: UpdateUserDetailsRequest): UserDetailsDto {

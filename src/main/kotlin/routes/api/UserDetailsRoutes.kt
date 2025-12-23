@@ -25,15 +25,38 @@ fun Route.userDetailsRoutes(userDetailsService: UserDetailsService) {
             ))
         }
 
-        // Get user details by user ID
+        // Get user details by user ID (returns null if not found)
         get("/user/{userId}") {
             val userId = call.parameters["userId"]
                 ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
 
             val userDetails = userDetailsService.getUserDetailsByUserId(userId)
+
+            if (userDetails == null) {
+                call.respond(HttpStatusCode.NotFound, ApiResponse(
+                    success = false,
+                    data = null,
+                    message = "User details not found. Please create user details first."
+                ))
+            } else {
+                call.respond(ApiResponse(
+                    success = true,
+                    data = userDetails
+                ))
+            }
+        }
+
+        // Create or update user details (upsert) - recommended endpoint
+        put("/user/{userId}/upsert") {
+            val userId = call.parameters["userId"]
+                ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
+
+            val request = call.receive<UpdateUserDetailsRequest>()
+            val userDetails = userDetailsService.createOrUpdateUserDetails(userId, request)
             call.respond(ApiResponse(
                 success = true,
-                data = userDetails
+                data = userDetails,
+                message = "User details saved successfully"
             ))
         }
 
