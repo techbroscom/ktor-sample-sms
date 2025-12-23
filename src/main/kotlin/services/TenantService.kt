@@ -83,7 +83,15 @@ class TenantService {
                 TransportRoutes,
                 TransportStops,
                 StudentTransportAssignments,
-                Files
+                Files,
+                UserPermissions,  // User-level feature permissions (per tenant)
+                Visitors,         // Visitor management
+                VisitorPasses,    // Visitor passes (optional)
+                Books,            // Library management
+                BookBorrowings,
+                BookReservations,
+                LibraryFines,
+                LibrarySettings
             )
         }
 
