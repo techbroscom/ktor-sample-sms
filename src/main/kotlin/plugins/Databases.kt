@@ -35,6 +35,7 @@ fun Application.configureDatabases() {
 //        migrationService.migrateLibraryManagementTables() // Create library tables in tenant schemas
 //        migrationService.migrateUsersPhotoUrl() // Add photo_url column to users table
 //        migrationService.migrateUserDetailsTable() // Create user_details table in tenant schemas
+//        migrationService.migrateUsersS3Columns() // Add image_url and image_s3_key columns to users table
     }
 }
 

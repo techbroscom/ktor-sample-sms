@@ -7,10 +7,14 @@ import com.example.services.OtpService
 import com.example.services.UserService
 import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 
 fun Route.userRoutes(userService: UserService, otpService: OtpService) {
     route("/api/v1/users") {
@@ -211,6 +215,82 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
                 success = true,
                 message = "User deleted successfully"
             ))
+        }
+
+        // Upload user photo
+        post("/{id}/upload-photo") {
+            try {
+                val userId = call.parameters["id"]
+                    ?: throw ApiException("User ID is required", HttpStatusCode.BadRequest)
+
+                val tenantId = call.request.headers["X-Tenant"] ?: "default"
+                val multipartData = call.receiveMultipart()
+
+                var imageBytes: ByteArray? = null
+                var imageFileName: String? = null
+
+                multipartData.forEachPart { part ->
+                    when (part) {
+                        is PartData.FileItem -> {
+                            if (part.name == "photo" || part.name == "image") {
+                                imageFileName = part.originalFileName ?: "photo.jpg"
+                                imageBytes = withContext(Dispatchers.IO) {
+                                    try {
+                                        val stream = part.streamProvider()
+                                        val buffer = ByteArrayOutputStream()
+                                        stream.use { inputStream ->
+                                            inputStream.copyTo(buffer)
+                                        }
+                                        buffer.toByteArray()
+                                    } catch (e: Exception) {
+                                        println("Error reading image stream: ${e.message}")
+                                        ByteArray(0)
+                                    }
+                                }
+                            }
+                            part.dispose()
+                        }
+                        else -> {
+                            part.dispose()
+                        }
+                    }
+                }
+
+                if (imageBytes == null || imageBytes!!.isEmpty()) {
+                    call.respond(HttpStatusCode.BadRequest, ApiResponse<Unit>(
+                        success = false,
+                        message = "Photo file is required"
+                    ))
+                    return@post
+                }
+
+                // Upload photo
+                val updatedUser = userService.uploadUserPhoto(
+                    userId = userId,
+                    tenantId = tenantId,
+                    inputStream = imageBytes!!.inputStream(),
+                    originalFileName = imageFileName!!
+                )
+
+                call.respond(HttpStatusCode.OK, ApiResponse(
+                    success = true,
+                    data = updatedUser,
+                    message = "Photo uploaded successfully"
+                ))
+
+            } catch (e: ApiException) {
+                throw e
+            } catch (e: Exception) {
+                println("ERROR uploading user photo: ${e.message}")
+                e.printStackTrace()
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ApiResponse<Unit>(
+                        success = false,
+                        message = "Failed to upload photo: ${e.message}"
+                    )
+                )
+            }
         }
     }
 }

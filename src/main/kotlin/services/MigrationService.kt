@@ -689,6 +689,110 @@ class MigrationService {
     }
 
     /**
+     * Add S3 storage columns (image_url and image_s3_key) to users table
+     * This replaces the deprecated photo_url with a proper S3-based storage solution
+     */
+    fun migrateUsersS3Columns() {
+        println("🔧 Adding image_url and image_s3_key columns to users table in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (users.image_url and users.image_s3_key)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if users table exists
+                val usersTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!usersTableExists) {
+                    println("⚠ Skipping $schema (users table not found)")
+                    return@transaction
+                }
+
+                // Check if image_url column already exists
+                val imageUrlColumnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                          AND column_name = 'image_url'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!imageUrlColumnExists) {
+                    // Add image_url column
+                    exec("""
+                        ALTER TABLE users
+                        ADD COLUMN image_url VARCHAR(500)
+                    """)
+                    println("✓ Added image_url column to $schema.users")
+                } else {
+                    println("✓ image_url column already exists in $schema.users")
+                }
+
+                // Check if image_s3_key column already exists
+                val imageS3KeyColumnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                          AND column_name = 'image_s3_key'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!imageS3KeyColumnExists) {
+                    // Add image_s3_key column
+                    exec("""
+                        ALTER TABLE users
+                        ADD COLUMN image_s3_key VARCHAR(500)
+                    """)
+                    println("✓ Added image_s3_key column to $schema.users")
+                } else {
+                    println("✓ image_s3_key column already exists in $schema.users")
+                }
+            }
+        }
+
+        println("✓ Users S3 columns migration completed")
+    }
+
+    /**
      * Create user_details table in existing tenant schemas
      */
     fun migrateUserDetailsTable() {

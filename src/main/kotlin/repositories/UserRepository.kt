@@ -28,6 +28,8 @@ class UserRepository {
             it[firstName] = request.firstName
             it[lastName] = request.lastName
             it[photoUrl] = request.photoUrl
+            it[imageUrl] = request.imageUrl
+            it[imageS3Key] = request.imageS3Key
             it[createdAt] = LocalDateTime.now()
         }
         userId
@@ -93,6 +95,8 @@ class UserRepository {
             it[firstName] = request.firstName
             it[lastName] = request.lastName
             it[photoUrl] = request.photoUrl
+            it[imageUrl] = request.imageUrl
+            it[imageS3Key] = request.imageS3Key
             it[updatedAt] = LocalDateTime.now()
         } > 0
     }
@@ -251,6 +255,8 @@ class UserRepository {
             firstName = row[Users.firstName],
             lastName = row[Users.lastName],
             photoUrl = row[Users.photoUrl],
+            imageUrl = row[Users.imageUrl],
+            imageS3Key = row[Users.imageS3Key],
             createdAt = row[Users.createdAt].toString(),
             updatedAt = row[Users.updatedAt]?.toString()
         )

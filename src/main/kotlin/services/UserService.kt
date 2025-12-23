@@ -10,13 +10,16 @@ import com.example.repositories.UserRepository
 import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
 import org.mindrot.jbcrypt.BCrypt
+import services.S3FileService
+import java.io.InputStream
 import java.util.*
 
 class UserService(
     private val userRepository: UserRepository,
     private val fcmService: FCMService?,
     private val tenantFeaturesRepository: TenantFeaturesRepository? = null,
-    private val userPermissionsRepository: UserPermissionsRepository? = null
+    private val userPermissionsRepository: UserPermissionsRepository? = null,
+    private val s3FileService: S3FileService? = null
 ) {
 
     suspend fun createUser(request: CreateUserRequest): UserDto {
@@ -174,6 +177,58 @@ class UserService(
         if (!deleted) {
             throw ApiException("User not found", HttpStatusCode.NotFound)
         }
+    }
+
+    suspend fun uploadUserPhoto(
+        userId: String,
+        tenantId: String,
+        inputStream: InputStream,
+        originalFileName: String
+    ): UserDto {
+        val uuid = try {
+            UUID.fromString(userId)
+        } catch (e: IllegalArgumentException) {
+            throw ApiException("Invalid user ID format", HttpStatusCode.BadRequest)
+        }
+
+        // Verify user exists
+        val user = getUserById(uuid)
+
+        // Check if S3 service is available
+        if (s3FileService == null) {
+            throw ApiException("S3 file service not available", HttpStatusCode.ServiceUnavailable)
+        }
+
+        // Upload photo to S3
+        val uploadResponse = s3FileService.uploadProfilePicture(
+            tenantId = tenantId,
+            inputStream = inputStream,
+            originalFileName = originalFileName,
+            userId = userId
+        )
+
+        if (!uploadResponse.success) {
+            throw ApiException(
+                uploadResponse.message ?: "Failed to upload photo",
+                HttpStatusCode.InternalServerError
+            )
+        }
+
+        // Update user record with imageUrl and imageS3Key
+        val updateRequest = UpdateUserRequest(
+            email = user.email,
+            mobileNumber = user.mobileNumber,
+            role = user.role,
+            firstName = user.firstName,
+            lastName = user.lastName,
+            photoUrl = user.photoUrl, // Keep existing photoUrl
+            imageUrl = uploadResponse.fileUrl, // Set new S3 URL
+            imageS3Key = uploadResponse.objectKey // Set S3 object key
+        )
+
+        userRepository.update(uuid, updateRequest)
+
+        return getUserById(uuid)
     }
 
     suspend fun authenticateUser(request: UserLoginRequest): UserLoginResponse {

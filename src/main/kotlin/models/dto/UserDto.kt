@@ -12,7 +12,9 @@ data class UserDto(
     val role: String,
     val firstName: String,
     val lastName: String,
-    val photoUrl: String? = null,
+    val photoUrl: String? = null, // Deprecated, use imageUrl
+    val imageUrl: String? = null, // S3 public URL
+    val imageS3Key: String? = null, // S3 object key
     val createdAt: String,
     val updatedAt: String?
 )
@@ -25,7 +27,9 @@ data class CreateUserRequest(
     val role: String, // ADMIN, STAFF, STUDENT
     val firstName: String,
     val lastName: String,
-    val photoUrl: String? = null
+    val photoUrl: String? = null, // Deprecated, use imageUrl
+    val imageUrl: String? = null, // S3 public URL (set via upload endpoint)
+    val imageS3Key: String? = null // S3 object key (set via upload endpoint)
 )
 
 @Serializable
@@ -35,7 +39,9 @@ data class UpdateUserRequest(
     val role: String, // ADMIN, STAFF, STUDENT
     val firstName: String,
     val lastName: String,
-    val photoUrl: String? = null
+    val photoUrl: String? = null, // Deprecated, use imageUrl
+    val imageUrl: String? = null, // S3 public URL (set via upload endpoint)
+    val imageS3Key: String? = null // S3 object key (set via upload endpoint)
 )
 
 @Serializable
