@@ -12,10 +12,13 @@ import com.example.models.dto.UserWithDetailsDto
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import services.S3FileService
 import java.time.LocalDateTime
 import java.util.*
 
-class UserRepository {
+class UserRepository(
+    private val s3FileService: S3FileService? = null
+) {
 
     suspend fun create(request: CreateUserRequest, hashedPassword: String): UUID = tenantDbQuery {
         val userId = UUID.randomUUID()
@@ -246,7 +249,15 @@ class UserRepository {
             }
     }
 
-    private fun mapRowToDto(row: ResultRow): UserDto {
+    private suspend fun mapRowToDto(row: ResultRow): UserDto {
+        val imageS3Key = row[Users.imageS3Key]
+        // Generate URL dynamically from S3 key instead of using stored URL to avoid expiration issues
+        val imageUrl = if (!imageS3Key.isNullOrBlank()) {
+            s3FileService?.generateSignedUrlByKey(imageS3Key, expirationMinutes = 60) ?: row[Users.imageUrl]
+        } else {
+            row[Users.imageUrl]
+        }
+
         return UserDto(
             id = row[Users.id].toString(),
             email = row[Users.email],
@@ -255,8 +266,8 @@ class UserRepository {
             firstName = row[Users.firstName],
             lastName = row[Users.lastName],
             photoUrl = row[Users.photoUrl],
-            imageUrl = row[Users.imageUrl],
-            imageS3Key = row[Users.imageS3Key],
+            imageUrl = imageUrl,
+            imageS3Key = imageS3Key,
             createdAt = row[Users.createdAt].toString(),
             updatedAt = row[Users.updatedAt]?.toString()
         )

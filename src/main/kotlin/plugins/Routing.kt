@@ -120,8 +120,18 @@ fun Application.configureRouting() {
     val fcmTokenRepository = FCMTokenRepository()
     val fcmService = FCMService(fcmTokenRepository)
 
+    // File storage service - S3-based with Backblaze B2 (initialized early for use in repositories)
+    val s3StorageConfig = S3StorageConfig.forBackblazeB2(
+        accessKeyId = "005627b76e5aa4b0000000001",
+        secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
+        region = "us-east-005",
+        bucketName = "schoolmate"
+    )
+    val fileStorage = S3CompatibleStorage(s3StorageConfig)
+    val fileRepository = FileRepository()
+    val s3FileService = S3FileService(fileStorage, fileRepository)
 
-    val userRepository = UserRepository()
+    val userRepository = UserRepository(s3FileService)
     val userDetailsRepository = UserDetailsRepository()
 
     val tenantService = TenantService()
@@ -156,17 +166,6 @@ fun Application.configureRouting() {
 
     val holidayRepository = HolidayRepository()
     val holidayService = HolidayService(holidayRepository)
-
-    // File storage service - S3-based with Backblaze B2
-    val s3StorageConfig = S3StorageConfig.forBackblazeB2(
-        accessKeyId = "005627b76e5aa4b0000000001",
-        secretAccessKey = "K005COF4ZYJ1fXZnwgnuE/nsxyUwpBo",
-        region = "us-east-005",
-        bucketName = "schoolmate"
-    )
-    val fileStorage = S3CompatibleStorage(s3StorageConfig)
-    val fileRepository = FileRepository()
-    val s3FileService = S3FileService(fileStorage, fileRepository)
 
     val postRepository = PostRepository()
     val postImageRepository = PostImageRepository(s3FileService)
@@ -218,7 +217,7 @@ fun Application.configureRouting() {
     val attendanceRepository = AttendanceRepository()
     val attendanceService = AttendanceService(attendanceRepository, userService, classService, studentAssignmentService)
 
-    val dashboardRepository = DashboardRepository()
+    val dashboardRepository = DashboardRepository(s3FileService)
     val dashboardService = DashboardService(dashboardRepository, s3FileService)
 
     val feesStructureRepository = FeesStructureRepository()

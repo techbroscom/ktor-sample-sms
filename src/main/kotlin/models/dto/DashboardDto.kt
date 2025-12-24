@@ -246,6 +246,9 @@ data class StudentCompleteDataDto(
     val lastName: String,
     val email: String,
     val mobileNumber: String,
+    val photoUrl: String? = null,
+    val imageUrl: String? = null,
+    val imageS3Key: String? = null,
     val createdAt: String,
     val updatedAt: String,
 

@@ -4,13 +4,16 @@ import com.example.database.tables.*
 import com.example.models.dto.*
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
+import services.S3FileService
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 
-class DashboardRepository {
+class DashboardRepository(
+    private val s3FileService: S3FileService? = null
+) {
 
     suspend fun getDashboardOverview(): DashboardOverviewDto = tenantDbQuery {
         val today = LocalDate.now()
@@ -831,6 +834,14 @@ class DashboardRepository {
                 }
         } else emptyList()
 
+        val imageS3Key = studentInfo[Users.imageS3Key]
+        // Generate URL dynamically from S3 key to avoid expiration issues
+        val imageUrl = if (!imageS3Key.isNullOrBlank()) {
+            s3FileService?.generateSignedUrlByKey(imageS3Key, expirationMinutes = 60) ?: studentInfo[Users.imageUrl]
+        } else {
+            studentInfo[Users.imageUrl]
+        }
+
         StudentCompleteDataDto(
             // Basic student information
             studentId = studentInfo[Users.id].toString(),
@@ -838,6 +849,9 @@ class DashboardRepository {
             lastName = studentInfo[Users.lastName],
             email = studentInfo[Users.email],
             mobileNumber = studentInfo[Users.mobileNumber] ?: "",
+            photoUrl = studentInfo[Users.photoUrl],
+            imageUrl = imageUrl,
+            imageS3Key = imageS3Key,
             createdAt = studentInfo[Users.createdAt].toString(),
             updatedAt = studentInfo[Users.updatedAt].toString(),
 
