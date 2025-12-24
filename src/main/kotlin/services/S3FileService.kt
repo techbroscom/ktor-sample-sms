@@ -349,6 +349,30 @@ class S3FileService(
     }
 
     /**
+     * Generate a public URL by file ID (no signing, no expiration)
+     * Use this for public content like profile pictures, logos, post images
+     * Requires bucket to be configured as public
+     */
+    suspend fun generatePublicUrl(fileId: String): String? {
+        return try {
+            val fileRecord = fileRepository.findById(UUID.fromString(fileId)) ?: return null
+            fileStorage.generatePublicUrl(fileRecord.objectKey)
+        } catch (e: Exception) {
+            println("ERROR generating public URL: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Generate a public URL by object key (no signing, no expiration)
+     * Use this for public content like profile pictures, logos, post images
+     * Requires bucket to be configured as public
+     */
+    fun generatePublicUrlByKey(objectKey: String): String {
+        return fileStorage.generatePublicUrl(objectKey)
+    }
+
+    /**
      * Get file metadata from database
      */
     suspend fun getFileById(fileId: UUID): FileRecord? {

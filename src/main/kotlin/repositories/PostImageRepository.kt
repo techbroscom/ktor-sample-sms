@@ -61,8 +61,9 @@ class PostImageRepository(
 
     private suspend fun mapRowToDto(row: ResultRow): PostImageDto {
         val imageS3Key = row[PostImages.imageS3Key]
-        // Generate URL dynamically from S3 key instead of using stored URL
-        val imageUrl = s3FileService?.generateSignedUrlByKey(imageS3Key, expirationMinutes = 60) ?: ""
+        // Generate public URL from S3 key - no signing, no expiration
+        // For public content (post images), use public URLs instead of signed URLs
+        val imageUrl = s3FileService?.generatePublicUrlByKey(imageS3Key) ?: ""
 
         return PostImageDto(
             id = row[PostImages.id],

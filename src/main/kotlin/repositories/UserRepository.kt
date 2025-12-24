@@ -251,9 +251,10 @@ class UserRepository(
 
     private suspend fun mapRowToDto(row: ResultRow): UserDto {
         val imageS3Key = row[Users.imageS3Key]
-        // Generate URL dynamically from S3 key instead of using stored URL to avoid expiration issues
+        // Generate public URL from S3 key - no signing, no expiration
+        // For public content (profile pictures), use public URLs instead of signed URLs
         val imageUrl = if (!imageS3Key.isNullOrBlank()) {
-            s3FileService?.generateSignedUrlByKey(imageS3Key, expirationMinutes = 60) ?: row[Users.imageUrl]
+            s3FileService?.generatePublicUrlByKey(imageS3Key) ?: row[Users.imageUrl]
         } else {
             row[Users.imageUrl]
         }

@@ -835,9 +835,10 @@ class DashboardRepository(
         } else emptyList()
 
         val imageS3Key = studentInfo[Users.imageS3Key]
-        // Generate URL dynamically from S3 key to avoid expiration issues
+        // Generate public URL from S3 key - no signing, no expiration
+        // For public content (profile pictures), use public URLs instead of signed URLs
         val imageUrl = if (!imageS3Key.isNullOrBlank()) {
-            s3FileService?.generateSignedUrlByKey(imageS3Key, expirationMinutes = 60) ?: studentInfo[Users.imageUrl]
+            s3FileService?.generatePublicUrlByKey(imageS3Key) ?: studentInfo[Users.imageUrl]
         } else {
             studentInfo[Users.imageUrl]
         }

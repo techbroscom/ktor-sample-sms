@@ -130,6 +130,30 @@ class S3CompatibleStorage(private val config: S3StorageConfig) : FileStorage {
             }
         }
 
+    /**
+     * Generate a public URL for a file (no signing, no expiration)
+     * Works when bucket is configured as public
+     *
+     * Format for Backblaze B2: https://{bucket}.s3.{region}.backblazeb2.com/{objectKey}
+     * Format for AWS S3: https://{bucket}.s3.{region}.amazonaws.com/{objectKey}
+     * Format for Cloudflare R2: https://{bucket}.{accountId}.r2.cloudflarestorage.com/{objectKey}
+     */
+    override fun generatePublicUrl(objectKey: String): String {
+        return when (config.provider) {
+            StorageProvider.BACKBLAZE_B2 -> {
+                "https://${config.bucketName}.s3.${config.region}.backblazeb2.com/$objectKey"
+            }
+            StorageProvider.AWS_S3 -> {
+                "https://${config.bucketName}.s3.${config.region}.amazonaws.com/$objectKey"
+            }
+            StorageProvider.CLOUDFLARE_R2 -> {
+                // For R2, you need to set up a custom domain or use the default R2.dev subdomain
+                // This is a placeholder - update with your actual R2 public domain
+                "https://${config.bucketName}.r2.dev/$objectKey"
+            }
+        }
+    }
+
     override suspend fun fileExists(objectKey: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val headObjectRequest = HeadObjectRequest.builder()

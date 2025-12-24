@@ -37,6 +37,15 @@ interface FileStorage {
     suspend fun generateSignedUrl(objectKey: String, expirationMinutes: Long = 60): String
 
     /**
+     * Generate a public URL for a file (no signing, no expiration)
+     * Use this for public content like profile pictures, logos, post images
+     * Requires the bucket to be configured as public
+     * @param objectKey The S3 object key
+     * @return Public URL string
+     */
+    fun generatePublicUrl(objectKey: String): String
+
+    /**
      * Check if a file exists in storage
      * @param objectKey The S3 object key
      * @return true if file exists, false otherwise
