@@ -18,3 +18,23 @@ data class SendOtpResponse(
     val message: String,
     val email: String
 )
+
+// Password Reset DTOs
+@Serializable
+data class ForgotPasswordSendOtpRequest(
+    val mobileNumber: String
+)
+
+@Serializable
+data class ForgotPasswordSendOtpResponse(
+    val message: String,
+    val mobileNumber: String,
+    val email: String // Masked email (e.g., "a***@example.com")
+)
+
+@Serializable
+data class ForgotPasswordResetRequest(
+    val mobileNumber: String,
+    val otpCode: String,
+    val newPassword: String
+)

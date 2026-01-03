@@ -19,7 +19,9 @@ class UserService(
     private val fcmService: FCMService?,
     private val tenantFeaturesRepository: TenantFeaturesRepository? = null,
     private val userPermissionsRepository: UserPermissionsRepository? = null,
-    private val s3FileService: S3FileService? = null
+    private val s3FileService: S3FileService? = null,
+    private val otpRepository: com.example.repositories.OtpRepository? = null,
+    private val emailService: EmailService? = null
 ) {
 
     suspend fun createUser(request: CreateUserRequest): UserDto {
@@ -371,6 +373,130 @@ class UserService(
         return result
     }
 
+    /**
+     * Send password reset OTP to user's email
+     * User provides mobile number, system finds their email and sends OTP
+     */
+    suspend fun sendPasswordResetOtp(mobileNumber: String): com.example.models.dto.ForgotPasswordSendOtpResponse {
+        // Validate mobile number
+        if (mobileNumber.isBlank()) {
+            throw ApiException("Mobile number cannot be empty", HttpStatusCode.BadRequest)
+        }
+
+        // Find user by mobile number
+        val users = userRepository.findByMobile(mobileNumber)
+        if (users.isNullOrEmpty()) {
+            throw ApiException("No account found with this mobile number", HttpStatusCode.NotFound)
+        }
+
+        val user = users[0]
+        val email = user.email
+
+        // Check if required services are available
+        if (otpRepository == null || emailService == null) {
+            throw ApiException("Password reset service not available", HttpStatusCode.ServiceUnavailable)
+        }
+
+        // Generate 6-digit OTP
+        val otpCode = (100000..999999).random().toString()
+        val expiresAt = java.time.LocalDateTime.now().plusMinutes(10)
+
+        // Save OTP to database (reuse existing OTP table)
+        otpRepository.createOtp(email, otpCode, expiresAt)
+
+        // Send password reset email
+        val emailSent = emailService.sendPasswordResetOtpEmail(email, otpCode)
+        if (!emailSent) {
+            throw ApiException("Failed to send password reset email", HttpStatusCode.InternalServerError)
+        }
+
+        return com.example.models.dto.ForgotPasswordSendOtpResponse(
+            message = "Password reset code sent to your email",
+            mobileNumber = mobileNumber,
+            email = maskEmail(email)
+        )
+    }
+
+    /**
+     * Reset password using OTP verification
+     */
+    suspend fun resetPasswordWithOtp(
+        mobileNumber: String,
+        otpCode: String,
+        newPassword: String
+    ): UserDto {
+        // Validate inputs
+        if (mobileNumber.isBlank()) {
+            throw ApiException("Mobile number cannot be empty", HttpStatusCode.BadRequest)
+        }
+        if (otpCode.isBlank()) {
+            throw ApiException("OTP code cannot be empty", HttpStatusCode.BadRequest)
+        }
+        if (otpCode.length != 6) {
+            throw ApiException("OTP code must be 6 digits", HttpStatusCode.BadRequest)
+        }
+        if (newPassword.isBlank()) {
+            throw ApiException("New password cannot be empty", HttpStatusCode.BadRequest)
+        }
+        if (newPassword.length < 6) {
+            throw ApiException("New password must be at least 6 characters", HttpStatusCode.BadRequest)
+        }
+
+        // Find user by mobile number
+        val users = userRepository.findByMobile(mobileNumber)
+        if (users.isNullOrEmpty()) {
+            throw ApiException("No account found with this mobile number", HttpStatusCode.NotFound)
+        }
+
+        val user = users[0]
+        val email = user.email
+
+        // Check if OTP repository is available
+        if (otpRepository == null) {
+            throw ApiException("Password reset service not available", HttpStatusCode.ServiceUnavailable)
+        }
+
+        // Check attempt count first
+        val attemptCount = otpRepository.getAttemptCount(email, otpCode)
+        if (attemptCount >= 3) {
+            throw ApiException(
+                "Too many failed attempts. Please request a new password reset code.",
+                HttpStatusCode.TooManyRequests
+            )
+        }
+
+        // Verify OTP
+        val isValid = otpRepository.verifyOtp(email, otpCode)
+        if (!isValid) {
+            val newAttemptCount = attemptCount + 1
+            val remainingAttempts = 3 - newAttemptCount
+
+            if (remainingAttempts > 0) {
+                throw ApiException(
+                    "Invalid or expired OTP code. $remainingAttempts attempts remaining.",
+                    HttpStatusCode.BadRequest
+                )
+            } else {
+                throw ApiException(
+                    "Invalid or expired OTP code. Maximum attempts reached. Please request a new code.",
+                    HttpStatusCode.TooManyRequests
+                )
+            }
+        }
+
+        // Hash new password
+        val newHashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt())
+
+        // Update password
+        val userId = UUID.fromString(user.id)
+        val updated = userRepository.updatePassword(userId, newHashedPassword)
+        if (!updated) {
+            throw ApiException("Failed to update password", HttpStatusCode.InternalServerError)
+        }
+
+        return getUserById(userId)
+    }
+
     private fun validateCreateUserRequest(request: CreateUserRequest) {
         when {
             request.email.isBlank() -> throw ApiException("Email cannot be empty", HttpStatusCode.BadRequest)
@@ -431,5 +557,22 @@ class UserService(
 
     private fun isValidEmail(email: String): Boolean {
         return email.matches(Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"))
+    }
+
+    /**
+     * Mask email for privacy (e.g., "test@example.com" -> "t***@example.com")
+     */
+    private fun maskEmail(email: String): String {
+        val parts = email.split("@")
+        if (parts.size != 2) return email
+
+        val username = parts[0]
+        val domain = parts[1]
+
+        return when {
+            username.length <= 1 -> "${username}***@${domain}"
+            username.length <= 3 -> "${username.first()}***@${domain}"
+            else -> "${username.first()}***${username.last()}@${domain}"
+        }
     }
 }

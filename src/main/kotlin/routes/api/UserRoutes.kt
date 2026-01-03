@@ -100,6 +100,34 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
             ))
         }
 
+        // Password Reset: Send OTP to user's email
+        post("/forgot-password/send-otp") {
+            val request = call.receive<ForgotPasswordSendOtpRequest>()
+
+            val response = userService.sendPasswordResetOtp(request.mobileNumber)
+            call.respond(ApiResponse(
+                success = true,
+                data = response,
+                message = "Password reset code sent successfully"
+            ))
+        }
+
+        // Password Reset: Verify OTP and reset password
+        post("/forgot-password/reset") {
+            val request = call.receive<ForgotPasswordResetRequest>()
+
+            val user = userService.resetPasswordWithOtp(
+                request.mobileNumber,
+                request.otpCode,
+                request.newPassword
+            )
+            call.respond(ApiResponse(
+                success = true,
+                data = user,
+                message = "Password reset successfully"
+            ))
+        }
+
         // Get users with filters (role, class, search) - with pagination
         get("/filter") {
             val role = call.request.queryParameters["role"]

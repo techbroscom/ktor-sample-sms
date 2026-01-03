@@ -152,12 +152,19 @@ fun Application.configureRouting() {
         userRepository
     )
 
-    // Update UserService to include feature repositories
+    // OTP and Email services (needed for password reset)
+    val otpRepository = OtpRepository()
+    val emailService = EmailService()
+
+    // Update UserService to include feature repositories and password reset dependencies
     val userService = UserService(
         userRepository,
         fcmService,
         tenantFeaturesRepository,
-        userPermissionsRepository
+        userPermissionsRepository,
+        s3FileService,
+        otpRepository,
+        emailService
     )
 
     val userDetailsService = UserDetailsService(userDetailsRepository, userRepository)
@@ -177,8 +184,6 @@ fun Application.configureRouting() {
     val academicYearRepository = AcademicYearRepository()
     val academicYearService = AcademicYearService(academicYearRepository)
 
-    val otpRepository = OtpRepository()
-    val emailService = EmailService()
     val otpService = OtpService(otpRepository, userRepository, emailService)
 
     val schoolConfigRepository = SchoolConfigRepository()
