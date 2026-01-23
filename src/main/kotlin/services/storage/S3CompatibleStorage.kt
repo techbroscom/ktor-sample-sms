@@ -191,6 +191,24 @@ class S3CompatibleStorage(private val config: S3StorageConfig) : FileStorage {
             }
         }
 
+    override suspend fun listFiles(prefix: String?): List<String> = withContext(Dispatchers.IO) {
+        try {
+            val requestBuilder = ListObjectsV2Request.builder()
+                .bucket(config.bucketName)
+
+            if (prefix != null) {
+                requestBuilder.prefix(prefix)
+            }
+
+            val listObjectsRequest = requestBuilder.build()
+            val result = s3Client.listObjectsV2(listObjectsRequest)
+
+            result.contents().map { it.key() }
+        } catch (e: Exception) {
+            throw FileStorageException("Failed to list files: ${e.message}", e)
+        }
+    }
+
     /**
      * Test the connection to the storage provider
      */

@@ -59,6 +59,14 @@ class PostImageRepository(
         } > 0
     }
 
+    /**
+     * Get all S3 keys from post images
+     */
+    suspend fun getAllImageS3Keys(): List<String> = tenantDbQuery {
+        PostImages.select(PostImages.imageS3Key)
+            .map { it[PostImages.imageS3Key] }
+    }
+
     private suspend fun mapRowToDto(row: ResultRow): PostImageDto {
         val imageS3Key = row[PostImages.imageS3Key]
         // Generate public URL from S3 key - no signing, no expiration

@@ -115,6 +115,16 @@ class UserRepository(
         Users.deleteWhere { Users.id eq id } > 0
     }
 
+    /**
+     * Get all non-null S3 keys from user profile images
+     */
+    suspend fun getAllImageS3Keys(): List<String> = tenantDbQuery {
+        Users.select(Users.imageS3Key)
+            .where { Users.imageS3Key.isNotNull() }
+            .mapNotNull { it[Users.imageS3Key] }
+            .filter { it.isNotBlank() }
+    }
+
     suspend fun emailExists(email: String): Boolean = tenantDbQuery {
         Users.selectAll()
             .where { Users.email eq email }

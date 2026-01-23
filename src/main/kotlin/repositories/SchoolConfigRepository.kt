@@ -63,6 +63,16 @@ class SchoolConfigRepository(
         } > 0
     }
 
+    /**
+     * Get all non-null S3 keys from school logos
+     */
+    suspend fun getAllLogoS3Keys(): List<String> = tenantDbQuery {
+        SchoolConfig.select(SchoolConfig.logoS3Key)
+            .where { SchoolConfig.logoS3Key.isNotNull() }
+            .mapNotNull { it[SchoolConfig.logoS3Key] }
+            .filter { it.isNotBlank() }
+    }
+
     private fun mapRowToDto(row: ResultRow): SchoolConfigDto {
         val logoS3Key = row[SchoolConfig.logoS3Key]
         // Generate public URL from S3 key - no signing, no expiration

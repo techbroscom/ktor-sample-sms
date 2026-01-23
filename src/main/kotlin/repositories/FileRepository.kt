@@ -146,6 +146,35 @@ class FileRepository {
             .firstOrNull() ?: 0L
     }
 
+    /**
+     * Get all active (not soft-deleted) S3 object keys in the Files table
+     */
+    suspend fun getAllActiveObjectKeys(): List<String> = tenantDbQuery {
+        Files.select(Files.objectKey)
+            .where { Files.deletedAt.isNull() }
+            .map { it[Files.objectKey] }
+    }
+
+    /**
+     * Get soft-deleted files older than specified days
+     */
+    suspend fun getSoftDeletedFiles(olderThanDays: Int = 7): List<FileRecord> = tenantDbQuery {
+        val cutoffDate = LocalDateTime.now().minusDays(olderThanDays.toLong())
+        Files.selectAll()
+            .where { Files.deletedAt.isNotNull() and (Files.deletedAt less cutoffDate) }
+            .map { it.toFileRecord() }
+    }
+
+    /**
+     * Hard delete soft-deleted files older than specified days
+     */
+    suspend fun cleanupSoftDeletedFiles(olderThanDays: Int = 7): Int = tenantDbQuery {
+        val cutoffDate = LocalDateTime.now().minusDays(olderThanDays.toLong())
+        Files.deleteWhere {
+            deletedAt.isNotNull() and (deletedAt less cutoffDate)
+        }
+    }
+
     private fun ResultRow.toFileRecord() = FileRecord(
         id = this[Files.id],
         module = this[Files.module],

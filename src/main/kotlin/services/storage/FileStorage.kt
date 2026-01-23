@@ -58,6 +58,13 @@ interface FileStorage {
      * @return Map of metadata
      */
     suspend fun getFileMetadata(objectKey: String): Map<String, String>
+
+    /**
+     * List all files in storage with optional prefix filter
+     * @param prefix Optional prefix to filter files (e.g., "tenant-001/")
+     * @return List of object keys
+     */
+    suspend fun listFiles(prefix: String? = null): List<String>
 }
 
 /**
