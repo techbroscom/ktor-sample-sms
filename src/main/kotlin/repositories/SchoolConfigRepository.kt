@@ -6,8 +6,11 @@ import com.example.models.dto.UpdateSchoolConfigRequest
 import com.example.utils.tenantDbQuery
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import services.S3FileService
 
-class SchoolConfigRepository {
+class SchoolConfigRepository(
+    private val s3FileService: S3FileService? = null
+) {
 
     suspend fun insertDefaultIfNotExists() = tenantDbQuery {
         val exists = SchoolConfig
@@ -49,6 +52,7 @@ class SchoolConfigRepository {
             it[schoolName] = request.schoolName
             it[address] = request.address
             it[logoUrl] = request.logoUrl
+            it[logoS3Key] = request.logoS3Key
             it[email] = request.email
             it[phoneNumber1] = request.phoneNumber1
             it[phoneNumber2] = request.phoneNumber2
@@ -60,11 +64,21 @@ class SchoolConfigRepository {
     }
 
     private fun mapRowToDto(row: ResultRow): SchoolConfigDto {
+        val logoS3Key = row[SchoolConfig.logoS3Key]
+        // Generate public URL from S3 key - no signing, no expiration
+        // For public content (school logos), use public URLs instead of signed URLs
+        val logoUrl = if (!logoS3Key.isNullOrBlank()) {
+            s3FileService?.generatePublicUrlByKey(logoS3Key) ?: row[SchoolConfig.logoUrl]
+        } else {
+            row[SchoolConfig.logoUrl]
+        }
+
         return SchoolConfigDto(
             id = row[SchoolConfig.id],
             schoolName = row[SchoolConfig.schoolName],
             address = row[SchoolConfig.address],
-            logoUrl = row[SchoolConfig.logoUrl],
+            logoUrl = logoUrl,
+            logoS3Key = logoS3Key,
             email = row[SchoolConfig.email],
             phoneNumber1 = row[SchoolConfig.phoneNumber1],
             phoneNumber2 = row[SchoolConfig.phoneNumber2],

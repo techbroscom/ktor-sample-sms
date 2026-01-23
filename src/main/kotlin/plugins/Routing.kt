@@ -186,7 +186,7 @@ fun Application.configureRouting() {
 
     val otpService = OtpService(otpRepository, userRepository, emailService)
 
-    val schoolConfigRepository = SchoolConfigRepository()
+    val schoolConfigRepository = SchoolConfigRepository(s3FileService)
     val schoolConfigService = SchoolConfigService(schoolConfigRepository)
 
     val rulesAndRegulationsRepository = RulesAndRegulationsRepository()

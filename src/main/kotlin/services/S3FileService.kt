@@ -96,12 +96,13 @@ class S3FileService(
                 uploadedBy = uploadedBy
             )
 
-            // Generate signed URL for immediate access
-            val signedUrl = fileStorage.generateSignedUrl(objectKey, expirationMinutes = 60)
+            // Generate public URL for immediate access (no signing, no expiration)
+            // For public content (profile pictures, logos, post images), use public URLs
+            val publicUrl = fileStorage.generatePublicUrl(objectKey)
 
             FileUploadResponse(
                 success = true,
-                fileUrl = signedUrl,
+                fileUrl = publicUrl,
                 fileName = uniqueFileName,
                 fileSize = fileBytes.size.toLong(),
                 objectKey = objectKey,

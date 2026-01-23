@@ -873,4 +873,83 @@ class MigrationService {
         println("✓ UserDetails table migration completed")
     }
 
+    /**
+     * Add logo_s3_key column to school_config table in existing tenant schemas
+     * This enables public URL generation for school logos (no expiration)
+     */
+    fun migrateSchoolConfigS3Column() {
+        println("🔧 Adding logo_s3_key column to school_config table in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (school_config.logo_s3_key)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if school_config table exists
+                val schoolConfigTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'school_config'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!schoolConfigTableExists) {
+                    println("⚠ Skipping $schema (school_config table not found)")
+                    return@transaction
+                }
+
+                // Check if logo_s3_key column already exists
+                val logoS3KeyColumnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'school_config'
+                          AND column_name = 'logo_s3_key'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (logoS3KeyColumnExists) {
+                    println("✓ logo_s3_key column already exists in $schema.school_config")
+                    return@transaction
+                }
+
+                // Add logo_s3_key column
+                exec("""
+                    ALTER TABLE school_config
+                    ADD COLUMN logo_s3_key VARCHAR(500)
+                """)
+
+                println("✓ Added logo_s3_key column to $schema.school_config")
+            }
+        }
+
+        println("✓ SchoolConfig logo_s3_key column migration completed")
+    }
+
 }
