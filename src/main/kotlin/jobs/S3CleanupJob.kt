@@ -1,11 +1,11 @@
 package com.example.jobs
 
-import com.example.models.dto.TenantDto
 import com.example.repositories.FileRepository
 import com.example.repositories.UserRepository
 import com.example.repositories.SchoolConfigRepository
 import com.example.repositories.PostImageRepository
 import com.example.services.TenantService
+import com.example.tenant.TenantContext
 import com.example.tenant.TenantContextHolder
 import io.ktor.server.application.*
 import kotlinx.coroutines.*
@@ -96,7 +96,7 @@ class S3CleanupJob(
      * Cleanup orphaned files in S3 for a specific tenant
      * Orphaned files are files that exist in S3 but are not referenced in any database table
      */
-    private suspend fun cleanupOrphanedFilesForTenant(tenant: TenantDto): Int {
+    private suspend fun cleanupOrphanedFilesForTenant(tenant: TenantContext): Int {
         try {
             // Get all files in S3 for this tenant (prefix with tenant ID)
             val s3Files = s3Storage.listFiles(prefix = "${tenant.id}/")
@@ -165,7 +165,7 @@ class S3CleanupJob(
      * Cleanup soft-deleted files from S3 and database
      * Removes files that have been soft-deleted for more than the configured number of days
      */
-    private suspend fun cleanupSoftDeletedFilesForTenant(tenant: TenantDto): Int {
+    private suspend fun cleanupSoftDeletedFilesForTenant(tenant: TenantContext): Int {
         try {
             // Set tenant context before database queries
             TenantContextHolder.setTenant(tenant)
