@@ -109,53 +109,50 @@ class S3CleanupJob(
 
             logger.debug("Found ${s3Files.size} files in S3 for tenant ${tenant.id}")
 
-            // Set tenant context before database queries
-            TenantContextHolder.setTenant(tenant)
-            try {
-                // Collect all S3 keys referenced in database tables
-                val referencedKeys = mutableSetOf<String>()
+            // Collect all S3 keys referenced in database tables with tenant context element
+            val referencedKeys = withContext(TenantContextHolder.threadLocal.asContextElement(tenant)) {
+                val keys = mutableSetOf<String>()
 
                 // 1. Files table (active files only)
-                referencedKeys.addAll(fileRepository.getAllActiveObjectKeys())
+                keys.addAll(fileRepository.getAllActiveObjectKeys())
 
                 // 2. Users table (profile pictures)
-                referencedKeys.addAll(userRepository.getAllImageS3Keys())
+                keys.addAll(userRepository.getAllImageS3Keys())
 
                 // 3. SchoolConfig table (school logos)
-                referencedKeys.addAll(schoolConfigRepository.getAllLogoS3Keys())
+                keys.addAll(schoolConfigRepository.getAllLogoS3Keys())
 
                 // 4. PostImages table (post images)
-                referencedKeys.addAll(postImageRepository.getAllImageS3Keys())
+                keys.addAll(postImageRepository.getAllImageS3Keys())
 
-                logger.debug("Found ${referencedKeys.size} referenced S3 keys in database for tenant ${tenant.id}")
-
-                // Find orphaned files (files in S3 not referenced in database)
-                val orphanedFiles = s3Files.filter { it !in referencedKeys }
-
-                if (orphanedFiles.isEmpty()) {
-                    logger.debug("No orphaned files found for tenant ${tenant.id}")
-                    return 0
-                }
-
-                logger.info("Found ${orphanedFiles.size} orphaned files in S3 for tenant ${tenant.id}")
-
-                // Delete orphaned files from S3
-                var deletedCount = 0
-                for (orphanedFile in orphanedFiles) {
-                    try {
-                        s3Storage.deleteFile(orphanedFile)
-                        deletedCount++
-                        logger.debug("Deleted orphaned file: $orphanedFile")
-                    } catch (e: Exception) {
-                        logger.error("Failed to delete orphaned file $orphanedFile: ${e.message}", e)
-                    }
-                }
-
-                return deletedCount
-            } finally {
-                // Always clear tenant context
-                TenantContextHolder.clear()
+                keys
             }
+
+            logger.debug("Found ${referencedKeys.size} referenced S3 keys in database for tenant ${tenant.id}")
+
+            // Find orphaned files (files in S3 not referenced in database)
+            val orphanedFiles = s3Files.filter { it !in referencedKeys }
+
+            if (orphanedFiles.isEmpty()) {
+                logger.debug("No orphaned files found for tenant ${tenant.id}")
+                return 0
+            }
+
+            logger.info("Found ${orphanedFiles.size} orphaned files in S3 for tenant ${tenant.id}")
+
+            // Delete orphaned files from S3 (no tenant context needed)
+            var deletedCount = 0
+            for (orphanedFile in orphanedFiles) {
+                try {
+                    s3Storage.deleteFile(orphanedFile)
+                    deletedCount++
+                    logger.debug("Deleted orphaned file: $orphanedFile")
+                } catch (e: Exception) {
+                    logger.error("Failed to delete orphaned file $orphanedFile: ${e.message}", e)
+                }
+            }
+
+            return deletedCount
         } catch (e: Exception) {
             logger.error("Error during orphaned file cleanup for tenant ${tenant.id}: ${e.message}", e)
             return 0
@@ -168,12 +165,9 @@ class S3CleanupJob(
      */
     private suspend fun cleanupSoftDeletedFilesForTenant(tenant: TenantContext): Int {
         try {
-            // Step 1: Get soft-deleted files with tenant context
-            TenantContextHolder.setTenant(tenant)
-            val softDeletedFiles = try {
+            // Step 1: Get soft-deleted files with tenant context element
+            val softDeletedFiles = withContext(TenantContextHolder.threadLocal.asContextElement(tenant)) {
                 fileRepository.getSoftDeletedFiles(softDeletedFileAgeInDays)
-            } finally {
-                TenantContextHolder.clear()
             }
 
             if (softDeletedFiles.isEmpty()) {
@@ -198,10 +192,9 @@ class S3CleanupJob(
                 }
             }
 
-            // Step 3: Hard delete from database (with tenant context)
+            // Step 3: Hard delete from database (with tenant context element)
             if (successfullyDeletedIds.isNotEmpty()) {
-                TenantContextHolder.setTenant(tenant)
-                try {
+                withContext(TenantContextHolder.threadLocal.asContextElement(tenant)) {
                     for (fileId in successfullyDeletedIds) {
                         try {
                             fileRepository.hardDelete(fileId)
@@ -210,15 +203,12 @@ class S3CleanupJob(
                             logger.error("Failed to delete file record from database: $fileId: ${e.message}", e)
                         }
                     }
-                } finally {
-                    TenantContextHolder.clear()
                 }
             }
 
             return deletedCount
         } catch (e: Exception) {
             logger.error("Error during soft-deleted file cleanup: ${e.message}", e)
-            TenantContextHolder.clear()
             return 0
         }
     }
