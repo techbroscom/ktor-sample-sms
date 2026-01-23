@@ -12,6 +12,7 @@ import kotlinx.coroutines.*
 import services.storage.S3CompatibleStorage
 import kotlin.time.Duration.Companion.hours
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * S3 Cleanup Job
@@ -167,52 +168,57 @@ class S3CleanupJob(
      */
     private suspend fun cleanupSoftDeletedFilesForTenant(tenant: TenantContext): Int {
         try {
-            // Set tenant context before database queries
+            // Step 1: Get soft-deleted files with tenant context
             TenantContextHolder.setTenant(tenant)
-            try {
-                // Get soft-deleted files older than configured days
-                val softDeletedFiles = fileRepository.getSoftDeletedFiles(softDeletedFileAgeInDays)
-
-                if (softDeletedFiles.isEmpty()) {
-                    logger.debug("No soft-deleted files found older than $softDeletedFileAgeInDays days")
-                    return 0
-                }
-
-                logger.info("Found ${softDeletedFiles.size} soft-deleted files older than $softDeletedFileAgeInDays days")
-
-                var deletedCount = 0
-
-                // Delete files from S3 and database
-                for (fileRecord in softDeletedFiles) {
-                    try {
-                        // Delete from S3
-                        s3Storage.deleteFile(fileRecord.objectKey)
-                        logger.debug("Deleted soft-deleted file from S3: ${fileRecord.objectKey}")
-
-                        // Hard delete from database
-                        fileRepository.hardDelete(fileRecord.id)
-                        logger.debug("Hard deleted file record from database: ${fileRecord.id}")
-
-                        deletedCount++
-                    } catch (e: Exception) {
-                        logger.error(
-                            "Failed to delete soft-deleted file ${fileRecord.objectKey} (${fileRecord.id}): ${e.message}",
-                            e
-                        )
-                    }
-                }
-
-                // Also cleanup from Files table (this is a batch operation for efficiency)
-                val batchDeletedCount = fileRepository.cleanupSoftDeletedFiles(softDeletedFileAgeInDays)
-                logger.info("Batch deleted $batchDeletedCount soft-deleted file records from database")
-
-                return deletedCount
+            val softDeletedFiles = try {
+                fileRepository.getSoftDeletedFiles(softDeletedFileAgeInDays)
             } finally {
-                // Always clear tenant context
                 TenantContextHolder.clear()
             }
+
+            if (softDeletedFiles.isEmpty()) {
+                logger.debug("No soft-deleted files found older than $softDeletedFileAgeInDays days")
+                return 0
+            }
+
+            logger.info("Found ${softDeletedFiles.size} soft-deleted files older than $softDeletedFileAgeInDays days")
+
+            // Step 2: Delete files from S3 (no tenant context needed)
+            var deletedCount = 0
+            val successfullyDeletedIds = mutableListOf<UUID>()
+
+            for (fileRecord in softDeletedFiles) {
+                try {
+                    s3Storage.deleteFile(fileRecord.objectKey)
+                    logger.debug("Deleted soft-deleted file from S3: ${fileRecord.objectKey}")
+                    successfullyDeletedIds.add(fileRecord.id)
+                    deletedCount++
+                } catch (e: Exception) {
+                    logger.error("Failed to delete soft-deleted file from S3: ${fileRecord.objectKey}: ${e.message}", e)
+                }
+            }
+
+            // Step 3: Hard delete from database (with tenant context)
+            if (successfullyDeletedIds.isNotEmpty()) {
+                TenantContextHolder.setTenant(tenant)
+                try {
+                    for (fileId in successfullyDeletedIds) {
+                        try {
+                            fileRepository.hardDelete(fileId)
+                            logger.debug("Hard deleted file record from database: $fileId")
+                        } catch (e: Exception) {
+                            logger.error("Failed to delete file record from database: $fileId: ${e.message}", e)
+                        }
+                    }
+                } finally {
+                    TenantContextHolder.clear()
+                }
+            }
+
+            return deletedCount
         } catch (e: Exception) {
             logger.error("Error during soft-deleted file cleanup: ${e.message}", e)
+            TenantContextHolder.clear()
             return 0
         }
     }
