@@ -170,4 +170,36 @@ class NotificationService(
 
         fcmService.sendBroadcastNotification(notification)
     }
+
+    // Send complaint notification to admins (when a new complaint is submitted)
+    suspend fun sendComplaintNotification(title: String, message: String) {
+        println("Sending complaint notification to admins")
+        val notification = BroadcastNotificationRequest(
+            title = title,
+            body = message,
+            schoolId = 1,
+            targetRole = UserRole.ADMIN,
+            data = mapOf(
+                "type" to "complaint_notification"
+            )
+        )
+
+        fcmService.sendBroadcastNotification(notification)
+    }
+
+    // Send complaint status update notification to the complaint author
+    suspend fun sendComplaintStatusUpdateNotification(userId: String, complaintTitle: String, newStatus: String) {
+        println("Sending complaint status update notification to user: $userId")
+        val notification = PersonalNotificationRequest(
+            title = "Complaint Status Updated",
+            body = "Your complaint \"$complaintTitle\" has been updated to: $newStatus",
+            userId = userId,
+            data = mapOf(
+                "type" to "complaint_status_update",
+                "status" to newStatus
+            )
+        )
+
+        fcmService.sendPersonalNotification(notification)
+    }
 }

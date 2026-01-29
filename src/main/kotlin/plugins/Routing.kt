@@ -179,7 +179,7 @@ fun Application.configureRouting() {
     val postService = PostService(postRepository, postImageRepository, notificationService, s3FileService)
 
     val complaintRepository = ComplaintRepository()
-    val complaintService = ComplaintService(complaintRepository)
+    val complaintService = ComplaintService(complaintRepository, notificationService)
 
     val academicYearRepository = AcademicYearRepository()
     val academicYearService = AcademicYearService(academicYearRepository)

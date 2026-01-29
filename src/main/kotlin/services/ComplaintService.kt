@@ -7,12 +7,22 @@ import io.ktor.http.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class ComplaintService(private val complaintRepository: ComplaintRepository) {
+class ComplaintService(
+    private val complaintRepository: ComplaintRepository,
+    private val notificationService: NotificationService?
+) {
 
     suspend fun createComplaint(request: CreateComplaintRequest): ComplaintDto {
         validateComplaintRequest(request)
 
         val complaintId = complaintRepository.create(request)
+        
+        // Send FCM notification to admins about new complaint
+        notificationService?.sendComplaintNotification(
+            title = "New Complaint: ${request.title}",
+            message = "A new complaint has been submitted in category: ${request.category}"
+        )
+        
         return getComplaintById(complaintId)
     }
 
@@ -58,6 +68,9 @@ class ComplaintService(private val complaintRepository: ComplaintRepository) {
     suspend fun updateStatus(id: String, request: UpdateStatusRequest): ComplaintDto {
         validateStatus(request.status)
 
+        // Get complaint to send notification to author
+        val complaint = getComplaintById(id)
+
         val comment = CommentDto(
             comment = request.comment,
             commentedBy = request.commentedBy,
@@ -68,6 +81,13 @@ class ComplaintService(private val complaintRepository: ComplaintRepository) {
         if (!updated) {
             throw ApiException("Complaint not found", HttpStatusCode.NotFound)
         }
+
+        // Send FCM notification to the complaint author about status update
+        notificationService?.sendComplaintStatusUpdateNotification(
+            userId = complaint.author,
+            complaintTitle = complaint.title,
+            newStatus = request.status
+        )
 
         return getComplaintById(id)
     }
