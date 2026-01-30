@@ -20,28 +20,24 @@ class FCMTokenRepository {
         deviceId: String?,
         platform: String
     ): Boolean = tenantDbQuery {
-
-        println("[FCM][DB] saveToken | userId=$userId | deviceId=$deviceId")
-
-        val existingToken = FCMTokens
+        // 1. First, find if this specific TOKEN already exists for ANY user
+        val existingByToken = FCMTokens
             .selectAll()
-            .where {
-                (FCMTokens.userId eq userId) and
-                        (FCMTokens.deviceId eq deviceId)
-            }
+            .where { FCMTokens.token eq token }
             .singleOrNull()
 
-        if (existingToken != null) {
-            FCMTokens.update({
-                (FCMTokens.userId eq userId) and
-                        (FCMTokens.deviceId eq deviceId)
-            }) {
-                it[FCMTokens.token] = token
+        if (existingByToken != null) {
+            // 2. Update the existing record with the NEW userId and info
+            // This effectively "transfers" the device/token to the new user
+            FCMTokens.update({ FCMTokens.token eq token }) {
+                it[FCMTokens.userId] = userId
+                it[FCMTokens.deviceId] = deviceId
                 it[FCMTokens.platform] = platform
                 it[isActive] = true
                 it[updatedAt] = LocalDateTime.now()
             }
         } else {
+            // 3. Only if the token is completely unknown, do we insert
             FCMTokens.insert {
                 it[FCMTokens.userId] = userId
                 it[this.token] = token
@@ -50,7 +46,6 @@ class FCMTokenRepository {
                 it[isActive] = true
             }
         }
-
         true
     }
 
