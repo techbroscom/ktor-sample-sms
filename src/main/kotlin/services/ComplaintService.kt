@@ -197,7 +197,7 @@ class ComplaintService(
     }
 
     private fun validateStatus(status: String) {
-        val validStatuses = listOf("PENDING", "IN_PROGRESS", "RESOLVED", "REJECTED", "CLOSED")
+        val validStatuses = listOf("OPEN","PENDING", "IN_PROGRESS", "RESOLVED", "REJECTED", "CLOSED")
         if (status !in validStatuses) {
             throw ApiException("Invalid status. Valid statuses are: ${validStatuses.joinToString(", ")}", HttpStatusCode.BadRequest)
         }
