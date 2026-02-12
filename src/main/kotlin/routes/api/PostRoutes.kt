@@ -18,6 +18,17 @@ import java.io.ByteArrayOutputStream
 fun Route.postRoutes(postService: PostService) {
     route("/api/v1/posts") {
 
+        // Get posts with filters and pagination
+        get("/filter") {
+            val author = call.request.queryParameters["author"]
+            val search = call.request.queryParameters["search"]
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+            val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+
+            val paginatedPosts = postService.getPostsWithFilters(author, search, page, pageSize)
+            call.respond(paginatedPosts)
+        }
+
         // Get all posts (with optional limit)
         get {
             val limit = call.request.queryParameters["limit"]?.toIntOrNull()

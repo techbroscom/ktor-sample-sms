@@ -47,6 +47,51 @@ class ComplaintService(
         return complaintRepository.findByAuthor(authorId)
     }
 
+    suspend fun getComplaintsWithFilters(
+        status: String? = null,
+        category: String? = null,
+        authorId: String? = null,
+        search: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20
+    ): com.example.models.responses.PaginatedResponse<List<ComplaintDto>> {
+        // Validate pagination parameters
+        val validPage = if (page < 1) 1 else page
+        val validPageSize = when {
+            pageSize < 1 -> 20
+            pageSize > 100 -> 100
+            else -> pageSize
+        }
+
+        // Validate status if provided
+        if (status != null) {
+            validateStatus(status)
+        }
+
+        // Get total count
+        val totalItems = complaintRepository.countWithFilters(status, category, authorId, search)
+        val totalPages = if (totalItems == 0L) 0L else ((totalItems + validPageSize - 1) / validPageSize)
+
+        // Get paginated data
+        val complaints = complaintRepository.findWithFilters(status, category, authorId, search, validPage, validPageSize)
+
+        // Build pagination info
+        val paginationInfo = com.example.models.responses.PaginatedResponse.PaginationInfo(
+            page = validPage,
+            pageSize = validPageSize,
+            totalItems = totalItems,
+            totalPages = totalPages,
+            hasNext = validPage < totalPages,
+            hasPrevious = validPage > 1
+        )
+
+        return com.example.models.responses.PaginatedResponse(
+            success = true,
+            data = complaints,
+            pagination = paginationInfo
+        )
+    }
+
     suspend fun updateComplaint(id: String, request: UpdateComplaintRequest): ComplaintDto {
         validateUpdateComplaintRequest(request)
 

@@ -230,6 +230,50 @@ class PostService(
         }
     }
 
+    suspend fun getPostsWithFilters(
+        author: String? = null,
+        search: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20
+    ): com.example.models.responses.PaginatedResponse<List<PostDto>> {
+        // Validate pagination parameters
+        val validPage = if (page < 1) 1 else page
+        val validPageSize = when {
+            pageSize < 1 -> 20
+            pageSize > 100 -> 100
+            else -> pageSize
+        }
+
+        // Get total count
+        val totalItems = postRepository.countWithFilters(author, search)
+        val totalPages = if (totalItems == 0L) 0L else ((totalItems + validPageSize - 1) / validPageSize)
+
+        // Get paginated data
+        val posts = postRepository.findWithFilters(author, search, validPage, validPageSize)
+
+        // Load images for each post
+        val postsWithImages = posts.map { post ->
+            val images = postImageRepository.findByPostId(post.id ?: 0)
+            post.copy(images = images)
+        }
+
+        // Build pagination info
+        val paginationInfo = com.example.models.responses.PaginatedResponse.PaginationInfo(
+            page = validPage,
+            pageSize = validPageSize,
+            totalItems = totalItems,
+            totalPages = totalPages,
+            hasNext = validPage < totalPages,
+            hasPrevious = validPage > 1
+        )
+
+        return com.example.models.responses.PaginatedResponse(
+            success = true,
+            data = postsWithImages,
+            pagination = paginationInfo
+        )
+    }
+
     private fun validatePostRequest(title: String, content: String) {
         when {
             title.isBlank() -> throw ApiException("Post title cannot be empty", HttpStatusCode.BadRequest)

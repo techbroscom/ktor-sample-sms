@@ -66,6 +66,53 @@ class PostRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun countWithFilters(
+        author: String? = null,
+        search: String? = null
+    ): Long = tenantDbQuery {
+        val query = Posts.select(Posts.id)
+
+        author?.let { query.andWhere { Posts.author eq it } }
+        search?.let { searchTerm ->
+            if (searchTerm.isNotBlank()) {
+                val searchPattern = "%${searchTerm.lowercase()}%"
+                query.andWhere {
+                    (Posts.title.lowerCase() like searchPattern) or
+                    (Posts.content.lowerCase() like searchPattern)
+                }
+            }
+        }
+
+        query.count()
+    }
+
+    suspend fun findWithFilters(
+        author: String? = null,
+        search: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20
+    ): List<PostDto> = tenantDbQuery {
+        val offset = ((page - 1) * pageSize).toLong()
+
+        val query = Posts.selectAll()
+
+        author?.let { query.andWhere { Posts.author eq it } }
+        search?.let { searchTerm ->
+            if (searchTerm.isNotBlank()) {
+                val searchPattern = "%${searchTerm.lowercase()}%"
+                query.andWhere {
+                    (Posts.title.lowerCase() like searchPattern) or
+                    (Posts.content.lowerCase() like searchPattern)
+                }
+            }
+        }
+
+        query.orderBy(Posts.createdAt to SortOrder.DESC)
+            .limit(pageSize)
+            .offset(offset)
+            .map { mapRowToDto(it) }
+    }
+
     private fun mapRowToDto(row: ResultRow): PostDto {
         return PostDto(
             id = row[Posts.id],

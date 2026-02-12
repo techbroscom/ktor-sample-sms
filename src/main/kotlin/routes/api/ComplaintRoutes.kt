@@ -13,6 +13,21 @@ import io.ktor.server.routing.*
 fun Route.complaintRoutes(complaintService: ComplaintService) {
     route("/api/v1/complaints") {
 
+        // Get complaints with filters and pagination
+        get("/filter") {
+            val status = call.request.queryParameters["status"]
+            val category = call.request.queryParameters["category"]
+            val authorId = call.request.queryParameters["authorId"]
+            val search = call.request.queryParameters["search"]
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+            val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+
+            val paginatedComplaints = complaintService.getComplaintsWithFilters(
+                status, category, authorId, search, page, pageSize
+            )
+            call.respond(paginatedComplaints)
+        }
+
         // Get all complaints
         get {
             val complaints = complaintService.getAllComplaints()

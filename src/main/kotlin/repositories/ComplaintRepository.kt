@@ -117,6 +117,61 @@ class ComplaintRepository {
             .map { mapRowToDto(it) }
     }
 
+    suspend fun countWithFilters(
+        status: String? = null,
+        category: String? = null,
+        authorId: String? = null,
+        search: String? = null
+    ): Long = tenantDbQuery {
+        val query = Complaints.select(Complaints.id)
+
+        status?.let { query.andWhere { Complaints.status eq it } }
+        category?.let { query.andWhere { Complaints.category eq it } }
+        authorId?.let { query.andWhere { Complaints.author eq it } }
+        search?.let { searchTerm ->
+            if (searchTerm.isNotBlank()) {
+                val searchPattern = "%${searchTerm.lowercase()}%"
+                query.andWhere {
+                    (Complaints.title.lowerCase() like searchPattern) or
+                    (Complaints.content.lowerCase() like searchPattern)
+                }
+            }
+        }
+
+        query.count()
+    }
+
+    suspend fun findWithFilters(
+        status: String? = null,
+        category: String? = null,
+        authorId: String? = null,
+        search: String? = null,
+        page: Int = 1,
+        pageSize: Int = 20
+    ): List<ComplaintDto> = tenantDbQuery {
+        val offset = ((page - 1) * pageSize).toLong()
+
+        val query = Complaints.selectAll()
+
+        status?.let { query.andWhere { Complaints.status eq it } }
+        category?.let { query.andWhere { Complaints.category eq it } }
+        authorId?.let { query.andWhere { Complaints.author eq it } }
+        search?.let { searchTerm ->
+            if (searchTerm.isNotBlank()) {
+                val searchPattern = "%${searchTerm.lowercase()}%"
+                query.andWhere {
+                    (Complaints.title.lowerCase() like searchPattern) or
+                    (Complaints.content.lowerCase() like searchPattern)
+                }
+            }
+        }
+
+        query.orderBy(Complaints.createdAt to SortOrder.DESC)
+            .limit(pageSize)
+            .offset(offset)
+            .map { mapRowToDto(it) }
+    }
+
     private fun mapRowToDto(row: ResultRow): ComplaintDto {
         val commentsJson = row[Complaints.comments]
         val comments = try {
