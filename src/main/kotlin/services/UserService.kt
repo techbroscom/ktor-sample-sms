@@ -27,11 +27,6 @@ class UserService(
     suspend fun createUser(request: CreateUserRequest): UserDto {
         validateCreateUserRequest(request)
 
-        // Check if email already exists
-        if (userRepository.emailExists(request.email)) {
-            throw ApiException("Email already exists", HttpStatusCode.Conflict)
-        }
-
         // Hash password
         val hashedPassword = BCrypt.hashpw(request.password, BCrypt.gensalt())
 
@@ -124,11 +119,6 @@ class UserService(
         }
 
         validateUpdateUserRequest(request)
-
-        // Check if email already exists for other users
-        if (userRepository.emailExistsForOtherUser(request.email, uuid)) {
-            throw ApiException("Email already exists", HttpStatusCode.Conflict)
-        }
 
         val updated = userRepository.update(uuid, request)
         if (!updated) {

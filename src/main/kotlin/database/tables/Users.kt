@@ -10,7 +10,7 @@ enum class UserRole {
 
 object Users : Table("users") {
     val id = uuid("id")
-    val email = varchar("email", 255).uniqueIndex()
+    val email = varchar("email", 255)
     val mobileNumber = varchar("mobile_number", 15)
     val passwordHash = varchar("password_hash", 255)
     val role = enumerationByName("role", 20, UserRole::class)
