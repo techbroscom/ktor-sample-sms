@@ -952,4 +952,116 @@ class MigrationService {
         println("✓ SchoolConfig logo_s3_key column migration completed")
     }
 
+    /**
+     * Remove unique index on email column in users table.
+     * Multiple users can share the same email (e.g., parent is both staff and student,
+     * or two students under one parent email).
+     */
+    fun migrateRemoveUsersEmailUniqueIndex() {
+        println("🔧 Removing unique index on users.email in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (remove users email unique index)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                // Set search path to tenant schema
+                exec("SET search_path TO $schema")
+
+                // Check if users table exists
+                val usersTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!usersTableExists) {
+                    println("⚠ Skipping $schema (users table not found)")
+                    return@transaction
+                }
+
+                // Find and drop any unique index on email column
+                val indexNames = mutableListOf<String>()
+                exec(
+                    """
+                    SELECT indexname
+                    FROM pg_indexes
+                    WHERE schemaname = '$schema'
+                      AND tablename = 'users'
+                      AND indexdef LIKE '%email%'
+                      AND indexdef LIKE '%UNIQUE%'
+                    """
+                ) { rs ->
+                    while (rs.next()) {
+                        indexNames.add(rs.getString("indexname"))
+                    }
+                }
+
+                if (indexNames.isEmpty()) {
+                    // Also check for unique constraint (not just index)
+                    val constraintNames = mutableListOf<String>()
+                    exec(
+                        """
+                        SELECT constraint_name
+                        FROM information_schema.table_constraints
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                          AND constraint_type = 'UNIQUE'
+                          AND constraint_name LIKE '%email%'
+                        """
+                    ) { rs ->
+                        while (rs.next()) {
+                            constraintNames.add(rs.getString("constraint_name"))
+                        }
+                    }
+
+                    if (constraintNames.isEmpty()) {
+                        println("✓ No unique email index/constraint found in $schema.users")
+                        return@transaction
+                    }
+
+                    // Drop unique constraints
+                    constraintNames.forEach { constraintName ->
+                        exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS $constraintName")
+                        println("✓ Dropped unique constraint '$constraintName' from $schema.users")
+                    }
+                } else {
+                    // Drop unique indexes
+                    indexNames.forEach { indexName ->
+                        exec("DROP INDEX IF EXISTS $indexName")
+                        println("✓ Dropped unique index '$indexName' from $schema.users")
+                    }
+                }
+
+                // Add a regular (non-unique) index on email for query performance
+                exec("""
+                    CREATE INDEX IF NOT EXISTS idx_users_email
+                    ON users (email)
+                """)
+
+                println("✓ Email unique constraint removed, regular index added in $schema")
+            }
+        }
+
+        println("✓ Users email unique index removal migration completed")
+    }
+
 }
