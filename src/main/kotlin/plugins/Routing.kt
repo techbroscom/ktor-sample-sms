@@ -108,6 +108,7 @@ import com.example.services.UserService
 import com.example.services.UserDetailsService
 import com.example.services.VisitorService
 import com.example.services.LibraryService
+import com.example.services.SocialAuthService
 import config.S3StorageConfig
 import services.S3FileService
 import services.storage.S3CompatibleStorage
@@ -165,6 +166,14 @@ fun Application.configureRouting() {
         s3FileService,
         otpRepository,
         emailService
+    )
+
+    // Social Auth Service (Google/Apple sign-in via Firebase)
+    val socialAuthService = SocialAuthService(
+        userRepository,
+        fcmService,
+        tenantFeaturesRepository,
+        userPermissionsRepository
     )
 
     val userDetailsService = UserDetailsService(userDetailsRepository, userRepository)
@@ -282,7 +291,7 @@ fun Application.configureRouting() {
 
         tenantRoutes(tenantService)
 
-        userRoutes(userService, otpService)
+        userRoutes(userService, otpService, socialAuthService)
         userDetailsRoutes(userDetailsService)
         holidayRoutes(holidayService)
         postRoutes(postService)

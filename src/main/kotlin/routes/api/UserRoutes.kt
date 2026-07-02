@@ -16,7 +16,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 
-fun Route.userRoutes(userService: UserService, otpService: OtpService) {
+import com.example.services.SocialAuthService
+
+fun Route.userRoutes(userService: UserService, otpService: OtpService, socialAuthService: SocialAuthService) {
     route("/api/v1/users") {
 
         get("/tenant-info") {
@@ -50,6 +52,20 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService) {
 
             val response = userService.authenticateUserWithFCM(request)
             println(response.toString())
+            call.respond(ApiResponse(
+                success = true,
+                data = response,
+                message = "Login successful"
+            ))
+        }
+
+        // Social Login (Google/Apple via Firebase)
+        post("/login/social") {
+            val request = call.receive<SocialLoginRequest>()
+            println("[Social Login] Provider: ${request.provider}")
+
+            val response = socialAuthService.authenticateWithSocial(request)
+            println("[Social Login] Success for user: ${response.user.firstOrNull()?.email}")
             call.respond(ApiResponse(
                 success = true,
                 data = response,
