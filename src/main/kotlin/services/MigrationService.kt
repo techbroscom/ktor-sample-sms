@@ -1044,10 +1044,11 @@ class MigrationService {
                         println("✓ Dropped unique constraint '$constraintName' from $schema.users")
                     }
                 } else {
-                    // Drop unique indexes
+                    // In PostgreSQL, unique constraints create backing indexes with the same name.
+                    // Must drop as constraint (ALTER TABLE), not as index (DROP INDEX).
                     indexNames.forEach { indexName ->
-                        exec("DROP INDEX IF EXISTS $indexName")
-                        println("✓ Dropped unique index '$indexName' from $schema.users")
+                        exec("ALTER TABLE users DROP CONSTRAINT IF EXISTS $indexName")
+                        println("✓ Dropped unique constraint '$indexName' from $schema.users")
                     }
                 }
 
