@@ -38,6 +38,7 @@ fun Application.configureDatabases() {
         migrationService.migrateUsersS3Columns() // Add image_url and image_s3_key columns to users table
         migrationService.migrateSchoolConfigS3Column() // Add logo_s3_key column to school_config table
         migrationService.migrateRemoveUsersEmailUniqueIndex() // Allow multiple users per email
+        migrationService.migrateSchoolConfigTagLineAndDescription() // Add tag_line and description to school_config
     }
 }
 

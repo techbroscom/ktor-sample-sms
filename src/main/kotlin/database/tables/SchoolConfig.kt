@@ -15,6 +15,8 @@ object SchoolConfig : Table("school_config") {
     val phoneNumber4 = varchar("phone_number_4", 20).nullable()
     val phoneNumber5 = varchar("phone_number_5", 20).nullable()
     val website = varchar("website", 255).nullable()
+    val tagLine = varchar("tag_line", 255).nullable()
+    val description = text("description").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

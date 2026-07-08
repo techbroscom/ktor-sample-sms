@@ -1065,4 +1065,94 @@ class MigrationService {
         println("✓ Users email unique index removal migration completed")
     }
 
+    /**
+     * Add tag_line and description columns to school_config table.
+     * These allow organizations to set a tagline and about description.
+     */
+    fun migrateSchoolConfigTagLineAndDescription() {
+        println("🔧 Adding tag_line and description columns to school_config table in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (school_config.tag_line, school_config.description)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                exec("SET search_path TO $schema")
+
+                val schoolConfigTableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'school_config'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!schoolConfigTableExists) {
+                    println("⚠ Skipping $schema (school_config table not found)")
+                    return@transaction
+                }
+
+                // Add tag_line column if not exists
+                val tagLineExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'school_config'
+                          AND column_name = 'tag_line'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!tagLineExists) {
+                    exec("ALTER TABLE school_config ADD COLUMN tag_line VARCHAR(255)")
+                    println("✓ Added tag_line column to $schema.school_config")
+                }
+
+                // Add description column if not exists
+                val descriptionExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'school_config'
+                          AND column_name = 'description'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!descriptionExists) {
+                    exec("ALTER TABLE school_config ADD COLUMN description TEXT")
+                    println("✓ Added description column to $schema.school_config")
+                }
+            }
+        }
+
+        println("✓ SchoolConfig tag_line and description migration completed")
+    }
+
 }

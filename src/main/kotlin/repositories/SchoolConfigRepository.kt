@@ -60,6 +60,8 @@ class SchoolConfigRepository(
             it[phoneNumber4] = request.phoneNumber4
             it[phoneNumber5] = request.phoneNumber5
             it[website] = request.website
+            it[tagLine] = request.tagLine
+            it[description] = request.description
         } > 0
     }
 
@@ -95,7 +97,9 @@ class SchoolConfigRepository(
             phoneNumber3 = row[SchoolConfig.phoneNumber3],
             phoneNumber4 = row[SchoolConfig.phoneNumber4],
             phoneNumber5 = row[SchoolConfig.phoneNumber5],
-            website = row[SchoolConfig.website]
+            website = row[SchoolConfig.website],
+            tagLine = row[SchoolConfig.tagLine],
+            description = row[SchoolConfig.description]
         )
     }
 }

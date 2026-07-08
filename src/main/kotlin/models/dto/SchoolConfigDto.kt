@@ -15,7 +15,9 @@ data class SchoolConfigDto(
     val phoneNumber3: String? = null,
     val phoneNumber4: String? = null,
     val phoneNumber5: String? = null,
-    val website: String? = null
+    val website: String? = null,
+    val tagLine: String? = null,
+    val description: String? = null
 )
 
 @Serializable
@@ -30,5 +32,7 @@ data class UpdateSchoolConfigRequest(
     val phoneNumber3: String? = null,
     val phoneNumber4: String? = null,
     val phoneNumber5: String? = null,
-    val website: String? = null
+    val website: String? = null,
+    val tagLine: String? = null,
+    val description: String? = null
 )
