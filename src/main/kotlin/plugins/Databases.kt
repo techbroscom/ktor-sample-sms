@@ -39,6 +39,7 @@ fun Application.configureDatabases() {
         migrationService.migrateSchoolConfigS3Column() // Add logo_s3_key column to school_config table
         migrationService.migrateRemoveUsersEmailUniqueIndex() // Allow multiple users per email
         migrationService.migrateSchoolConfigTagLineAndDescription() // Add tag_line and description to school_config
+        migrationService.migrateUsersAppleRelayEmail() // Add apple_relay_email column for Apple Sign-In relay mapping
     }
 }
 

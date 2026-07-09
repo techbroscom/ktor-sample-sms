@@ -4,6 +4,7 @@ import com.example.exceptions.ApiException
 import com.example.models.FCMTokenRequest
 import com.example.models.dto.UserDto
 import com.example.models.dto.SocialLoginRequest
+import com.example.models.dto.LinkAppleRelayRequest
 import com.example.models.dto.UserLoginResponse
 import com.example.repositories.TenantFeaturesRepository
 import com.example.repositories.UserPermissionsRepository
@@ -42,8 +43,36 @@ class SocialAuthService(
                 HttpStatusCode.BadRequest
             )
 
-        // Step 3: Look up user by email
-        val users = userRepository.findByEmail(email)
+        // Step 3: Look up user by email (handle Apple private relay)
+        var users = userRepository.findByEmail(email)
+
+        // If not found and it's an Apple private relay email, check relay column and real email
+        if (users.isNullOrEmpty() && email.endsWith("@privaterelay.appleid.com")) {
+            // First check if relay email is already linked
+            users = userRepository.findByAppleRelayEmail(email)
+
+            // If still not found, try the real email from client (available on first auth)
+            if (users.isNullOrEmpty()) {
+                val realEmail = request.appleRealEmail
+                if (!realEmail.isNullOrBlank()) {
+                    users = userRepository.findByEmail(realEmail)
+                    // Auto-link relay email if user found by real email
+                    if (!users.isNullOrEmpty()) {
+                        val userId = UUID.fromString(users[0].id)
+                        userRepository.linkAppleRelayEmail(userId, email)
+                        println("[Social Auth] Auto-linked Apple relay email $email to user ${users[0].email}")
+                    }
+                }
+            }
+
+            if (users.isNullOrEmpty()) {
+                throw ApiException(
+                    "No account found with this Apple ID. Your email uses Apple's Hide My Email feature. Please link your account.|APPLE_RELAY|$email",
+                    HttpStatusCode.NotFound
+                )
+            }
+        }
+
         if (users.isNullOrEmpty()) {
             throw ApiException(
                 "No account found with this email ($email). Please contact your administrator.",
@@ -127,5 +156,60 @@ class SocialAuthService(
         )
 
         fcmService?.saveToken(userId, tokenRequest)
+    }
+
+    /**
+     * Link an Apple private relay email to an existing user account.
+     * User must verify identity with their actual email + password.
+     */
+    suspend fun linkAppleRelayEmail(request: LinkAppleRelayRequest): UserLoginResponse {
+        // Step 1: Find user by actual email
+        val users = userRepository.findByEmail(request.actualEmail)
+        if (users.isNullOrEmpty()) {
+            throw ApiException(
+                "No account found with this email (${request.actualEmail}). Please check your email.",
+                HttpStatusCode.NotFound
+            )
+        }
+
+        // Step 2: Verify password
+        val passwordHash = userRepository.findPasswordHashByEmail(request.actualEmail)
+            ?: throw ApiException("Unable to verify credentials", HttpStatusCode.Unauthorized)
+
+        if (!org.mindrot.jbcrypt.BCrypt.checkpw(request.password, passwordHash)) {
+            throw ApiException("Invalid password", HttpStatusCode.Unauthorized)
+        }
+
+        // Step 3: Link the relay email to the user
+        val userId = UUID.fromString(users[0].id)
+        val linked = userRepository.linkAppleRelayEmail(userId, request.relayEmail)
+        if (!linked) {
+            throw ApiException("Failed to link Apple account", HttpStatusCode.InternalServerError)
+        }
+
+        println("[Social Auth] Linked Apple relay email ${request.relayEmail} to user ${request.actualEmail}")
+
+        // Step 4: Update FCM token if provided
+        if (request.fcmToken != null && request.platform != null && fcmService != null) {
+            try {
+                updateFCMTokenOnSocialLogin(
+                    userId = userId,
+                    fcmToken = request.fcmToken,
+                    deviceId = request.deviceId,
+                    platform = request.platform
+                )
+            } catch (e: Exception) {
+                println("Warning: Failed to update FCM token: ${e.message}")
+            }
+        }
+
+        // Step 5: Return login response
+        val enabledFeatures = getEnabledFeaturesForUser(users[0])
+
+        return UserLoginResponse(
+            user = users,
+            token = null,
+            enabledFeatures = enabledFeatures
+        )
     }
 }

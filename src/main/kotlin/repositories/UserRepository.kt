@@ -51,6 +51,19 @@ class UserRepository(
             .map { mapRowToDto(it) }
     }
 
+    suspend fun findByAppleRelayEmail(relayEmail: String): List<UserDto>? = tenantDbQuery {
+        Users.selectAll()
+            .where { Users.appleRelayEmail eq relayEmail }
+            .map { mapRowToDto(it) }
+    }
+
+    suspend fun linkAppleRelayEmail(userId: UUID, relayEmail: String): Boolean = tenantDbQuery {
+        Users.update({ Users.id eq userId }) {
+            it[appleRelayEmail] = relayEmail
+            it[updatedAt] = LocalDateTime.now()
+        } > 0
+    }
+
     suspend fun findByAdminType(): List<UserDto>? = tenantDbQuery {
         Users.selectAll()
             .where { Users.role eq UserRole.ADMIN }

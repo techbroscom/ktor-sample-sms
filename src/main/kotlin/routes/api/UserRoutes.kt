@@ -73,6 +73,20 @@ fun Route.userRoutes(userService: UserService, otpService: OtpService, socialAut
             ))
         }
 
+        // Link Apple private relay email to existing account
+        post("/login/social/link-apple") {
+            val request = call.receive<LinkAppleRelayRequest>()
+            println("[Apple Link] Linking relay ${request.relayEmail} to ${request.actualEmail}")
+
+            val response = socialAuthService.linkAppleRelayEmail(request)
+            println("[Apple Link] Success for user: ${response.user.firstOrNull()?.email}")
+            call.respond(ApiResponse(
+                success = true,
+                data = response,
+                message = "Apple account linked successfully"
+            ))
+        }
+
         // NEW: Send OTP to email
         post("/login/send-otp") {
             println("Received request to send OTP")

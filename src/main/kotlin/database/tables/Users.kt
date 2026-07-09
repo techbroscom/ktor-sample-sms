@@ -19,6 +19,7 @@ object Users : Table("users") {
     val photoUrl = varchar("photo_url", 500).nullable() // Deprecated, use imageUrl
     val imageUrl = varchar("image_url", 500).nullable() // S3 public URL
     val imageS3Key = varchar("image_s3_key", 500).nullable() // S3 object key
+    val appleRelayEmail = varchar("apple_relay_email", 255).nullable() // Apple private relay email
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").nullable()
 

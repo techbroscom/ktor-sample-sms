@@ -1155,4 +1155,51 @@ class MigrationService {
         println("✓ SchoolConfig tag_line and description migration completed")
     }
 
+    fun migrateUsersAppleRelayEmail() {
+        println("🔧 Running Apple relay email column migration...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (users.apple_relay_email)")
+
+            transaction(systemDb) {
+                exec("SET search_path TO $schema")
+
+                // Check if column already exists
+                val columnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'users'
+                          AND column_name = 'apple_relay_email'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!columnExists) {
+                    exec("ALTER TABLE users ADD COLUMN apple_relay_email VARCHAR(255) NULL")
+                    exec("CREATE INDEX idx_users_apple_relay_email ON users(apple_relay_email) WHERE apple_relay_email IS NOT NULL")
+                    println("  ➕ Added apple_relay_email column to $schema.users")
+                } else {
+                    println("  ⏭ apple_relay_email already exists in $schema.users")
+                }
+            }
+        }
+
+        println("✓ Apple relay email column migration completed")
+    }
+
 }
