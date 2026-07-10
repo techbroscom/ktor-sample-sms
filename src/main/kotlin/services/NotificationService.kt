@@ -6,7 +6,7 @@ import com.example.models.PersonalNotificationRequest
 import com.example.repositories.UserRepository
 
 class NotificationService(
-    private val fcmService: FCMService,
+    private val fcmService: FCMService?,
     private val userRepository: UserRepository
 ) {
 
@@ -23,7 +23,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendPersonalNotification(notification)
+        fcmService?.sendPersonalNotification(notification)
     }
 
     // Send exam result notification
@@ -40,7 +40,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendPersonalNotification(notification)
+        fcmService?.sendPersonalNotification(notification)
     }
 
     // Send attendance alert
@@ -55,7 +55,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendPersonalNotification(notification)
+        fcmService?.sendPersonalNotification(notification)
     }
 
     // Send school announcement to all students
@@ -71,7 +71,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send news/updates to entire school
@@ -86,7 +86,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send holiday notification
@@ -103,7 +103,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send assignment notification to students
@@ -121,7 +121,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send exam schedule notification
@@ -138,7 +138,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send teacher notification
@@ -153,7 +153,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send parent notification
@@ -168,7 +168,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send complaint notification to admins (when a new complaint is submitted)
@@ -184,7 +184,7 @@ class NotificationService(
             )
         )
 
-        fcmService.sendBroadcastNotification(notification)
+        fcmService?.sendBroadcastNotification(notification)
     }
 
     // Send complaint status update notification to the complaint author
@@ -200,6 +200,6 @@ class NotificationService(
             )
         )
 
-        fcmService.sendPersonalNotification(notification)
+        fcmService?.sendPersonalNotification(notification)
     }
 }

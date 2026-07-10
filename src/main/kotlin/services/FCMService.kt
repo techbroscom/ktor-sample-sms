@@ -14,7 +14,7 @@ class FCMService(
     private val fcmTokenRepository: FCMTokenRepository
 ) {
 
-    private val messaging = FCMConfig.getMessaging()
+    private val messaging: FirebaseMessaging = FCMConfig.getMessaging()
 
     /* -------------------------------------------------------
      * SAVE TOKEN

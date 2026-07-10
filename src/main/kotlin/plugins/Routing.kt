@@ -119,7 +119,12 @@ import io.ktor.server.routing.*
 fun Application.configureRouting() {
     // Initialize dependencies
     val fcmTokenRepository = FCMTokenRepository()
-    val fcmService = FCMService(fcmTokenRepository)
+    val fcmService: FCMService? = try {
+        FCMService(fcmTokenRepository)
+    } catch (e: Exception) {
+        println("Warning: FCM Service unavailable - push notifications disabled: ${e.message}")
+        null
+    }
 
     // File storage service - S3-based with Backblaze B2 (initialized early for use in repositories)
     val s3StorageConfig = S3StorageConfig.forBackblazeB2(

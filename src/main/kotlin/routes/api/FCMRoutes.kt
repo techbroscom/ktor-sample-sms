@@ -9,7 +9,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.util.UUID
 
-fun Route.fcmRoutes(fcmService: FCMService) {
+fun Route.fcmRoutes(fcmService: FCMService?) {
+
+    if (fcmService == null) {
+        route("/api/v1/fcm") {
+            // FCM unavailable - return service unavailable for all endpoints
+            post("/token") { call.respond(HttpStatusCode.ServiceUnavailable, "FCM not configured") }
+            delete("/token") { call.respond(HttpStatusCode.ServiceUnavailable, "FCM not configured") }
+            post("/send") { call.respond(HttpStatusCode.ServiceUnavailable, "FCM not configured") }
+            post("/broadcast") { call.respond(HttpStatusCode.ServiceUnavailable, "FCM not configured") }
+        }
+        return
+    }
 
     route("/api/v1/fcm") {
 
