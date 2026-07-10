@@ -160,7 +160,7 @@ class SocialAuthService(
 
     /**
      * Link an Apple private relay email to an existing user account.
-     * User must verify identity with their actual email + password.
+     * User identity is already verified via Apple biometric auth (Face ID/Touch ID).
      */
     suspend fun linkAppleRelayEmail(request: LinkAppleRelayRequest): UserLoginResponse {
         // Step 1: Find user by actual email
@@ -172,15 +172,7 @@ class SocialAuthService(
             )
         }
 
-        // Step 2: Verify password
-        val passwordHash = userRepository.findPasswordHashByEmail(request.actualEmail)
-            ?: throw ApiException("Unable to verify credentials", HttpStatusCode.Unauthorized)
-
-        if (!org.mindrot.jbcrypt.BCrypt.checkpw(request.password, passwordHash)) {
-            throw ApiException("Invalid password", HttpStatusCode.Unauthorized)
-        }
-
-        // Step 3: Link the relay email to the user
+        // Step 2: Link the relay email to the user
         val userId = UUID.fromString(users[0].id)
         val linked = userRepository.linkAppleRelayEmail(userId, request.relayEmail)
         if (!linked) {
@@ -189,7 +181,7 @@ class SocialAuthService(
 
         println("[Social Auth] Linked Apple relay email ${request.relayEmail} to user ${request.actualEmail}")
 
-        // Step 4: Update FCM token if provided
+        // Step 3: Update FCM token if provided
         if (request.fcmToken != null && request.platform != null && fcmService != null) {
             try {
                 updateFCMTokenOnSocialLogin(
@@ -203,7 +195,7 @@ class SocialAuthService(
             }
         }
 
-        // Step 5: Return login response
+        // Step 4: Return login response
         val enabledFeatures = getEnabledFeaturesForUser(users[0])
 
         return UserLoginResponse(

@@ -16,7 +16,6 @@ data class SocialLoginRequest(
 data class LinkAppleRelayRequest(
     val relayEmail: String,       // The Apple private relay email
     val actualEmail: String,      // User's real email in the system
-    val password: String,         // Password to verify identity
     val fcmToken: String? = null,
     val deviceId: String? = null,
     val platform: String? = null
