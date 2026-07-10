@@ -20,9 +20,11 @@ suspend fun <T> tenantDbQuery(block: suspend () -> T): T {
     val currentTenant = TenantContextHolder.getTenant()
         ?: error("No tenant context found in coroutine scope")
 
-    // 2. Use asContextElement to ensure this value moves to the IO thread
+    // 2. Use the tenant-specific database connection and ensure correct schema
+    val tenantDb = TenantDatabaseConfig.getTenantDatabase(currentTenant.schemaName)
     return newSuspendedTransaction(
-        Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant)
+        Dispatchers.IO + TenantContextHolder.threadLocal.asContextElement(currentTenant),
+        tenantDb
     ) {
         val schema = currentTenant.schemaName
         // 3. Set the PostgreSQL schema for this specific connection
