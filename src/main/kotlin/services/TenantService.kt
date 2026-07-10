@@ -101,6 +101,7 @@ class TenantService {
 
     suspend fun getAllTenants(): List<TenantContext> {
         return transaction(TenantDatabaseConfig.getSystemDb()) {
+            exec("SET search_path TO public")
             Tenants.selectAll().map {
                 TenantContext(
                     id = it[Tenants.id].toString(),
