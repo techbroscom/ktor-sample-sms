@@ -41,6 +41,8 @@ class S3CleanupJob(
 
     fun start() {
         job = coroutineScope.launch {
+            // Wait for server to fully start and migrations to complete
+            delay(30_000)
             while (isActive) {
                 try {
                     logger.info("Starting S3 cleanup job")

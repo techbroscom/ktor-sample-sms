@@ -17,6 +17,8 @@ class OtpCleanupJob(
 
     fun start() {
         cleanupJob = scope.launch(Dispatchers.IO) {
+            // Wait for server to fully start and migrations to complete
+            delay(30_000)
             while (isActive) {
                 try {
                     cleanupExpiredOtpsForAllTenants()

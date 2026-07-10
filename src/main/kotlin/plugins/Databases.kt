@@ -27,7 +27,7 @@ fun Application.configureDatabases() {
     // Run migration for existing tenants on startup
     val migrationService = MigrationService()
     runBlocking {
-//        migrationService.migrateTenantPostImagesTable()
+        migrationService.migrateTenantPostImagesTable()
 //        migrationService.removeFilesTenantIdColumn() // Remove tenant_id column (schema-level isolation)
 //        migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
 //        migrationService.migrateUserPermissionsTable() // Create UserPermissions table in tenant schemas

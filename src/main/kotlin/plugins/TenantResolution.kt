@@ -17,7 +17,7 @@ fun Application.configureTenantResolution() {
     intercept(ApplicationCallPipeline.Call) {
         // Skip tenant resolution for tenant management endpoints
         val path = call.request.path()
-        if (path.startsWith("/api/v1/tenants") || path.startsWith("/api/v1/console")) {
+        if (path.startsWith("/api/v1/tenants") || path.startsWith("/api/v1/console") || path == "/health") {
             proceed()
             return@intercept
         }
@@ -34,6 +34,15 @@ fun Application.configureTenantResolution() {
                 ))
                 return@intercept
             }
+        } catch (e: Exception) {
+            call.respond(
+                HttpStatusCode.ServiceUnavailable,
+                ApiResponse<Unit>(
+                    success = false,
+                    message = "Service temporarily unavailable. Please try again."
+                )
+            )
+            return@intercept
         } finally {
             TenantContextHolder.clear()
         }
@@ -50,7 +59,10 @@ private suspend fun resolveTenant(call: ApplicationCall): TenantContext? {
 
     return try {
         val tenantId = UUID.fromString(id)
-        transaction(TenantDatabaseConfig.getSystemDb()) {
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+        transaction(systemDb) {
+            // Ensure we're querying the public schema
+            exec("SET search_path TO public")
             Tenants.selectAll()
                 .where { Tenants.id eq tenantId }
                 .map {

@@ -19,6 +19,8 @@ class FCMCleanupJob(
 
     fun start() {
         job = coroutineScope.launch {
+            // Wait for server to fully start before running cleanup
+            delay(30_000)
             while (isActive) {
                 try {
                     cleanupExpiredTokensForAllTenants()
