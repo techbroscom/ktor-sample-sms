@@ -73,6 +73,7 @@ import com.example.routes.api.userRoutes
 import com.example.routes.api.userDetailsRoutes
 import com.example.routes.api.visitorRoutes
 import com.example.routes.api.libraryRoutes
+import com.example.routes.api.oauthRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
 import com.example.services.ClassService
@@ -295,6 +296,7 @@ fun Application.configureRouting() {
         // API routes
 
         tenantRoutes(tenantService)
+        oauthRoutes()
 
         userRoutes(userService, otpService, socialAuthService)
         userDetailsRoutes(userDetailsService)
