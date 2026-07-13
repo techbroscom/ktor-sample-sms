@@ -1221,6 +1221,7 @@ class MigrationService {
         val systemDb = TenantDatabaseConfig.getSystemDb()
 
         val tenantSchemas = transaction(systemDb) {
+            exec("SET search_path TO public")
             Tenants
                 .selectAll()
                 .map { it[Tenants.schema_name] }
