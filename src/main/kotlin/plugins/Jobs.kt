@@ -1,6 +1,7 @@
 package com.example.plugins
 
 import com.example.jobs.FCMCleanupJob
+import com.example.jobs.LmsSessionNotificationJob
 import com.example.jobs.OtpCleanupJob
 import com.example.jobs.S3CleanupJob
 import com.example.repositories.FCMTokenRepository
@@ -10,6 +11,7 @@ import com.example.repositories.UserRepository
 import com.example.repositories.SchoolConfigRepository
 import com.example.repositories.PostImageRepository
 import com.example.services.TenantService
+import com.example.services.FCMService
 import config.S3StorageConfig
 import services.storage.S3CompatibleStorage
 import io.ktor.server.application.*
@@ -48,15 +50,26 @@ fun Application.configureJobs() {
         this
     )
 
+    // LMS Session Notification Job
+    val fcmService: FCMService? = try {
+        FCMService(fcmTokenRepository)
+    } catch (e: Exception) {
+        println("Warning: FCM Service unavailable for LMS notifications: ${e.message}")
+        null
+    }
+    val lmsNotificationJob = LmsSessionNotificationJob(fcmService, tenantService, this)
+
     // Start all jobs
     otpCleanupJob.start()
     fcmCleanupJob.start()
     s3CleanupJob.start()
+    lmsNotificationJob.start()
 
     // Stop jobs on shutdown
     environment.monitor.subscribe(ApplicationStopped) {
         otpCleanupJob.stop()
         fcmCleanupJob.stop()
         s3CleanupJob.stop()
+        lmsNotificationJob.stop()
     }
 }

@@ -39,6 +39,7 @@ import com.example.repositories.BookBorrowingRepository
 import com.example.repositories.BookReservationRepository
 import com.example.repositories.LibraryFineRepository
 import com.example.repositories.LibrarySettingsRepository
+import com.example.repositories.LmsRepository
 import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.attendanceRoutes
 import com.example.routes.api.classRoutes
@@ -73,6 +74,7 @@ import com.example.routes.api.userRoutes
 import com.example.routes.api.userDetailsRoutes
 import com.example.routes.api.visitorRoutes
 import com.example.routes.api.libraryRoutes
+import com.example.routes.api.lmsRoutes
 import com.example.routes.api.oauthRoutes
 import com.example.services.AcademicYearService
 import com.example.services.AttendanceService
@@ -109,6 +111,7 @@ import com.example.services.UserService
 import com.example.services.UserDetailsService
 import com.example.services.VisitorService
 import com.example.services.LibraryService
+import com.example.services.LmsService
 import com.example.services.SocialAuthService
 import config.S3StorageConfig
 import services.S3FileService
@@ -282,6 +285,10 @@ fun Application.configureRouting() {
         userRepository
     )
 
+    // LMS (Learning Management System)
+    val lmsRepository = LmsRepository()
+    val lmsService = LmsService(lmsRepository)
+
     // API routes
 
     routing {
@@ -331,5 +338,6 @@ fun Application.configureRouting() {
         userPermissionRoutes(userPermissionService)
         visitorRoutes(visitorService)
         libraryRoutes(libraryService)
+        lmsRoutes(lmsService)
     }
 }

@@ -14,6 +14,14 @@ import com.example.database.tables.BookBorrowings
 import com.example.database.tables.BookReservations
 import com.example.database.tables.LibraryFines
 import com.example.database.tables.LibrarySettings
+import com.example.database.tables.LmsCourses
+import com.example.database.tables.LmsSections
+import com.example.database.tables.LmsSessionTemplates
+import com.example.database.tables.LmsBatches
+import com.example.database.tables.LmsBatchSections
+import com.example.database.tables.LmsBatchSessions
+import com.example.database.tables.LmsEnrollments
+import com.example.database.tables.LmsConfig
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.selectAll
@@ -1200,6 +1208,72 @@ class MigrationService {
         }
 
         println("✓ Apple relay email column migration completed")
+    }
+
+    /**
+     * Create LMS (Learning Management System) tables in existing tenant schemas.
+     * Tables: lms_courses, lms_sections, lms_session_templates, lms_batches,
+     * lms_batch_sections, lms_batch_sessions, lms_enrollments, lms_config
+     */
+    fun migrateLmsTables() {
+        println("🔧 Creating LMS tables in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (LMS tables)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                exec("SET search_path TO $schema")
+
+                // Order matters due to foreign key dependencies
+                val tablesToCreate = listOf(
+                    Triple(LmsCourses, "lms_courses", "LMS Courses"),
+                    Triple(LmsSections, "lms_sections", "LMS Sections"),
+                    Triple(LmsSessionTemplates, "lms_session_templates", "LMS Session Templates"),
+                    Triple(LmsBatches, "lms_batches", "LMS Batches"),
+                    Triple(LmsBatchSections, "lms_batch_sections", "LMS Batch Sections"),
+                    Triple(LmsBatchSessions, "lms_batch_sessions", "LMS Batch Sessions"),
+                    Triple(LmsEnrollments, "lms_enrollments", "LMS Enrollments"),
+                    Triple(LmsConfig, "lms_config", "LMS Config")
+                )
+
+                tablesToCreate.forEach { (table, tableName, description) ->
+                    val tableExists = exec(
+                        """
+                        SELECT EXISTS (
+                            SELECT 1
+                            FROM information_schema.tables
+                            WHERE table_schema = '$schema'
+                              AND table_name = '$tableName'
+                        )
+                        """
+                    ) { rs ->
+                        rs.next()
+                        rs.getBoolean(1)
+                    } ?: false
+
+                    if (!tableExists) {
+                        println("➕ Creating $tableName table in $schema")
+                        SchemaUtils.create(table)
+                        println("✓ $description table created successfully in $schema")
+                    } else {
+                        println("✓ $tableName table already exists in $schema")
+                    }
+                }
+            }
+        }
+
+        println("✓ LMS tables migration completed")
     }
 
 }

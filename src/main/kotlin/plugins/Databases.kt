@@ -40,6 +40,7 @@ fun Application.configureDatabases() {
         migrationService.migrateRemoveUsersEmailUniqueIndex() // Allow multiple users per email
         migrationService.migrateSchoolConfigTagLineAndDescription() // Add tag_line and description to school_config
         migrationService.migrateUsersAppleRelayEmail() // Add apple_relay_email column for Apple Sign-In relay mapping
+        migrationService.migrateLmsTables() // Create LMS tables in tenant schemas
     }
 }
 
@@ -78,7 +79,15 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             BookBorrowings,
             BookReservations,
             LibraryFines,
-            LibrarySettings
+            LibrarySettings,
+            LmsCourses,       // LMS - Course templates
+            LmsSections,      // LMS - Sections within courses
+            LmsSessionTemplates, // LMS - Session templates per section
+            LmsBatches,       // LMS - Batch runs of a course
+            LmsBatchSections, // LMS - Per-section pricing in a batch
+            LmsBatchSessions, // LMS - Scheduled sessions in a batch
+            LmsEnrollments,   // LMS - User enrollments/purchases
+            LmsConfig         // LMS - Tenant-level config (meeting/payment provider)
         )
     }
 }
