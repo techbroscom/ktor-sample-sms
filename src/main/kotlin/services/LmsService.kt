@@ -438,6 +438,42 @@ class LmsService(
     }
 
     // ============================================
+    // Zoho Connect (Verify + Save)
+    // ============================================
+
+    suspend fun connectZohoWebinar(request: ZohoConnectRequest): ZohoConnectResponse {
+        // 1. Verify credentials and fetch user info (ZSOID, ZUID)
+        val userInfo = zohoWebinarService.verifyAndFetchUserInfo(
+            clientId = request.clientId,
+            clientSecret = request.clientSecret,
+            refreshToken = request.refreshToken,
+            accountsUrl = request.accountsUrl
+        )
+
+        // 2. Build full credentials JSON and save config
+        val credentialsJson = Json.encodeToString(
+            ZohoWebinarCredentials.serializer(),
+            ZohoWebinarCredentials(
+                clientId = request.clientId,
+                clientSecret = request.clientSecret,
+                refreshToken = request.refreshToken,
+                zsoid = userInfo.zsoid,
+                presenterZuid = userInfo.presenterZuid,
+                accountsUrl = request.accountsUrl
+            )
+        )
+
+        // 3. Update LMS config to ZOHO_WEBINAR with full credentials
+        val configRequest = UpdateLmsConfigRequest(
+            meetingProvider = "ZOHO_WEBINAR",
+            meetingCredentials = credentialsJson
+        )
+        lmsRepository.upsertConfig(configRequest)
+
+        return userInfo
+    }
+
+    // ============================================
     // Catalog (Public)
     // ============================================
 

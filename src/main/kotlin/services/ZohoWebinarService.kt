@@ -314,6 +314,61 @@ class ZohoWebinarService {
             .replace("\r", "\\r")
             .replace("\t", "\\t")
     }
+
+    /**
+     * Verifies credentials by fetching user info from Zoho.
+     * Returns ZSOID, ZUID, org name, email — used during "Connect" flow.
+     */
+    suspend fun verifyAndFetchUserInfo(
+        clientId: String,
+        clientSecret: String,
+        refreshToken: String,
+        accountsUrl: String
+    ): ZohoConnectResponse {
+        // Build temporary credentials to get an access token
+        val tempCredentials = ZohoWebinarCredentials(
+            clientId = clientId,
+            clientSecret = clientSecret,
+            refreshToken = refreshToken,
+            zsoid = "", // Not known yet
+            presenterZuid = 0,
+            accountsUrl = accountsUrl
+        )
+
+        val token = getAccessToken(tempCredentials)
+
+        // Call /api/v2/user to get zsoid and zuid
+        val response = httpClient.get("https://webinar.zoho.com/api/v2/user.json") {
+            header("Authorization", "Zoho-oauthtoken $token")
+        }
+
+        val body = response.bodyAsText()
+        logger.debug("Zoho user info response [${response.status}]: $body")
+
+        if (response.status != HttpStatusCode.OK) {
+            throw ZohoWebinarException("Failed to fetch Zoho user info: $body")
+        }
+
+        val jsonResponse = json.parseToJsonElement(body).jsonObject
+        val userDetails = jsonResponse["userDetails"]?.jsonObject
+            ?: throw ZohoWebinarException("No userDetails in response: $body")
+
+        val zsoid = userDetails["zsoid"]?.jsonPrimitive?.content
+            ?: throw ZohoWebinarException("No zsoid in response")
+        val zuid = userDetails["zuid"]?.jsonPrimitive?.content?.toLongOrNull()
+            ?: throw ZohoWebinarException("No zuid in response")
+        val orgName = userDetails["orgName"]?.jsonPrimitive?.content ?: ""
+        val email = userDetails["primaryEmail"]?.jsonPrimitive?.content ?: ""
+        val displayName = userDetails["displayName"]?.jsonPrimitive?.content ?: ""
+
+        return ZohoConnectResponse(
+            zsoid = zsoid,
+            presenterZuid = zuid,
+            orgName = orgName,
+            email = email,
+            displayName = displayName
+        )
+    }
 }
 
 // ============================================
@@ -371,3 +426,20 @@ data class ZohoRegistrationResult(
 )
 
 class ZohoWebinarException(message: String) : RuntimeException(message)
+
+@Serializable
+data class ZohoConnectRequest(
+    val clientId: String,
+    val clientSecret: String,
+    val refreshToken: String,
+    val accountsUrl: String = "https://accounts.zoho.com"
+)
+
+@Serializable
+data class ZohoConnectResponse(
+    val zsoid: String,
+    val presenterZuid: Long,
+    val orgName: String,
+    val email: String,
+    val displayName: String
+)

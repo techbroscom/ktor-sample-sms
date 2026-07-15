@@ -4,6 +4,7 @@ import com.example.exceptions.ApiException
 import com.example.models.dto.*
 import com.example.models.responses.ApiResponse
 import com.example.services.LmsService
+import com.example.services.ZohoConnectRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -266,6 +267,21 @@ fun Route.lmsRoutes(lmsService: LmsService) {
             val config = lmsService.updateConfig(request)
             call.respond(ApiResponse(
                 success = true, data = config, message = "LMS config updated"
+            ))
+        }
+    }
+
+    // ============================================
+    // Zoho Webinar Connect (Admin)
+    // ============================================
+
+    route("/api/v1/lms/zoho") {
+        // Verify credentials + auto-fetch ZSOID & ZUID, then save config
+        post("/connect") {
+            val request = call.receive<ZohoConnectRequest>()
+            val result = lmsService.connectZohoWebinar(request)
+            call.respond(ApiResponse(
+                success = true, data = result, message = "Zoho Webinar connected successfully"
             ))
         }
     }
