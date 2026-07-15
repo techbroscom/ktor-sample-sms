@@ -5,10 +5,11 @@ import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
 enum class MeetingProvider {
-    CUSTOM_LINK,  // Admin manually pastes Zoom/Meet link
-    ZOOM,         // Auto-generate via Zoom API (future)
-    GOOGLE_MEET,  // Auto-generate via Google Calendar API (future)
-    TEAMS         // Microsoft Teams (future)
+    CUSTOM_LINK,    // Admin manually pastes Zoom/Meet link
+    ZOOM,           // Auto-generate via Zoom API (future)
+    GOOGLE_MEET,    // Auto-generate via Google Calendar API (future)
+    TEAMS,          // Microsoft Teams (future)
+    ZOHO_WEBINAR    // Auto-generate via Zoho Webinar API
 }
 
 enum class LmsPaymentProvider {

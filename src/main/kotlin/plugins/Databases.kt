@@ -41,6 +41,7 @@ fun Application.configureDatabases() {
         migrationService.migrateSchoolConfigTagLineAndDescription() // Add tag_line and description to school_config
         migrationService.migrateUsersAppleRelayEmail() // Add apple_relay_email column for Apple Sign-In relay mapping
         migrationService.migrateLmsTables() // Create LMS tables in tenant schemas
+        migrationService.migrateLmsBatchSessionsProviderMeetingId() // Add provider_meeting_id for Zoho Webinar
     }
 }
 

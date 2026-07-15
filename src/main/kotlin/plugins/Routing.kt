@@ -112,6 +112,7 @@ import com.example.services.UserDetailsService
 import com.example.services.VisitorService
 import com.example.services.LibraryService
 import com.example.services.LmsService
+import com.example.services.ZohoWebinarService
 import com.example.services.SocialAuthService
 import config.S3StorageConfig
 import services.S3FileService
@@ -287,7 +288,8 @@ fun Application.configureRouting() {
 
     // LMS (Learning Management System)
     val lmsRepository = LmsRepository()
-    val lmsService = LmsService(lmsRepository)
+    val zohoWebinarService = ZohoWebinarService()
+    val lmsService = LmsService(lmsRepository, zohoWebinarService)
 
     // API routes
 

@@ -310,7 +310,7 @@ class LmsRepository {
     // Batch Session CRUD
     // ============================================
 
-    suspend fun createBatchSession(batchId: UUID, request: CreateBatchSessionRequest): UUID = tenantDbQuery {
+    suspend fun createBatchSession(batchId: UUID, request: CreateBatchSessionRequest, meetingLinkOverride: String? = null, providerMeetingId: String? = null): UUID = tenantDbQuery {
         val sessionId = UUID.randomUUID()
         LmsBatchSessions.insert {
             it[id] = sessionId
@@ -322,7 +322,8 @@ class LmsRepository {
             it[scheduledDate] = LocalDate.parse(request.scheduledDate)
             it[startTime] = LocalTime.parse(request.startTime)
             it[endTime] = LocalTime.parse(request.endTime)
-            it[meetingLink] = request.meetingLink
+            it[meetingLink] = meetingLinkOverride ?: request.meetingLink
+            it[LmsBatchSessions.providerMeetingId] = providerMeetingId
             it[status] = SessionStatus.UPCOMING
             it[order] = request.order
             it[createdAt] = LocalDateTime.now()
@@ -704,5 +705,38 @@ class LmsRepository {
                 (LmsBatchSections.sectionId eq sectionId)
             }
             .singleOrNull()?.get(LmsBatchSections.price)
+    }
+
+    // ============================================
+    // Zoho Webinar Support
+    // ============================================
+
+    suspend fun getSessionProviderMeetingId(sessionId: UUID): String? = tenantDbQuery {
+        LmsBatchSessions.selectAll()
+            .where { LmsBatchSessions.id eq sessionId }
+            .singleOrNull()?.get(LmsBatchSessions.providerMeetingId)
+    }
+
+    suspend fun getMeetingCredentialsRaw(): String? = tenantDbQuery {
+        LmsConfig.selectAll().firstOrNull()?.get(LmsConfig.meetingCredentials)
+    }
+
+    data class UserBasicInfo(
+        val firstName: String,
+        val lastName: String?,
+        val email: String
+    )
+
+    suspend fun getUserBasicInfo(userId: UUID): UserBasicInfo = tenantDbQuery {
+        val row = Users.selectAll()
+            .where { Users.id eq userId }
+            .singleOrNull()
+            ?: throw RuntimeException("User not found: $userId")
+
+        UserBasicInfo(
+            firstName = row[Users.firstName],
+            lastName = row[Users.lastName],
+            email = row[Users.email]
+        )
     }
 }

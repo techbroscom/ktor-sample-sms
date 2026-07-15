@@ -1277,4 +1277,55 @@ class MigrationService {
         println("✓ LMS tables migration completed")
     }
 
+    /**
+     * Add provider_meeting_id column to lms_batch_sessions for Zoho Webinar integration.
+     * Stores the provider-specific meeting identifier (e.g., "meetingKey::instanceId" for Zoho).
+     */
+    fun migrateLmsBatchSessionsProviderMeetingId() {
+        println("🔧 Adding provider_meeting_id column to lms_batch_sessions...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            exec("SET search_path TO public")
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (lms_batch_sessions.provider_meeting_id)")
+
+            transaction(systemDb) {
+                exec("SET search_path TO $schema")
+
+                // Check if column already exists
+                val columnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'lms_batch_sessions'
+                          AND column_name = 'provider_meeting_id'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!columnExists) {
+                    exec("ALTER TABLE lms_batch_sessions ADD COLUMN provider_meeting_id VARCHAR(255) NULL")
+                    println("  ➕ Added provider_meeting_id column to $schema.lms_batch_sessions")
+                } else {
+                    println("  ⏭ provider_meeting_id already exists in $schema.lms_batch_sessions")
+                }
+            }
+        }
+
+        println("✓ provider_meeting_id column migration completed")
+    }
+
 }
