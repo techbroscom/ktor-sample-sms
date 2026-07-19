@@ -1326,4 +1326,78 @@ class MigrationService {
         println("✓ provider_meeting_id column migration completed")
     }
 
+    /**
+     * Remove the session_template_id column from lms_batch_sessions and drop
+     * the lms_session_templates table. Course hierarchy simplified to:
+     * Course → Sections → (Batch Sessions scheduled directly).
+     */
+    fun migrateLmsRemoveSessionTemplates() {
+        println("🔧 Removing session templates layer from LMS...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            exec("SET search_path TO public")
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (remove session templates)")
+
+            transaction(systemDb) {
+                exec("SET search_path TO $schema")
+
+                // 1. Drop session_template_id column from lms_batch_sessions
+                val columnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'lms_batch_sessions'
+                          AND column_name = 'session_template_id'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (columnExists) {
+                    exec("ALTER TABLE lms_batch_sessions DROP COLUMN session_template_id")
+                    println("  ➖ Dropped session_template_id from $schema.lms_batch_sessions")
+                } else {
+                    println("  ⏭ session_template_id already removed from $schema.lms_batch_sessions")
+                }
+
+                // 2. Drop lms_session_templates table
+                val tableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'lms_session_templates'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (tableExists) {
+                    exec("DROP TABLE lms_session_templates")
+                    println("  ➖ Dropped lms_session_templates table from $schema")
+                } else {
+                    println("  ⏭ lms_session_templates already removed from $schema")
+                }
+            }
+        }
+
+        println("✓ Session templates removal migration completed")
+    }
+
 }
