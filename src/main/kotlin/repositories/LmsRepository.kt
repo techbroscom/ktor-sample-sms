@@ -130,27 +130,12 @@ class LmsRepository {
             .orderBy(LmsSections.order, SortOrder.ASC)
             .map { row ->
                 val sectionId = row[LmsSections.id]
-                val templates = LmsSessionTemplates.selectAll()
-                    .where { LmsSessionTemplates.sectionId eq sectionId }
-                    .orderBy(LmsSessionTemplates.order, SortOrder.ASC)
-                    .map { t ->
-                        SessionTemplateDto(
-                            id = t[LmsSessionTemplates.id].toString(),
-                            sectionId = sectionId.toString(),
-                            title = t[LmsSessionTemplates.title],
-                            description = t[LmsSessionTemplates.description],
-                            order = t[LmsSessionTemplates.order],
-                            createdAt = t[LmsSessionTemplates.createdAt].toString(),
-                            updatedAt = t[LmsSessionTemplates.updatedAt]?.toString()
-                        )
-                    }
                 SectionDto(
                     id = sectionId.toString(),
                     courseId = courseId.toString(),
                     title = row[LmsSections.title],
                     description = row[LmsSections.description],
                     order = row[LmsSections.order],
-                    sessionTemplates = templates,
                     createdAt = row[LmsSections.createdAt].toString(),
                     updatedAt = row[LmsSections.updatedAt]?.toString()
                 )
@@ -158,37 +143,7 @@ class LmsRepository {
     }
 
     // ============================================
-    // Session Template CRUD
-    // ============================================
-
-    suspend fun createSessionTemplate(sectionId: UUID, request: CreateSessionTemplateRequest): UUID = tenantDbQuery {
-        val templateId = UUID.randomUUID()
-        LmsSessionTemplates.insert {
-            it[id] = templateId
-            it[LmsSessionTemplates.sectionId] = sectionId
-            it[title] = request.title
-            it[description] = request.description
-            it[order] = request.order
-            it[createdAt] = LocalDateTime.now()
-        }
-        templateId
-    }
-
-    suspend fun updateSessionTemplate(templateId: UUID, request: UpdateSessionTemplateRequest): Boolean = tenantDbQuery {
-        LmsSessionTemplates.update({ LmsSessionTemplates.id eq templateId }) {
-            request.title?.let { v -> it[title] = v }
-            request.description?.let { v -> it[description] = v }
-            request.order?.let { v -> it[order] = v }
-            it[updatedAt] = LocalDateTime.now()
-        } > 0
-    }
-
-    suspend fun deleteSessionTemplate(templateId: UUID): Boolean = tenantDbQuery {
-        LmsSessionTemplates.deleteWhere { LmsSessionTemplates.id eq templateId } > 0
-    }
-
-    // ============================================
-    // Batch CRUD
+    // Batch Session CRUD
     // ============================================
 
     suspend fun createBatch(courseId: UUID, request: CreateBatchRequest, createdBy: UUID): UUID = tenantDbQuery {
@@ -316,8 +271,7 @@ class LmsRepository {
             it[id] = sessionId
             it[LmsBatchSessions.batchId] = batchId
             it[sectionId] = UUID.fromString(request.sectionId)
-            it[sessionTemplateId] = UUID.fromString(request.sessionTemplateId)
-            it[title] = request.title ?: ""
+            it[title] = request.title
             it[description] = request.description
             it[scheduledDate] = LocalDate.parse(request.scheduledDate)
             it[startTime] = LocalTime.parse(request.startTime)
@@ -625,7 +579,6 @@ class LmsRepository {
             batchId = row[LmsBatchSessions.batchId].toString(),
             sectionId = row[LmsBatchSessions.sectionId].toString(),
             sectionTitle = row[LmsSections.title],
-            sessionTemplateId = row[LmsBatchSessions.sessionTemplateId].toString(),
             title = row[LmsBatchSessions.title],
             description = row[LmsBatchSessions.description],
             scheduledDate = scheduledDate.toString(),
@@ -737,6 +690,29 @@ class LmsRepository {
             firstName = row[Users.firstName],
             lastName = row[Users.lastName],
             email = row[Users.email]
+        )
+    }
+
+    // ============================================
+    // Delete All LMS Data (Testing utility)
+    // ============================================
+
+    suspend fun deleteAllLmsData(): Map<String, Int> = tenantDbQuery {
+        // Delete in reverse dependency order to avoid FK violations
+        val enrollments = LmsEnrollments.deleteAll()
+        val batchSessions = LmsBatchSessions.deleteAll()
+        val batchSections = LmsBatchSections.deleteAll()
+        val batches = LmsBatches.deleteAll()
+        val sections = LmsSections.deleteAll()
+        val courses = LmsCourses.deleteAll()
+
+        mapOf(
+            "enrollments" to enrollments,
+            "batchSessions" to batchSessions,
+            "batchSections" to batchSections,
+            "batches" to batches,
+            "sections" to sections,
+            "courses" to courses
         )
     }
 }

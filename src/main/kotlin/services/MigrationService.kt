@@ -16,7 +16,6 @@ import com.example.database.tables.LibraryFines
 import com.example.database.tables.LibrarySettings
 import com.example.database.tables.LmsCourses
 import com.example.database.tables.LmsSections
-import com.example.database.tables.LmsSessionTemplates
 import com.example.database.tables.LmsBatches
 import com.example.database.tables.LmsBatchSections
 import com.example.database.tables.LmsBatchSessions
@@ -1240,7 +1239,6 @@ class MigrationService {
                 val tablesToCreate = listOf(
                     Triple(LmsCourses, "lms_courses", "LMS Courses"),
                     Triple(LmsSections, "lms_sections", "LMS Sections"),
-                    Triple(LmsSessionTemplates, "lms_session_templates", "LMS Session Templates"),
                     Triple(LmsBatches, "lms_batches", "LMS Batches"),
                     Triple(LmsBatchSections, "lms_batch_sections", "LMS Batch Sections"),
                     Triple(LmsBatchSessions, "lms_batch_sessions", "LMS Batch Sessions"),

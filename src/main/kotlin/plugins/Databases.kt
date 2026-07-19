@@ -83,7 +83,6 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             LibrarySettings,
             LmsCourses,       // LMS - Course templates
             LmsSections,      // LMS - Sections within courses
-            LmsSessionTemplates, // LMS - Session templates per section
             LmsBatches,       // LMS - Batch runs of a course
             LmsBatchSections, // LMS - Per-section pricing in a batch
             LmsBatchSessions, // LMS - Scheduled sessions in a batch

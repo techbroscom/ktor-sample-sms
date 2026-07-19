@@ -119,39 +119,6 @@ fun Route.lmsRoutes(lmsService: LmsService) {
             lmsService.deleteSection(sectionId)
             call.respond(ApiResponse<Unit>(success = true, data = null, message = "Section deleted"))
         }
-
-        // Session templates for a section
-        post("/{id}/session-templates") {
-            val sectionId = call.parameters["id"]
-                ?: throw ApiException("Section ID is required", HttpStatusCode.BadRequest)
-            val request = call.receive<CreateSessionTemplateRequest>()
-            val templateId = lmsService.addSessionTemplate(sectionId, request)
-            call.respond(HttpStatusCode.Created, ApiResponse(
-                success = true, data = mapOf("id" to templateId.toString()),
-                message = "Session template added"
-            ))
-        }
-    }
-
-    // ============================================
-    // Session Template Management
-    // ============================================
-
-    route("/api/v1/lms/session-templates") {
-        put("/{id}") {
-            val templateId = call.parameters["id"]
-                ?: throw ApiException("Template ID is required", HttpStatusCode.BadRequest)
-            val request = call.receive<UpdateSessionTemplateRequest>()
-            lmsService.updateSessionTemplate(templateId, request)
-            call.respond(ApiResponse<Unit>(success = true, data = null, message = "Template updated"))
-        }
-
-        delete("/{id}") {
-            val templateId = call.parameters["id"]
-                ?: throw ApiException("Template ID is required", HttpStatusCode.BadRequest)
-            lmsService.deleteSessionTemplate(templateId)
-            call.respond(ApiResponse<Unit>(success = true, data = null, message = "Template deleted"))
-        }
     }
 
     // ============================================
@@ -282,6 +249,19 @@ fun Route.lmsRoutes(lmsService: LmsService) {
             val result = lmsService.connectZohoWebinar(request)
             call.respond(ApiResponse(
                 success = true, data = result, message = "Zoho Webinar connected successfully"
+            ))
+        }
+    }
+
+    // ============================================
+    // Delete All LMS Data (Testing only)
+    // ============================================
+
+    route("/api/v1/lms/reset") {
+        delete {
+            val result = lmsService.deleteAllLmsData()
+            call.respond(ApiResponse(
+                success = true, data = result, message = "All LMS data deleted"
             ))
         }
     }

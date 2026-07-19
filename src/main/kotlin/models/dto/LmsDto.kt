@@ -69,7 +69,6 @@ data class SectionDto(
     val title: String,
     val description: String? = null,
     val order: Int,
-    val sessionTemplates: List<SessionTemplateDto> = emptyList(),
     val createdAt: String,
     val updatedAt: String? = null
 )
@@ -88,34 +87,7 @@ data class UpdateSectionRequest(
     val order: Int? = null
 )
 
-// ============================================
-// Session Template DTOs
-// ============================================
 
-@Serializable
-data class SessionTemplateDto(
-    val id: String,
-    val sectionId: String,
-    val title: String,
-    val description: String? = null,
-    val order: Int,
-    val createdAt: String,
-    val updatedAt: String? = null
-)
-
-@Serializable
-data class CreateSessionTemplateRequest(
-    val title: String,
-    val description: String? = null,
-    val order: Int
-)
-
-@Serializable
-data class UpdateSessionTemplateRequest(
-    val title: String? = null,
-    val description: String? = null,
-    val order: Int? = null
-)
 
 // ============================================
 // Batch DTOs
@@ -202,7 +174,6 @@ data class BatchSessionDto(
     val batchId: String,
     val sectionId: String,
     val sectionTitle: String,
-    val sessionTemplateId: String,
     val title: String,
     val description: String? = null,
     val scheduledDate: String,
@@ -219,8 +190,7 @@ data class BatchSessionDto(
 @Serializable
 data class CreateBatchSessionRequest(
     val sectionId: String,
-    val sessionTemplateId: String,
-    val title: String? = null, // Override template title
+    val title: String,
     val description: String? = null,
     val scheduledDate: String,
     val startTime: String,

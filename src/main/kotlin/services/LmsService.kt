@@ -81,28 +81,6 @@ class LmsService(
     }
 
     // ============================================
-    // Session Template Management
-    // ============================================
-
-    suspend fun addSessionTemplate(sectionId: String, request: CreateSessionTemplateRequest): UUID {
-        val secId = UUID.fromString(sectionId)
-        return lmsRepository.createSessionTemplate(secId, request)
-    }
-
-    suspend fun updateSessionTemplate(templateId: String, request: UpdateSessionTemplateRequest): Boolean {
-        val id = UUID.fromString(templateId)
-        val success = lmsRepository.updateSessionTemplate(id, request)
-        if (!success) throw ApiException("Session template not found", HttpStatusCode.NotFound)
-        return true
-    }
-
-    suspend fun deleteSessionTemplate(templateId: String) {
-        val id = UUID.fromString(templateId)
-        val success = lmsRepository.deleteSessionTemplate(id)
-        if (!success) throw ApiException("Session template not found", HttpStatusCode.NotFound)
-    }
-
-    // ============================================
     // Batch Management
     // ============================================
 
@@ -170,7 +148,7 @@ class LmsService(
                     )
 
                     val zohoRequest = ZohoCreateWebinarRequest(
-                        topic = request.title ?: "LMS Session",
+                        topic = request.title,
                         agenda = request.description,
                         startTime = startTime,
                         durationMs = durationMs
@@ -491,5 +469,13 @@ class LmsService(
 
     suspend fun updateConfig(request: UpdateLmsConfigRequest): LmsConfigDto {
         return lmsRepository.upsertConfig(request)
+    }
+
+    // ============================================
+    // Delete All (Testing)
+    // ============================================
+
+    suspend fun deleteAllLmsData(): Map<String, Int> {
+        return lmsRepository.deleteAllLmsData()
     }
 }

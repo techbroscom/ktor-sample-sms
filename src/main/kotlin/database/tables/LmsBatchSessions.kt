@@ -17,8 +17,7 @@ object LmsBatchSessions : Table("lms_batch_sessions") {
     val id = uuid("id")
     val batchId = uuid("batch_id").references(LmsBatches.id)
     val sectionId = uuid("section_id").references(LmsSections.id)
-    val sessionTemplateId = uuid("session_template_id").references(LmsSessionTemplates.id)
-    val title = varchar("title", 255) // Can override template title
+    val title = varchar("title", 255)
     val description = text("description").nullable()
     val scheduledDate = date("scheduled_date")
     val startTime = time("start_time")

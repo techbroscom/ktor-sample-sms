@@ -4,6 +4,11 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.datetime
 import java.time.LocalDateTime
 
+/**
+ * @deprecated Session templates have been removed to simplify the course hierarchy.
+ * Courses now have a flat structure: Course → Sections → (Batch Sessions are scheduled directly).
+ * This table is kept temporarily for migration purposes only.
+ */
 object LmsSessionTemplates : Table("lms_session_templates") {
     val id = uuid("id")
     val sectionId = uuid("section_id").references(LmsSections.id)
