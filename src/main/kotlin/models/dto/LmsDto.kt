@@ -300,6 +300,7 @@ data class BatchPendingDto(
 @Serializable
 data class SessionPendingDto(
     val sessionId: String,
+    val batchId: String,
     val sessionTitle: String,
     val batchName: String,
     val courseName: String,
@@ -311,6 +312,7 @@ data class SessionPendingDto(
 @Serializable
 data class UpcomingSessionDto(
     val sessionId: String,
+    val batchId: String,
     val sessionTitle: String,
     val batchName: String,
     val courseName: String,

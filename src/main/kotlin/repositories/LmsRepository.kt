@@ -807,6 +807,7 @@ class LmsRepository {
             .map { row ->
                 SessionPendingDto(
                     sessionId = row[LmsBatchSessions.id].toString(),
+                    batchId = row[LmsBatchSessions.batchId].toString(),
                     sessionTitle = row[LmsBatchSessions.title],
                     batchName = row[LmsBatches.name],
                     courseName = row[LmsCourses.title],
@@ -838,6 +839,7 @@ class LmsRepository {
 
                 UpcomingSessionDto(
                     sessionId = row[LmsBatchSessions.id].toString(),
+                    batchId = row[LmsBatchSessions.batchId].toString(),
                     sessionTitle = row[LmsBatchSessions.title],
                     batchName = row[LmsBatches.name],
                     courseName = row[LmsCourses.title],
