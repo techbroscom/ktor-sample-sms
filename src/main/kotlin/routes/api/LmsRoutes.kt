@@ -141,6 +141,14 @@ fun Route.lmsRoutes(lmsService: LmsService) {
             call.respond(ApiResponse(success = true, data = batch, message = "Batch updated"))
         }
 
+        // List enrollments for a batch (Admin)
+        get("/{id}/enrollments") {
+            val batchId = call.parameters["id"]
+                ?: throw ApiException("Batch ID is required", HttpStatusCode.BadRequest)
+            val enrollments = lmsService.getBatchEnrollments(batchId)
+            call.respond(ApiResponse(success = true, data = enrollments))
+        }
+
         // Schedule sessions for a batch
         post("/{id}/sessions") {
             val batchId = call.parameters["id"]
@@ -216,6 +224,17 @@ fun Route.lmsRoutes(lmsService: LmsService) {
                 ?: throw ApiException("User ID header is required", HttpStatusCode.Unauthorized)
             val courses = lmsService.getMyEnrolledCourses(userId)
             call.respond(ApiResponse(success = true, data = courses))
+        }
+    }
+
+    // ============================================
+    // Admin Dashboard
+    // ============================================
+
+    route("/api/v1/lms/admin/dashboard") {
+        get {
+            val dashboard = lmsService.getAdminDashboard()
+            call.respond(ApiResponse(success = true, data = dashboard))
         }
     }
 

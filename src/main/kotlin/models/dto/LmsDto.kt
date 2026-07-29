@@ -183,6 +183,7 @@ data class BatchSessionDto(
     val status: String,
     val order: Int,
     val canJoin: Boolean = false, // Computed: is within join window?
+    val webinarCreated: Boolean = false, // Admin: whether Zoho/provider webinar was created
     val createdAt: String,
     val updatedAt: String? = null
 )
@@ -271,6 +272,71 @@ data class SessionJoinResponse(
     val startTime: String,
     val endTime: String,
     val provider: String // ZOOM / GOOGLE_MEET / CUSTOM_LINK
+)
+
+// ============================================
+// Admin Dashboard DTOs
+// ============================================
+
+@Serializable
+data class AdminDashboardDto(
+    val draftCourses: List<CourseSummaryDto> = emptyList(),
+    val batchesWithoutSessions: List<BatchPendingDto> = emptyList(),
+    val sessionsWithoutWebinar: List<SessionPendingDto> = emptyList(),
+    val upcomingSessions: List<UpcomingSessionDto> = emptyList(),
+    val recentEnrollments: List<BatchEnrollmentDto> = emptyList()
+)
+
+@Serializable
+data class BatchPendingDto(
+    val batchId: String,
+    val batchName: String,
+    val courseName: String,
+    val startDate: String,
+    val endDate: String,
+    val sessionCount: Int
+)
+
+@Serializable
+data class SessionPendingDto(
+    val sessionId: String,
+    val sessionTitle: String,
+    val batchName: String,
+    val courseName: String,
+    val scheduledDate: String,
+    val startTime: String,
+    val endTime: String
+)
+
+@Serializable
+data class UpcomingSessionDto(
+    val sessionId: String,
+    val sessionTitle: String,
+    val batchName: String,
+    val courseName: String,
+    val scheduledDate: String,
+    val startTime: String,
+    val endTime: String,
+    val webinarCreated: Boolean,
+    val enrolledCount: Int
+)
+
+@Serializable
+data class BatchEnrollmentDto(
+    val enrollmentId: String,
+    val userId: String,
+    val userName: String,
+    val userEmail: String,
+    val batchId: String,
+    val batchName: String,
+    val courseName: String,
+    val purchaseType: String,
+    val sectionId: String? = null,
+    val sectionTitle: String? = null,
+    val amount: String,
+    val currency: String,
+    val paymentStatus: String,
+    val purchaseDate: String
 )
 
 // ============================================

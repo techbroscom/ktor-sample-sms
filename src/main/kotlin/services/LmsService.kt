@@ -460,6 +460,28 @@ class LmsService(
     }
 
     // ============================================
+    // Admin Dashboard
+    // ============================================
+
+    suspend fun getAdminDashboard(): AdminDashboardDto {
+        return AdminDashboardDto(
+            draftCourses = lmsRepository.getDraftCourses(),
+            batchesWithoutSessions = lmsRepository.getBatchesWithoutSessions(),
+            sessionsWithoutWebinar = lmsRepository.getSessionsWithoutWebinar(),
+            upcomingSessions = lmsRepository.getUpcomingSessions(7),
+            recentEnrollments = lmsRepository.getRecentEnrollments(10)
+        )
+    }
+
+    suspend fun getBatchEnrollments(batchId: String): List<BatchEnrollmentDto> {
+        val bId = UUID.fromString(batchId)
+        // Verify batch exists
+        lmsRepository.findBatchById(bId)
+            ?: throw ApiException("Batch not found", HttpStatusCode.NotFound)
+        return lmsRepository.findEnrollmentsByBatchId(bId)
+    }
+
+    // ============================================
     // Config
     // ============================================
 

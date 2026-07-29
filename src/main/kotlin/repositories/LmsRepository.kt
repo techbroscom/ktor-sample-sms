@@ -573,6 +573,7 @@ class LmsRepository {
         val joinWindowStart = sessionStart.minusMinutes(10)
 
         val canJoin = now.isAfter(joinWindowStart) && now.isBefore(sessionEnd)
+        val providerMeetingId = row[LmsBatchSessions.providerMeetingId]
 
         return BatchSessionDto(
             id = row[LmsBatchSessions.id].toString(),
@@ -588,6 +589,7 @@ class LmsRepository {
             status = row[LmsBatchSessions.status].name,
             order = row[LmsBatchSessions.order],
             canJoin = canJoin,
+            webinarCreated = providerMeetingId != null && providerMeetingId.isNotBlank(),
             createdAt = row[LmsBatchSessions.createdAt].toString(),
             updatedAt = row[LmsBatchSessions.updatedAt]?.toString()
         )
@@ -691,6 +693,196 @@ class LmsRepository {
             lastName = row[Users.lastName],
             email = row[Users.email]
         )
+    }
+
+    // ============================================
+    // Admin: Enrollments per Batch
+    // ============================================
+
+    suspend fun findEnrollmentsByBatchId(batchId: UUID): List<BatchEnrollmentDto> = tenantDbQuery {
+        val batch = LmsBatches.selectAll()
+            .where { LmsBatches.id eq batchId }
+            .singleOrNull() ?: return@tenantDbQuery emptyList()
+
+        val courseName = LmsCourses.selectAll()
+            .where { LmsCourses.id eq batch[LmsBatches.courseId] }
+            .singleOrNull()?.get(LmsCourses.title) ?: ""
+
+        LmsEnrollments
+            .join(Users, JoinType.INNER, LmsEnrollments.userId, Users.id)
+            .selectAll()
+            .where { LmsEnrollments.batchId eq batchId }
+            .orderBy(LmsEnrollments.purchaseDate, SortOrder.DESC)
+            .map { row ->
+                val sectionId = row[LmsEnrollments.sectionId]
+                val sectionTitle = sectionId?.let {
+                    LmsSections.selectAll().where { LmsSections.id eq it }
+                        .singleOrNull()?.get(LmsSections.title)
+                }
+
+                BatchEnrollmentDto(
+                    enrollmentId = row[LmsEnrollments.id].toString(),
+                    userId = row[LmsEnrollments.userId].toString(),
+                    userName = "${row[Users.firstName]} ${row[Users.lastName]}".trim(),
+                    userEmail = row[Users.email],
+                    batchId = batchId.toString(),
+                    batchName = batch[LmsBatches.name],
+                    courseName = courseName,
+                    purchaseType = row[LmsEnrollments.purchaseType].name,
+                    sectionId = sectionId?.toString(),
+                    sectionTitle = sectionTitle,
+                    amount = row[LmsEnrollments.amount].toString(),
+                    currency = row[LmsEnrollments.currency],
+                    paymentStatus = row[LmsEnrollments.paymentStatus].name,
+                    purchaseDate = row[LmsEnrollments.purchaseDate].toString()
+                )
+            }
+    }
+
+    // ============================================
+    // Admin: Dashboard Data
+    // ============================================
+
+    suspend fun getDraftCourses(): List<CourseSummaryDto> = tenantDbQuery {
+        LmsCourses.selectAll()
+            .where { LmsCourses.status eq CourseStatus.DRAFT }
+            .map { row ->
+                val courseId = row[LmsCourses.id]
+                val sectionCount = LmsSections.selectAll()
+                    .where { LmsSections.courseId eq courseId }
+                    .count().toInt()
+
+                CourseSummaryDto(
+                    id = courseId.toString(),
+                    title = row[LmsCourses.title],
+                    instructor = row[LmsCourses.instructor],
+                    thumbnail = row[LmsCourses.thumbnail],
+                    category = row[LmsCourses.category],
+                    totalDuration = row[LmsCourses.totalDuration],
+                    status = row[LmsCourses.status].name,
+                    sectionCount = sectionCount,
+                    nextBatchStartDate = null,
+                    lowestPrice = null
+                )
+            }
+    }
+
+    suspend fun getBatchesWithoutSessions(): List<BatchPendingDto> = tenantDbQuery {
+        val activeBatches = LmsBatches.selectAll()
+            .where { LmsBatches.status inList listOf(BatchStatus.UPCOMING, BatchStatus.ONGOING) }
+
+        activeBatches.mapNotNull { batchRow ->
+            val batchId = batchRow[LmsBatches.id]
+            val sessionCount = LmsBatchSessions.selectAll()
+                .where { LmsBatchSessions.batchId eq batchId }
+                .count().toInt()
+
+            if (sessionCount == 0) {
+                val courseName = LmsCourses.selectAll()
+                    .where { LmsCourses.id eq batchRow[LmsBatches.courseId] }
+                    .singleOrNull()?.get(LmsCourses.title) ?: ""
+
+                BatchPendingDto(
+                    batchId = batchId.toString(),
+                    batchName = batchRow[LmsBatches.name],
+                    courseName = courseName,
+                    startDate = batchRow[LmsBatches.startDate].toString(),
+                    endDate = batchRow[LmsBatches.endDate].toString(),
+                    sessionCount = 0
+                )
+            } else null
+        }
+    }
+
+    suspend fun getSessionsWithoutWebinar(): List<SessionPendingDto> = tenantDbQuery {
+        LmsBatchSessions
+            .join(LmsBatches, JoinType.INNER, LmsBatchSessions.batchId, LmsBatches.id)
+            .join(LmsCourses, JoinType.INNER, LmsBatches.courseId, LmsCourses.id)
+            .selectAll()
+            .where {
+                (LmsBatchSessions.status eq SessionStatus.UPCOMING) and
+                (LmsBatchSessions.providerMeetingId.isNull() or (LmsBatchSessions.providerMeetingId eq ""))
+            }
+            .orderBy(LmsBatchSessions.scheduledDate, SortOrder.ASC)
+            .map { row ->
+                SessionPendingDto(
+                    sessionId = row[LmsBatchSessions.id].toString(),
+                    sessionTitle = row[LmsBatchSessions.title],
+                    batchName = row[LmsBatches.name],
+                    courseName = row[LmsCourses.title],
+                    scheduledDate = row[LmsBatchSessions.scheduledDate].toString(),
+                    startTime = row[LmsBatchSessions.startTime].toString(),
+                    endTime = row[LmsBatchSessions.endTime].toString()
+                )
+            }
+    }
+
+    suspend fun getUpcomingSessions(days: Int = 7): List<UpcomingSessionDto> = tenantDbQuery {
+        val today = LocalDate.now()
+        val endDate = today.plusDays(days.toLong())
+
+        LmsBatchSessions
+            .join(LmsBatches, JoinType.INNER, LmsBatchSessions.batchId, LmsBatches.id)
+            .join(LmsCourses, JoinType.INNER, LmsBatches.courseId, LmsCourses.id)
+            .selectAll()
+            .where {
+                (LmsBatchSessions.scheduledDate greaterEq today) and
+                (LmsBatchSessions.scheduledDate lessEq endDate) and
+                (LmsBatchSessions.status eq SessionStatus.UPCOMING)
+            }
+            .orderBy(LmsBatchSessions.scheduledDate, SortOrder.ASC)
+            .map { row ->
+                val batchId = row[LmsBatchSessions.batchId]
+                val enrolledCount = row[LmsBatches.enrolledCount]
+                val providerMeetingId = row[LmsBatchSessions.providerMeetingId]
+
+                UpcomingSessionDto(
+                    sessionId = row[LmsBatchSessions.id].toString(),
+                    sessionTitle = row[LmsBatchSessions.title],
+                    batchName = row[LmsBatches.name],
+                    courseName = row[LmsCourses.title],
+                    scheduledDate = row[LmsBatchSessions.scheduledDate].toString(),
+                    startTime = row[LmsBatchSessions.startTime].toString(),
+                    endTime = row[LmsBatchSessions.endTime].toString(),
+                    webinarCreated = providerMeetingId != null && providerMeetingId.isNotBlank(),
+                    enrolledCount = enrolledCount
+                )
+            }
+    }
+
+    suspend fun getRecentEnrollments(limit: Int = 10): List<BatchEnrollmentDto> = tenantDbQuery {
+        LmsEnrollments
+            .join(Users, JoinType.INNER, LmsEnrollments.userId, Users.id)
+            .join(LmsBatches, JoinType.INNER, LmsEnrollments.batchId, LmsBatches.id)
+            .join(LmsCourses, JoinType.INNER, LmsBatches.courseId, LmsCourses.id)
+            .selectAll()
+            .where { LmsEnrollments.paymentStatus eq PaymentStatus.SUCCESS }
+            .orderBy(LmsEnrollments.purchaseDate, SortOrder.DESC)
+            .limit(limit)
+            .map { row ->
+                val sectionId = row[LmsEnrollments.sectionId]
+                val sectionTitle = sectionId?.let {
+                    LmsSections.selectAll().where { LmsSections.id eq it }
+                        .singleOrNull()?.get(LmsSections.title)
+                }
+
+                BatchEnrollmentDto(
+                    enrollmentId = row[LmsEnrollments.id].toString(),
+                    userId = row[LmsEnrollments.userId].toString(),
+                    userName = "${row[Users.firstName]} ${row[Users.lastName]}".trim(),
+                    userEmail = row[Users.email],
+                    batchId = row[LmsEnrollments.batchId].toString(),
+                    batchName = row[LmsBatches.name],
+                    courseName = row[LmsCourses.title],
+                    purchaseType = row[LmsEnrollments.purchaseType].name,
+                    sectionId = sectionId?.toString(),
+                    sectionTitle = sectionTitle,
+                    amount = row[LmsEnrollments.amount].toString(),
+                    currency = row[LmsEnrollments.currency],
+                    paymentStatus = row[LmsEnrollments.paymentStatus].name,
+                    purchaseDate = row[LmsEnrollments.purchaseDate].toString()
+                )
+            }
     }
 
     // ============================================
