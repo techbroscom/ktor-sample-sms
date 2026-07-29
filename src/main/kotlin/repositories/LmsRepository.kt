@@ -299,6 +299,18 @@ class LmsRepository {
         } > 0
     }
 
+    suspend fun attachProviderWebinar(
+        sessionId: UUID,
+        meetingLinkValue: String,
+        providerMeetingIdValue: String
+    ): Boolean = tenantDbQuery {
+        LmsBatchSessions.update({ LmsBatchSessions.id eq sessionId }) {
+            it[LmsBatchSessions.meetingLink] = meetingLinkValue
+            it[LmsBatchSessions.providerMeetingId] = providerMeetingIdValue
+            it[updatedAt] = LocalDateTime.now()
+        } > 0
+    }
+
     suspend fun findBatchSessionById(sessionId: UUID): BatchSessionDto? = tenantDbQuery {
         LmsBatchSessions
             .join(LmsSections, JoinType.INNER, LmsBatchSessions.sectionId, LmsSections.id)

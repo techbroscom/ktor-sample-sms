@@ -177,6 +177,64 @@ class LmsService(
         return lmsRepository.findBatchSessionById(id)!!
     }
 
+    suspend fun createWebinarForSession(sessionId: String): BatchSessionDto {
+        val id = UUID.fromString(sessionId)
+        val session = lmsRepository.findBatchSessionById(id)
+            ?: throw ApiException("Session not found", HttpStatusCode.NotFound)
+
+        val existingProviderMeetingId = lmsRepository.getSessionProviderMeetingId(id)
+        if (!existingProviderMeetingId.isNullOrBlank()) {
+            return session
+        }
+
+        val config = lmsRepository.getConfig()
+            ?: throw ApiException("Webinar provider is not configured", HttpStatusCode.BadRequest)
+        if (config.meetingProvider != MeetingProvider.ZOHO_WEBINAR.name) {
+            throw ApiException("Webinar provider is not configured for Zoho", HttpStatusCode.BadRequest)
+        }
+
+        val credentials = getZohoCredentials(config)
+            ?: throw ApiException("Zoho Webinar credentials are not configured", HttpStatusCode.BadRequest)
+
+        val result = try {
+            val startTime = zohoWebinarService.formatStartTime(
+                date = session.scheduledDate,
+                time = session.startTime
+            )
+            val durationMs = zohoWebinarService.calculateDurationMs(
+                startTime = session.startTime,
+                endTime = session.endTime
+            )
+            zohoWebinarService.createWebinar(
+                credentials,
+                ZohoCreateWebinarRequest(
+                    topic = session.title,
+                    agenda = session.description,
+                    startTime = startTime,
+                    durationMs = durationMs
+                )
+            )
+        } catch (e: Exception) {
+            throw ApiException(
+                "Failed to create webinar: ${e.message ?: "provider error"}",
+                HttpStatusCode.BadRequest
+            )
+        }
+
+        val providerMeetingId = "${result.meetingKey}::${result.instanceId}"
+        val updated = lmsRepository.attachProviderWebinar(
+            sessionId = id,
+            meetingLinkValue = result.registrationLink,
+            providerMeetingIdValue = providerMeetingId
+        )
+        if (!updated) {
+            throw ApiException("Session not found", HttpStatusCode.NotFound)
+        }
+
+        return lmsRepository.findBatchSessionById(id)
+            ?: throw ApiException("Failed to load updated session", HttpStatusCode.InternalServerError)
+    }
+
     // ============================================
     // Purchase (Mock Payment)
     // ============================================
