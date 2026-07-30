@@ -42,6 +42,7 @@ fun Application.configureDatabases() {
         migrationService.migrateUsersAppleRelayEmail() // Add apple_relay_email column for Apple Sign-In relay mapping
         migrationService.migrateLmsTables() // Create LMS tables in tenant schemas
         migrationService.migrateLmsBatchSessionsProviderMeetingId() // Add provider_meeting_id for Zoho Webinar
+        migrationService.migrateLmsSessionAttendance() // Create lms_session_attendance table
         migrationService.migrateLmsRemoveSessionTemplates() // Remove session templates layer (simplify hierarchy)
     }
 }
@@ -88,7 +89,8 @@ fun createTenantTables(tenantDatabase: org.jetbrains.exposed.sql.Database) {
             LmsBatchSections, // LMS - Per-section pricing in a batch
             LmsBatchSessions, // LMS - Scheduled sessions in a batch
             LmsEnrollments,   // LMS - User enrollments/purchases
-            LmsConfig         // LMS - Tenant-level config (meeting/payment provider)
+            LmsConfig,        // LMS - Tenant-level config (meeting/payment provider)
+            LmsSessionAttendance // LMS - Self-reported attendance on session join
         )
     }
 }

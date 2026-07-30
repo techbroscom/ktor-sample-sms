@@ -184,6 +184,8 @@ data class BatchSessionDto(
     val order: Int,
     val canJoin: Boolean = false, // Computed: is within join window?
     val webinarCreated: Boolean = false, // Admin: whether Zoho/provider webinar was created
+    val meetingReady: Boolean = false, // Admin: students can join (provider webinar OR custom link set)
+    val canCreateWebinar: Boolean = false, // Admin: provider webinar can be created for this session
     val createdAt: String,
     val updatedAt: String? = null
 )
@@ -280,6 +282,7 @@ data class SessionJoinResponse(
 
 @Serializable
 data class AdminDashboardDto(
+    val meetingProvider: String = "CUSTOM_LINK",
     val draftCourses: List<CourseSummaryDto> = emptyList(),
     val batchesWithoutSessions: List<BatchPendingDto> = emptyList(),
     val sessionsWithoutWebinar: List<SessionPendingDto> = emptyList(),
@@ -320,6 +323,7 @@ data class UpcomingSessionDto(
     val startTime: String,
     val endTime: String,
     val webinarCreated: Boolean,
+    val meetingReady: Boolean = false,
     val enrolledCount: Int
 )
 

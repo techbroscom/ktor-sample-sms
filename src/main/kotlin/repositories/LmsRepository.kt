@@ -200,12 +200,13 @@ class LmsRepository {
                 )
             }
 
+        val meetingSetup = readMeetingSetup()
         val sessions = LmsBatchSessions
             .join(LmsSections, JoinType.INNER, LmsBatchSessions.sectionId, LmsSections.id)
             .selectAll()
             .where { LmsBatchSessions.batchId eq batchId }
             .orderBy(LmsBatchSessions.scheduledDate, SortOrder.ASC)
-            .map { mapBatchSessionRow(it) }
+            .map { mapBatchSessionRow(it, meetingSetup) }
 
         val maxSeats = batch[LmsBatches.maxSeats]
         val enrolled = batch[LmsBatches.enrolledCount]
@@ -312,21 +313,23 @@ class LmsRepository {
     }
 
     suspend fun findBatchSessionById(sessionId: UUID): BatchSessionDto? = tenantDbQuery {
+        val meetingSetup = readMeetingSetup()
         LmsBatchSessions
             .join(LmsSections, JoinType.INNER, LmsBatchSessions.sectionId, LmsSections.id)
             .selectAll()
             .where { LmsBatchSessions.id eq sessionId }
-            .map { mapBatchSessionRow(it) }
+            .map { mapBatchSessionRow(it, meetingSetup) }
             .singleOrNull()
     }
 
     suspend fun findSessionsByBatchId(batchId: UUID): List<BatchSessionDto> = tenantDbQuery {
+        val meetingSetup = readMeetingSetup()
         LmsBatchSessions
             .join(LmsSections, JoinType.INNER, LmsBatchSessions.sectionId, LmsSections.id)
             .selectAll()
             .where { LmsBatchSessions.batchId eq batchId }
             .orderBy(LmsBatchSessions.scheduledDate, SortOrder.ASC)
-            .map { mapBatchSessionRow(it) }
+            .map { mapBatchSessionRow(it, meetingSetup) }
     }
 
     // ============================================
@@ -376,6 +379,8 @@ class LmsRepository {
             .where { (LmsEnrollments.userId eq userId) and (LmsEnrollments.paymentStatus eq PaymentStatus.SUCCESS) }
             .orderBy(LmsEnrollments.purchaseDate, SortOrder.DESC)
 
+        val meetingSetup = readMeetingSetup()
+
         enrollments.map { row ->
             val batchId = row[LmsEnrollments.batchId]
             val sectionId = row[LmsEnrollments.sectionId]
@@ -397,7 +402,7 @@ class LmsRepository {
                 }
                 .orderBy(LmsBatchSessions.scheduledDate, SortOrder.ASC)
                 .limit(5)
-                .map { mapBatchSessionRow(it) }
+                .map { mapBatchSessionRow(it, meetingSetup) }
 
             MyEnrolledCourseDto(
                 enrollmentId = row[LmsEnrollments.id].toString(),
@@ -415,6 +420,53 @@ class LmsRepository {
                 purchaseDate = row[LmsEnrollments.purchaseDate].toString()
             )
         }
+    }
+
+    /**
+     * Self-reported attendance: called after a student successfully passes the
+     * enrollment + time-window checks in joinSession(). First join creates the
+     * row; subsequent joins (e.g. reconnects) just bump joinCount/lastJoinedAt.
+     * This proves the student requested the link, not that they stayed for the
+     * whole session.
+     */
+    suspend fun recordSessionAttendance(sessionId: UUID, userId: UUID, batchId: UUID) = tenantDbQuery {
+        val existing = LmsSessionAttendance.selectAll()
+            .where { (LmsSessionAttendance.sessionId eq sessionId) and (LmsSessionAttendance.userId eq userId) }
+            .singleOrNull()
+
+        val now = LocalDateTime.now()
+
+        if (existing == null) {
+            LmsSessionAttendance.insert {
+                it[id] = UUID.randomUUID()
+                it[LmsSessionAttendance.sessionId] = sessionId
+                it[LmsSessionAttendance.userId] = userId
+                it[LmsSessionAttendance.batchId] = batchId
+                it[firstJoinedAt] = now
+                it[lastJoinedAt] = now
+                it[joinCount] = 1
+                it[createdAt] = now
+            }
+        } else {
+            LmsSessionAttendance.update({
+                (LmsSessionAttendance.sessionId eq sessionId) and (LmsSessionAttendance.userId eq userId)
+            }) {
+                with(SqlExpressionBuilder) {
+                    it[joinCount] = joinCount + 1
+                }
+                it[lastJoinedAt] = now
+            }
+        }
+    }
+
+    /**
+     * Count of distinct sessions a student has self-reported attendance for
+     * within a batch. Used to compute a lightweight "progress" signal.
+     */
+    suspend fun countAttendedSessionsByUserAndBatch(userId: UUID, batchId: UUID): Int = tenantDbQuery {
+        LmsSessionAttendance.selectAll()
+            .where { (LmsSessionAttendance.userId eq userId) and (LmsSessionAttendance.batchId eq batchId) }
+            .count().toInt()
     }
 
     suspend fun hasEnrollment(userId: UUID, batchId: UUID, sectionId: UUID?): Boolean = tenantDbQuery {
@@ -575,7 +627,35 @@ class LmsRepository {
     // Helper Mappers
     // ============================================
 
-    private fun mapBatchSessionRow(row: ResultRow): BatchSessionDto {
+    /**
+     * Tenant meeting setup, read once per query so session readiness is judged
+     * against the provider the tenant actually uses. Without this, CUSTOM_LINK
+     * tenants would see every session flagged as "no webinar".
+     */
+    data class MeetingSetup(
+        val provider: String,
+        val hasCredentials: Boolean
+    ) {
+        /** True when the provider creates webinars for us and is usable right now. */
+        val managesWebinars: Boolean
+            get() = provider == MeetingProvider.ZOHO_WEBINAR.name && hasCredentials
+
+        /** Can students join this session? Provider webinar for Zoho, link otherwise. */
+        fun isSessionReady(providerMeetingId: String?, meetingLink: String?): Boolean =
+            if (provider == MeetingProvider.ZOHO_WEBINAR.name) !providerMeetingId.isNullOrBlank()
+            else !meetingLink.isNullOrBlank()
+    }
+
+    private fun readMeetingSetup(): MeetingSetup {
+        val row = LmsConfig.selectAll().firstOrNull()
+            ?: return MeetingSetup(MeetingProvider.CUSTOM_LINK.name, hasCredentials = false)
+        return MeetingSetup(
+            provider = row[LmsConfig.meetingProvider].name,
+            hasCredentials = !row[LmsConfig.meetingCredentials].isNullOrBlank()
+        )
+    }
+
+    private fun mapBatchSessionRow(row: ResultRow, setup: MeetingSetup): BatchSessionDto {
         val scheduledDate = row[LmsBatchSessions.scheduledDate]
         val startTime = row[LmsBatchSessions.startTime]
         val endTime = row[LmsBatchSessions.endTime]
@@ -586,6 +666,8 @@ class LmsRepository {
 
         val canJoin = now.isAfter(joinWindowStart) && now.isBefore(sessionEnd)
         val providerMeetingId = row[LmsBatchSessions.providerMeetingId]
+        val webinarCreated = !providerMeetingId.isNullOrBlank()
+        val status = row[LmsBatchSessions.status]
 
         return BatchSessionDto(
             id = row[LmsBatchSessions.id].toString(),
@@ -598,10 +680,17 @@ class LmsRepository {
             startTime = startTime.toString(),
             endTime = endTime.toString(),
             meetingLink = null, // Never exposed directly; use join endpoint
-            status = row[LmsBatchSessions.status].name,
+            status = status.name,
             order = row[LmsBatchSessions.order],
             canJoin = canJoin,
-            webinarCreated = providerMeetingId != null && providerMeetingId.isNotBlank(),
+            webinarCreated = webinarCreated,
+            meetingReady = setup.isSessionReady(
+                providerMeetingId = providerMeetingId,
+                meetingLink = row[LmsBatchSessions.meetingLink]
+            ),
+            canCreateWebinar = setup.managesWebinars &&
+                !webinarCreated &&
+                status == SessionStatus.UPCOMING,
             createdAt = row[LmsBatchSessions.createdAt].toString(),
             updatedAt = row[LmsBatchSessions.updatedAt]?.toString()
         )
@@ -806,15 +895,25 @@ class LmsRepository {
         }
     }
 
+    /**
+     * Upcoming sessions students cannot join yet. For webinar providers that
+     * means no provider webinar exists; for CUSTOM_LINK it means no link was set.
+     */
     suspend fun getSessionsWithoutWebinar(): List<SessionPendingDto> = tenantDbQuery {
+        val meetingSetup = readMeetingSetup()
+        val notReady: Op<Boolean> = with(SqlExpressionBuilder) {
+            if (meetingSetup.provider == MeetingProvider.ZOHO_WEBINAR.name) {
+                LmsBatchSessions.providerMeetingId.isNull() or (LmsBatchSessions.providerMeetingId eq "")
+            } else {
+                LmsBatchSessions.meetingLink.isNull() or (LmsBatchSessions.meetingLink eq "")
+            }
+        }
+
         LmsBatchSessions
             .join(LmsBatches, JoinType.INNER, LmsBatchSessions.batchId, LmsBatches.id)
             .join(LmsCourses, JoinType.INNER, LmsBatches.courseId, LmsCourses.id)
             .selectAll()
-            .where {
-                (LmsBatchSessions.status eq SessionStatus.UPCOMING) and
-                (LmsBatchSessions.providerMeetingId.isNull() or (LmsBatchSessions.providerMeetingId eq ""))
-            }
+            .where { (LmsBatchSessions.status eq SessionStatus.UPCOMING) and notReady }
             .orderBy(LmsBatchSessions.scheduledDate, SortOrder.ASC)
             .map { row ->
                 SessionPendingDto(
@@ -833,6 +932,7 @@ class LmsRepository {
     suspend fun getUpcomingSessions(days: Int = 7): List<UpcomingSessionDto> = tenantDbQuery {
         val today = LocalDate.now()
         val endDate = today.plusDays(days.toLong())
+        val meetingSetup = readMeetingSetup()
 
         LmsBatchSessions
             .join(LmsBatches, JoinType.INNER, LmsBatchSessions.batchId, LmsBatches.id)
@@ -858,7 +958,11 @@ class LmsRepository {
                     scheduledDate = row[LmsBatchSessions.scheduledDate].toString(),
                     startTime = row[LmsBatchSessions.startTime].toString(),
                     endTime = row[LmsBatchSessions.endTime].toString(),
-                    webinarCreated = providerMeetingId != null && providerMeetingId.isNotBlank(),
+                    webinarCreated = !providerMeetingId.isNullOrBlank(),
+                    meetingReady = meetingSetup.isSessionReady(
+                        providerMeetingId = providerMeetingId,
+                        meetingLink = row[LmsBatchSessions.meetingLink]
+                    ),
                     enrolledCount = enrolledCount
                 )
             }

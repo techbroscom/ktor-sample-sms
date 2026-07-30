@@ -21,6 +21,7 @@ import com.example.database.tables.LmsBatchSections
 import com.example.database.tables.LmsBatchSessions
 import com.example.database.tables.LmsEnrollments
 import com.example.database.tables.LmsConfig
+import com.example.database.tables.LmsSessionAttendance
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.selectAll
@@ -1324,6 +1325,59 @@ class MigrationService {
         }
 
         println("✓ provider_meeting_id column migration completed")
+    }
+
+    /**
+     * Create lms_session_attendance table in tenant schemas.
+     * Records self-reported attendance when a student successfully joins a
+     * live session (see LmsRepository.recordSessionAttendance).
+     */
+    fun migrateLmsSessionAttendance() {
+        println("🔧 Creating lms_session_attendance table in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            exec("SET search_path TO public")
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (lms_session_attendance)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                exec("SET search_path TO $schema")
+
+                val tableExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.tables
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'lms_session_attendance'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!tableExists) {
+                    println("➕ Creating lms_session_attendance table in $schema")
+                    SchemaUtils.create(LmsSessionAttendance)
+                    println("✓ LMS Session Attendance table created successfully in $schema")
+                } else {
+                    println("✓ lms_session_attendance table already exists in $schema")
+                }
+            }
+        }
+
+        println("✓ lms_session_attendance migration completed")
     }
 
     /**

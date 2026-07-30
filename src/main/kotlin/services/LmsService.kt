@@ -389,6 +389,9 @@ class LmsService(
             throw ApiException("Session has already ended", HttpStatusCode.Gone)
         }
 
+        // Self-reported attendance: record now that enrollment + time window are verified.
+        lmsRepository.recordSessionAttendance(sId, uId, batchId)
+
         val meetingProvider = config?.meetingProvider ?: "CUSTOM_LINK"
 
         // If Zoho Webinar — register the student and return personalized joinLink
@@ -523,6 +526,8 @@ class LmsService(
 
     suspend fun getAdminDashboard(): AdminDashboardDto {
         return AdminDashboardDto(
+            meetingProvider = lmsRepository.getConfig()?.meetingProvider
+                ?: MeetingProvider.CUSTOM_LINK.name,
             draftCourses = lmsRepository.getDraftCourses(),
             batchesWithoutSessions = lmsRepository.getBatchesWithoutSessions(),
             sessionsWithoutWebinar = lmsRepository.getSessionsWithoutWebinar(),
