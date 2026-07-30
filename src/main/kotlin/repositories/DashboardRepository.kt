@@ -12,8 +12,42 @@ import java.util.UUID
 
 
 class DashboardRepository(
-    private val s3FileService: S3FileService? = null
+    private val s3FileService: S3FileService? = null,
+    private val lmsRepository: LmsRepository = LmsRepository()
 ) {
+
+    /**
+     * Builds the LMS enrolled-course summary for a student's dashboard, reusing
+     * LmsRepository.findEnrollmentsByUserId for the base enrollment data and
+     * augmenting each with a self-reported attendance progress figure.
+     */
+    private suspend fun getEnrolledCoursesForDashboard(studentId: UUID): List<StudentEnrolledCourseDto> {
+        val enrollments = lmsRepository.findEnrollmentsByUserId(studentId)
+
+        return enrollments.map { enrollment ->
+            val batchId = UUID.fromString(enrollment.batchId)
+            val totalSessions = lmsRepository.countSessionsByBatchId(batchId)
+            val sessionsAttended = lmsRepository.countAttendedSessionsByUserAndBatch(studentId, batchId)
+            val progressPercentage = if (totalSessions > 0) {
+                (sessionsAttended.toDouble() / totalSessions) * 100
+            } else 0.0
+
+            StudentEnrolledCourseDto(
+                enrollmentId = enrollment.enrollmentId,
+                courseId = enrollment.courseId,
+                courseName = enrollment.courseName,
+                batchId = enrollment.batchId,
+                batchName = enrollment.batchName,
+                batchStatus = enrollment.batchStatus,
+                purchaseType = enrollment.purchaseType,
+                batchStartDate = enrollment.batchStartDate,
+                batchEndDate = enrollment.batchEndDate,
+                sessionsAttended = sessionsAttended,
+                totalSessions = totalSessions,
+                progressPercentage = progressPercentage
+            )
+        }
+    }
 
     suspend fun getDashboardOverview(): DashboardOverviewDto = tenantDbQuery {
         val today = LocalDate.now()
@@ -628,7 +662,13 @@ class DashboardRepository(
         )
     }
 
-    suspend fun getStudentCompleteData(studentId: String): StudentCompleteDataDto? = tenantDbQuery {
+    suspend fun getStudentCompleteData(studentId: String): StudentCompleteDataDto? {
+        val data = getStudentCompleteDataInternal(studentId) ?: return null
+        val enrolledCourses = getEnrolledCoursesForDashboard(UUID.fromString(studentId))
+        return data.copy(enrolledCourses = enrolledCourses)
+    }
+
+    private suspend fun getStudentCompleteDataInternal(studentId: String): StudentCompleteDataDto? = tenantDbQuery {
         // First, verify the student exists and get basic info
         val studentInfo = Users.selectAll()
             .where { (Users.id eq UUID.fromString(studentId)) and (Users.role eq UserRole.STUDENT) }
@@ -889,7 +929,13 @@ class DashboardRepository(
         )
     }
 
-    suspend fun getStudentBasicData(studentId: String): StudentBasicDataDto? = tenantDbQuery {
+    suspend fun getStudentBasicData(studentId: String): StudentBasicDataDto? {
+        val data = getStudentBasicDataInternal(studentId) ?: return null
+        val enrolledCourses = getEnrolledCoursesForDashboard(UUID.fromString(studentId))
+        return data.copy(enrolledCourses = enrolledCourses)
+    }
+
+    private suspend fun getStudentBasicDataInternal(studentId: String): StudentBasicDataDto? = tenantDbQuery {
         // First, verify the student exists and get basic info
         val studentInfo = Users.selectAll()
             .where { (Users.id eq UUID.fromString(studentId)) and (Users.role eq UserRole.STUDENT) }

@@ -269,7 +269,10 @@ data class StudentCompleteDataDto(
 
     // Upcoming information
     val upcomingExams: List<StudentUpcomingExamDto>,
-    val classTeachers: List<StudentClassTeacherDto>
+    val classTeachers: List<StudentClassTeacherDto>,
+
+    // LMS course enrollments
+    val enrolledCourses: List<StudentEnrolledCourseDto> = emptyList()
 )
 
 @Serializable
@@ -377,6 +380,24 @@ data class StudentClassTeacherDto(
 )
 
 @Serializable
+data class StudentEnrolledCourseDto(
+    val enrollmentId: String,
+    val courseId: String,
+    val courseName: String,
+    val batchId: String,
+    val batchName: String,
+    val batchStatus: String,
+    val purchaseType: String,
+    val batchStartDate: String,
+    val batchEndDate: String,
+    val sessionsAttended: Int,
+    val totalSessions: Int,
+    // sessionsAttended / totalSessions * 100 (0 when totalSessions is 0).
+    // Based on self-reported join events, not verified in-call duration.
+    val progressPercentage: Double
+)
+
+@Serializable
 data class StudentBasicDataDto(
     // Basic student information
     val studentId: String,
@@ -394,7 +415,10 @@ data class StudentBasicDataDto(
 
     // Upcoming information
     val upcomingExams: List<StudentUpcomingExamDto>,
-    val classTeachers: List<StudentClassTeacherDto>
+    val classTeachers: List<StudentClassTeacherDto>,
+
+    // LMS course enrollments
+    val enrolledCourses: List<StudentEnrolledCourseDto> = emptyList()
 )
 
 @Serializable

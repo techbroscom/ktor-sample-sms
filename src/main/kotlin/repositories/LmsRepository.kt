@@ -469,6 +469,17 @@ class LmsRepository {
             .count().toInt()
     }
 
+    /**
+     * Total number of scheduled sessions for a batch (all statuses).
+     * Paired with countAttendedSessionsByUserAndBatch to compute a
+     * "sessions attended / total sessions" progress figure.
+     */
+    suspend fun countSessionsByBatchId(batchId: UUID): Int = tenantDbQuery {
+        LmsBatchSessions.selectAll()
+            .where { LmsBatchSessions.batchId eq batchId }
+            .count().toInt()
+    }
+
     suspend fun hasEnrollment(userId: UUID, batchId: UUID, sectionId: UUID?): Boolean = tenantDbQuery {
         val query = LmsEnrollments.selectAll()
             .where {

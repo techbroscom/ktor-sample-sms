@@ -241,7 +241,9 @@ fun Application.configureRouting() {
     val attendanceRepository = AttendanceRepository()
     val attendanceService = AttendanceService(attendanceRepository, userService, classService, studentAssignmentService)
 
-    val dashboardRepository = DashboardRepository(s3FileService)
+    val lmsRepository = LmsRepository()
+
+    val dashboardRepository = DashboardRepository(s3FileService, lmsRepository)
     val dashboardService = DashboardService(dashboardRepository, s3FileService)
 
     val feesStructureRepository = FeesStructureRepository()
@@ -287,7 +289,6 @@ fun Application.configureRouting() {
     )
 
     // LMS (Learning Management System)
-    val lmsRepository = LmsRepository()
     val zohoWebinarService = ZohoWebinarService()
     val lmsService = LmsService(lmsRepository, zohoWebinarService)
 
