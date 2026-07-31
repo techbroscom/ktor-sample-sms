@@ -203,6 +203,13 @@ fun Route.lmsRoutes(lmsService: LmsService) {
             call.respond(ApiResponse(success = true, data = session, message = "Session updated"))
         }
 
+        delete("/{id}") {
+            val sessionId = call.parameters["id"]
+                ?: throw ApiException("Session ID is required", HttpStatusCode.BadRequest)
+            lmsService.deleteBatchSession(sessionId)
+            call.respond(ApiResponse(success = true, data = null, message = "Session deleted"))
+        }
+
         post("/{id}/webinar") {
             val sessionId = call.parameters["id"]
                 ?: throw ApiException("Session ID is required", HttpStatusCode.BadRequest)

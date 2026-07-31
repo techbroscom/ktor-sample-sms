@@ -187,6 +187,12 @@ class LmsService(
         return lmsRepository.findBatchSessionById(id)!!
     }
 
+    suspend fun deleteBatchSession(sessionId: String) {
+        val id = UUID.fromString(sessionId)
+        val deleted = lmsRepository.deleteBatchSession(id)
+        if (!deleted) throw ApiException("Session not found", HttpStatusCode.NotFound)
+    }
+
     suspend fun createWebinarForSession(sessionId: String): BatchSessionDto {
         val id = UUID.fromString(sessionId)
         val session = lmsRepository.findBatchSessionById(id)

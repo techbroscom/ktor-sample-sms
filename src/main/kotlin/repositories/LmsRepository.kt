@@ -276,6 +276,10 @@ class LmsRepository {
             .count() > 0
     }
 
+    suspend fun deleteBatchSession(sessionId: UUID): Boolean = tenantDbQuery {
+        LmsBatchSessions.deleteWhere { id eq sessionId } > 0
+    }
+
     suspend fun createBatchSession(batchId: UUID, request: CreateBatchSessionRequest, meetingLinkOverride: String? = null, providerMeetingId: String? = null): UUID = tenantDbQuery {
         val sessionId = UUID.randomUUID()
         LmsBatchSessions.insert {
