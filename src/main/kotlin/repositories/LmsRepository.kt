@@ -266,6 +266,16 @@ class LmsRepository {
     // Batch Session CRUD
     // ============================================
 
+    suspend fun findActiveSessionForSection(batchId: UUID, sectionId: UUID): Boolean = tenantDbQuery {
+        LmsBatchSessions.selectAll()
+            .where {
+                (LmsBatchSessions.batchId eq batchId) and
+                (LmsBatchSessions.sectionId eq sectionId) and
+                (LmsBatchSessions.status neq SessionStatus.CANCELLED)
+            }
+            .count() > 0
+    }
+
     suspend fun createBatchSession(batchId: UUID, request: CreateBatchSessionRequest, meetingLinkOverride: String? = null, providerMeetingId: String? = null): UUID = tenantDbQuery {
         val sessionId = UUID.randomUUID()
         LmsBatchSessions.insert {

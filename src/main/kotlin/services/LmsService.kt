@@ -129,6 +129,16 @@ class LmsService(
         val batch = lmsRepository.findBatchById(bId)
             ?: throw ApiException("Batch not found", HttpStatusCode.NotFound)
 
+        // Enforce one active session per section per batch
+        val sectionId = UUID.fromString(request.sectionId)
+        val hasExisting = lmsRepository.findActiveSessionForSection(bId, sectionId)
+        if (hasExisting) {
+            throw ApiException(
+                "This module already has a scheduled session in this batch",
+                HttpStatusCode.Conflict
+            )
+        }
+
         // Check if Zoho Webinar is configured — auto-create webinar
         val config = lmsRepository.getConfig()
         var meetingLink = request.meetingLink
