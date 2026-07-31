@@ -27,6 +27,7 @@ fun Application.configureDatabases() {
     // Run migration for existing tenants on startup
     val migrationService = MigrationService()
     runBlocking {
+        migrationService.migrateTenantsLogoUrl() // Add logo_url column to tenants table (must run before tenant queries)
         migrationService.migrateTenantPostImagesTable()
 //        migrationService.removeFilesTenantIdColumn() // Remove tenant_id column (schema-level isolation)
 //        migrationService.migrateTenantFeaturesToNewSchema() // Migrate TenantFeatures to use feature_id
@@ -44,7 +45,6 @@ fun Application.configureDatabases() {
         migrationService.migrateLmsBatchSessionsProviderMeetingId() // Add provider_meeting_id for Zoho Webinar
         migrationService.migrateLmsSessionAttendance() // Create lms_session_attendance table
         migrationService.migrateLmsRemoveSessionTemplates() // Remove session templates layer (simplify hierarchy)
-        migrationService.migrateTenantsLogoUrl() // Add logo_url column to tenants table
     }
 }
 
