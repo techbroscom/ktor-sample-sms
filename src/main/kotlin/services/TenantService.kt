@@ -114,7 +114,8 @@ class TenantService {
                     id = it[Tenants.id].toString(),
                     name = it[Tenants.name],
                     subDomain = it[Tenants.subDomain],
-                    schemaName = it[Tenants.schema_name]
+                    schemaName = it[Tenants.schema_name],
+                    logoUrl = it[Tenants.logoUrl]
                 )
             }
         }
@@ -129,7 +130,33 @@ class TenantService {
                         id = it[Tenants.id].toString(),
                         name = it[Tenants.name],
                         subDomain = it[Tenants.subDomain],
-                        schemaName = it[Tenants.schema_name]
+                        schemaName = it[Tenants.schema_name],
+                        logoUrl = it[Tenants.logoUrl]
+                    )
+                }
+                .singleOrNull()
+        }
+    }
+
+    suspend fun updateTenantLogo(tenantId: String, logoUrl: String): TenantContext? {
+        val tenantUuid = UUID.fromString(tenantId)
+
+        transaction(TenantDatabaseConfig.getSystemDb()) {
+            Tenants.update({ Tenants.id eq tenantUuid }) {
+                it[Tenants.logoUrl] = logoUrl
+            }
+        }
+
+        return transaction(TenantDatabaseConfig.getSystemDb()) {
+            Tenants.selectAll()
+                .where { Tenants.id eq tenantUuid }
+                .map {
+                    TenantContext(
+                        id = it[Tenants.id].toString(),
+                        name = it[Tenants.name],
+                        subDomain = it[Tenants.subDomain],
+                        schemaName = it[Tenants.schema_name],
+                        logoUrl = it[Tenants.logoUrl]
                     )
                 }
                 .singleOrNull()

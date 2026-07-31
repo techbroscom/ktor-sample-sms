@@ -9,7 +9,8 @@ object Tenants : Table("tenants") {
     val name = varchar("name", 100)
     val subDomain = varchar("sub_domain", 100)
     val schema_name = varchar("schema_name", 50).uniqueIndex()
-    val tenantNumber = integer("tenant_number").autoIncrement().uniqueIndex() // <- NEW
+    val tenantNumber = integer("tenant_number").autoIncrement().uniqueIndex()
+    val logoUrl = varchar("logo_url", 500).nullable()
     val isActive = bool("is_active").default(true)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").nullable()

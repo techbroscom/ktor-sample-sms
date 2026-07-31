@@ -1454,4 +1454,26 @@ class MigrationService {
         println("✓ Session templates removal migration completed")
     }
 
+    /**
+     * Add logo_url column to system tenants table.
+     * This allows each institution's logo to be served in the login screen
+     * without needing tenant-specific auth context.
+     */
+    fun migrateTenantsLogoUrl() {
+        println("🔧 Running migration: Add logo_url to system.tenants...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        transaction(systemDb) {
+            exec("SET search_path TO public")
+
+            exec("""
+                ALTER TABLE tenants
+                ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500)
+            """)
+
+            println("✓ Migration complete: logo_url added to system.tenants")
+        }
+    }
+
 }

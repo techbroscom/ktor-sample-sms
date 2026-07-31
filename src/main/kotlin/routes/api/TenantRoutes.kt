@@ -45,6 +45,27 @@ fun Route.tenantRoutes(tenantService: TenantService) {
             ))
         }
 
+        // Update tenant logo URL
+        put("/{id}/logo") {
+            val id = call.parameters["id"]
+                ?: throw ApiException("Tenant ID is required", HttpStatusCode.BadRequest)
+
+            val body = call.receive<Map<String, String>>()
+            val logoUrl = body["logoUrl"]
+                ?: throw ApiException("logoUrl is required", HttpStatusCode.BadRequest)
+
+            val tenant = tenantService.updateTenantLogo(id, logoUrl)
+            if (tenant != null) {
+                call.respond(ApiResponse(
+                    success = true,
+                    data = tenant,
+                    message = "Tenant logo updated successfully"
+                ))
+            } else {
+                throw ApiException("Tenant not found", HttpStatusCode.NotFound)
+            }
+        }
+
         // Get current tenant info (for debugging)
         get("/current") {
             val tenant = com.example.tenant.TenantContextHolder.getTenant()

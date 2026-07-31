@@ -8,7 +8,8 @@ data class TenantContext(
     val id: String,
     val name: String,
     val subDomain: String,
-    val schemaName: String
+    val schemaName: String,
+    val logoUrl: String? = null
 )
 
 object TenantContextHolder {
