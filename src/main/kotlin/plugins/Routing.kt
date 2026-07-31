@@ -39,6 +39,7 @@ import com.example.repositories.BookBorrowingRepository
 import com.example.repositories.BookReservationRepository
 import com.example.repositories.LibraryFineRepository
 import com.example.repositories.LibrarySettingsRepository
+import com.example.repositories.AssessmentRepository
 import com.example.repositories.LmsRepository
 import com.example.routes.api.academicYearRoutes
 import com.example.routes.api.attendanceRoutes
@@ -74,6 +75,7 @@ import com.example.routes.api.userRoutes
 import com.example.routes.api.userDetailsRoutes
 import com.example.routes.api.visitorRoutes
 import com.example.routes.api.libraryRoutes
+import com.example.routes.api.assessmentRoutes
 import com.example.routes.api.lmsRoutes
 import com.example.routes.api.oauthRoutes
 import com.example.services.AcademicYearService
@@ -111,6 +113,7 @@ import com.example.services.UserService
 import com.example.services.UserDetailsService
 import com.example.services.VisitorService
 import com.example.services.LibraryService
+import com.example.services.AssessmentService
 import com.example.services.LmsService
 import com.example.services.ZohoWebinarService
 import com.example.services.SocialAuthService
@@ -292,6 +295,10 @@ fun Application.configureRouting() {
     val zohoWebinarService = ZohoWebinarService()
     val lmsService = LmsService(lmsRepository, zohoWebinarService)
 
+    // Assessments Module
+    val assessmentRepository = AssessmentRepository()
+    val assessmentService = AssessmentService(assessmentRepository)
+
     // API routes
 
     routing {
@@ -342,5 +349,6 @@ fun Application.configureRouting() {
         visitorRoutes(visitorService)
         libraryRoutes(libraryService)
         lmsRoutes(lmsService)
+        assessmentRoutes(assessmentService)
     }
 }

@@ -22,7 +22,14 @@ import com.example.database.tables.LmsBatchSessions
 import com.example.database.tables.LmsEnrollments
 import com.example.database.tables.LmsConfig
 import com.example.database.tables.LmsSessionAttendance
+import com.example.database.tables.Assessments
+import com.example.database.tables.AssessmentQuestions
+import com.example.database.tables.AssessmentBatchEnablements
+import com.example.database.tables.AssessmentAssignments
+import com.example.database.tables.AssessmentPurchases
+import com.example.database.tables.AssessmentAttempts
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.selectAll
 
@@ -1474,6 +1481,69 @@ class MigrationService {
 
             println("✓ Migration complete: logo_url added to system.tenants")
         }
+    }
+
+    /**
+     * Create assessment tables in existing tenant schemas.
+     * Tables: assessments, assessment_questions, assessment_batch_enablements,
+     *         assessment_assignments, assessment_purchases, assessment_attempts
+     */
+    fun migrateAssessmentTables() {
+        println("🔧 Creating assessment tables in tenant schemas...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (assessment tables)")
+
+            val tenantDb = TenantDatabaseConfig.getTenantDatabase(schema)
+
+            transaction(tenantDb) {
+                exec("SET search_path TO $schema")
+
+                val tablesToCreate: List<Triple<Table, String, String>> = listOf(
+                    Triple(Assessments, "assessments", "Assessment templates"),
+                    Triple(AssessmentQuestions, "assessment_questions", "Assessment questions"),
+                    Triple(AssessmentBatchEnablements, "assessment_batch_enablements", "Batch enablements"),
+                    Triple(AssessmentAssignments, "assessment_assignments", "Assessment assignments"),
+                    Triple(AssessmentPurchases, "assessment_purchases", "Assessment purchases"),
+                    Triple(AssessmentAttempts, "assessment_attempts", "Assessment attempts")
+                )
+
+                tablesToCreate.forEach { (table, tableName, description) ->
+                    val tableExists = exec(
+                        """
+                        SELECT EXISTS (
+                            SELECT 1
+                            FROM information_schema.tables
+                            WHERE table_schema = '$schema'
+                              AND table_name = '$tableName'
+                        )
+                        """
+                    ) { rs ->
+                        rs.next()
+                        rs.getBoolean(1)
+                    } ?: false
+
+                    if (!tableExists) {
+                        println("➕ Creating $tableName table in $schema")
+                        SchemaUtils.create(table)
+                        println("✓ $description table created successfully in $schema")
+                    } else {
+                        println("✓ $tableName table already exists in $schema")
+                    }
+                }
+            }
+        }
+
+        println("✓ Assessment tables migration completed")
     }
 
 }
