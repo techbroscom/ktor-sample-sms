@@ -394,7 +394,18 @@ data class StudentEnrolledCourseDto(
     val totalSessions: Int,
     // sessionsAttended / totalSessions * 100 (0 when totalSessions is 0).
     // Based on self-reported join events, not verified in-call duration.
-    val progressPercentage: Double
+    val progressPercentage: Double,
+    val upcomingSessions: List<CourseUpcomingSessionDto> = emptyList()
+)
+
+@Serializable
+data class CourseUpcomingSessionDto(
+    val sessionId: String,
+    val title: String,
+    val scheduledDate: String,
+    val startTime: String,
+    val endTime: String,
+    val status: String
 )
 
 @Serializable

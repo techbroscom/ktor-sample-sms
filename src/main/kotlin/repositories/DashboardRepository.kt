@@ -44,7 +44,17 @@ class DashboardRepository(
                 batchEndDate = enrollment.batchEndDate,
                 sessionsAttended = sessionsAttended,
                 totalSessions = totalSessions,
-                progressPercentage = progressPercentage
+                progressPercentage = progressPercentage,
+                upcomingSessions = enrollment.upcomingSessions.take(3).map { session ->
+                    CourseUpcomingSessionDto(
+                        sessionId = session.id,
+                        title = session.title,
+                        scheduledDate = session.scheduledDate,
+                        startTime = session.startTime,
+                        endTime = session.endTime,
+                        status = session.status
+                    )
+                }
             )
         }
     }
