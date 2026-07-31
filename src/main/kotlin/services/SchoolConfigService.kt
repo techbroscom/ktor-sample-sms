@@ -1,10 +1,16 @@
 package com.example.services
 
+import com.example.config.TenantDatabaseConfig
+import com.example.database.tables.Tenants
 import com.example.exceptions.ApiException
 import com.example.models.dto.SchoolConfigDto
 import com.example.models.dto.UpdateSchoolConfigRequest
 import com.example.repositories.SchoolConfigRepository
+import com.example.tenant.TenantContextHolder
 import io.ktor.http.*
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
+import java.util.*
 import java.util.regex.Pattern
 
 class SchoolConfigService(private val schoolConfigRepository: SchoolConfigRepository) {
@@ -36,7 +42,30 @@ class SchoolConfigService(private val schoolConfigRepository: SchoolConfigReposi
             throw ApiException("School configuration not found", HttpStatusCode.NotFound)
         }
 
+        // Sync logo URL to the system tenants table so it appears on the login screen
+        syncLogoToTenants(request.logoUrl)
+
         return getSchoolConfigById(id)
+    }
+
+    /**
+     * When the school admin updates the logo in school config,
+     * sync it to the public.tenants table so the login screen can display it
+     * without requiring tenant-level auth context.
+     */
+    private fun syncLogoToTenants(logoUrl: String?) {
+        val tenantContext = TenantContextHolder.getTenant() ?: return
+        val tenantId = try {
+            UUID.fromString(tenantContext.id)
+        } catch (e: Exception) {
+            return
+        }
+
+        transaction(TenantDatabaseConfig.getSystemDb()) {
+            Tenants.update({ Tenants.id eq tenantId }) {
+                it[Tenants.logoUrl] = logoUrl
+            }
+        }
     }
 
     private fun isValidEmail(email: String): Boolean {
