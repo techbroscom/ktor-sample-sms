@@ -186,6 +186,7 @@ data class BatchSessionDto(
     val webinarCreated: Boolean = false, // Admin: whether Zoho/provider webinar was created
     val meetingReady: Boolean = false, // Admin: students can join (provider webinar OR custom link set)
     val canCreateWebinar: Boolean = false, // Admin: provider webinar can be created for this session
+    val presenterStartLink: String? = null, // Admin: link for organizer to start the webinar
     val createdAt: String,
     val updatedAt: String? = null
 )

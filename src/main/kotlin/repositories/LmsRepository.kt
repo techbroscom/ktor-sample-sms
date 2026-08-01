@@ -280,7 +280,7 @@ class LmsRepository {
         LmsBatchSessions.deleteWhere { id eq sessionId } > 0
     }
 
-    suspend fun createBatchSession(batchId: UUID, request: CreateBatchSessionRequest, meetingLinkOverride: String? = null, providerMeetingId: String? = null): UUID = tenantDbQuery {
+    suspend fun createBatchSession(batchId: UUID, request: CreateBatchSessionRequest, meetingLinkOverride: String? = null, providerMeetingId: String? = null, presenterStartLink: String? = null): UUID = tenantDbQuery {
         val sessionId = UUID.randomUUID()
         LmsBatchSessions.insert {
             it[id] = sessionId
@@ -293,6 +293,7 @@ class LmsRepository {
             it[endTime] = LocalTime.parse(request.endTime)
             it[meetingLink] = meetingLinkOverride ?: request.meetingLink
             it[LmsBatchSessions.providerMeetingId] = providerMeetingId
+            it[LmsBatchSessions.presenterStartLink] = presenterStartLink
             it[status] = SessionStatus.UPCOMING
             it[order] = request.order
             it[createdAt] = LocalDateTime.now()
@@ -317,11 +318,15 @@ class LmsRepository {
     suspend fun attachProviderWebinar(
         sessionId: UUID,
         meetingLinkValue: String,
-        providerMeetingIdValue: String
+        providerMeetingIdValue: String,
+        presenterStartLinkValue: String? = null
     ): Boolean = tenantDbQuery {
         LmsBatchSessions.update({ LmsBatchSessions.id eq sessionId }) {
             it[LmsBatchSessions.meetingLink] = meetingLinkValue
             it[LmsBatchSessions.providerMeetingId] = providerMeetingIdValue
+            if (presenterStartLinkValue != null) {
+                it[LmsBatchSessions.presenterStartLink] = presenterStartLinkValue
+            }
             it[updatedAt] = LocalDateTime.now()
         } > 0
     }
@@ -717,6 +722,7 @@ class LmsRepository {
             canCreateWebinar = setup.managesWebinars &&
                 !webinarCreated &&
                 status == SessionStatus.UPCOMING,
+            presenterStartLink = row[LmsBatchSessions.presenterStartLink],
             createdAt = row[LmsBatchSessions.createdAt].toString(),
             updatedAt = row[LmsBatchSessions.updatedAt]?.toString()
         )

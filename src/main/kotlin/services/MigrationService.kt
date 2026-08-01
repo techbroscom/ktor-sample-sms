@@ -1547,4 +1547,54 @@ class MigrationService {
         println("✓ Assessment tables migration completed")
     }
 
+    /**
+     * Add presenter_start_link column to lms_batch_sessions.
+     * Stores the Zoho Webinar start link for the organizer/presenter.
+     */
+    fun migrateLmsBatchSessionsPresenterStartLink() {
+        println("🔧 Adding presenter_start_link column to lms_batch_sessions...")
+
+        val systemDb = TenantDatabaseConfig.getSystemDb()
+
+        val tenantSchemas = transaction(systemDb) {
+            exec("SET search_path TO public")
+            Tenants
+                .selectAll()
+                .map { it[Tenants.schema_name] }
+                .filter { it.startsWith("tenant_") }
+        }
+
+        tenantSchemas.forEach { schema ->
+            println("➡ Migrating schema: $schema (lms_batch_sessions.presenter_start_link)")
+
+            transaction(systemDb) {
+                exec("SET search_path TO $schema")
+
+                val columnExists = exec(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = '$schema'
+                          AND table_name = 'lms_batch_sessions'
+                          AND column_name = 'presenter_start_link'
+                    )
+                    """
+                ) { rs ->
+                    rs.next()
+                    rs.getBoolean(1)
+                } ?: false
+
+                if (!columnExists) {
+                    exec("ALTER TABLE lms_batch_sessions ADD COLUMN presenter_start_link VARCHAR(500) NULL")
+                    println("  ➕ Added presenter_start_link column to $schema.lms_batch_sessions")
+                } else {
+                    println("  ⏭ presenter_start_link already exists in $schema.lms_batch_sessions")
+                }
+            }
+        }
+
+        println("✓ presenter_start_link column migration completed")
+    }
+
 }

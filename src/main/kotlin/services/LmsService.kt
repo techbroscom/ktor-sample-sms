@@ -143,6 +143,7 @@ class LmsService(
         val config = lmsRepository.getConfig()
         var meetingLink = request.meetingLink
         var providerMeetingId: String? = null
+        var presenterStartLink: String? = null
 
         if (config != null && config.meetingProvider == MeetingProvider.ZOHO_WEBINAR.name) {
             val credentials = getZohoCredentials(config)
@@ -168,6 +169,7 @@ class LmsService(
                     // Store as "meetingKey::instanceId" for later use in registration
                     providerMeetingId = "${result.meetingKey}::${result.instanceId}"
                     meetingLink = result.registrationLink
+                    presenterStartLink = result.startLink
                 } catch (e: Exception) {
                     // Log but don't fail session creation if Zoho call fails
                     println("WARNING: Failed to auto-create Zoho webinar: ${e.message}")
@@ -175,7 +177,7 @@ class LmsService(
             }
         }
 
-        val sessionId = lmsRepository.createBatchSession(bId, request, meetingLink, providerMeetingId)
+        val sessionId = lmsRepository.createBatchSession(bId, request, meetingLink, providerMeetingId, presenterStartLink)
         return lmsRepository.findBatchSessionById(sessionId)
             ?: throw ApiException("Failed to create session", HttpStatusCode.InternalServerError)
     }
@@ -241,7 +243,8 @@ class LmsService(
         val updated = lmsRepository.attachProviderWebinar(
             sessionId = id,
             meetingLinkValue = result.registrationLink,
-            providerMeetingIdValue = providerMeetingId
+            providerMeetingIdValue = providerMeetingId,
+            presenterStartLinkValue = result.startLink
         )
         if (!updated) {
             throw ApiException("Session not found", HttpStatusCode.NotFound)

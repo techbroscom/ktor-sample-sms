@@ -24,6 +24,7 @@ object LmsBatchSessions : Table("lms_batch_sessions") {
     val endTime = time("end_time")
     val meetingLink = varchar("meeting_link", 500).nullable()
     val providerMeetingId = varchar("provider_meeting_id", 255).nullable() // Zoho webinarKey, Zoom meeting ID, etc.
+    val presenterStartLink = varchar("presenter_start_link", 500).nullable() // Link for organizer to start the webinar
     val status = enumerationByName("status", 20, SessionStatus::class).default(SessionStatus.UPCOMING)
     val order = integer("session_order")
     val createdAt = datetime("created_at").default(LocalDateTime.now())

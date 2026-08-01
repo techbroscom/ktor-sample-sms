@@ -45,6 +45,7 @@ fun Application.configureDatabases() {
         migrationService.migrateLmsBatchSessionsProviderMeetingId() // Add provider_meeting_id for Zoho Webinar
         migrationService.migrateLmsSessionAttendance() // Create lms_session_attendance table
         migrationService.migrateLmsRemoveSessionTemplates() // Remove session templates layer (simplify hierarchy)
+        migrationService.migrateLmsBatchSessionsPresenterStartLink() // Store Zoho start link for presenter
         migrationService.migrateAssessmentTables() // Create assessment tables in tenant schemas
     }
 }
