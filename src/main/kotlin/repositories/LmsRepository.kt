@@ -684,7 +684,8 @@ class LmsRepository {
         val scheduledDate = row[LmsBatchSessions.scheduledDate]
         val startTime = row[LmsBatchSessions.startTime]
         val endTime = row[LmsBatchSessions.endTime]
-        val now = LocalDateTime.now()
+        val istZone = java.time.ZoneId.of("Asia/Kolkata")
+        val now = LocalDateTime.now(istZone)
         val sessionStart = LocalDateTime.of(scheduledDate, startTime)
         val sessionEnd = LocalDateTime.of(scheduledDate, endTime)
         val joinWindowStart = sessionStart.minusMinutes(10)

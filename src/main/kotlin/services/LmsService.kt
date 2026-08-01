@@ -381,8 +381,9 @@ class LmsService(
             throw ApiException("You are not enrolled for this session", HttpStatusCode.Forbidden)
         }
 
-        // Check time window
-        val now = LocalDateTime.now()
+        // Check time window — use IST since sessions are scheduled in Asia/Kolkata
+        val istZone = java.time.ZoneId.of("Asia/Kolkata")
+        val now = LocalDateTime.now(istZone)
         val scheduledDate = LocalDate.parse(session.scheduledDate)
         val startTime = LocalTime.parse(session.startTime)
         val endTime = LocalTime.parse(session.endTime)
